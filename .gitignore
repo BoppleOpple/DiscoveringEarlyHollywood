@@ -1,10 +1,7 @@
-"node_modules/" 
-/node_modules
-FirebaseAPI.env
 /temp_uploads
 img/
-/backend/firebase_cred
 /backend/static/edits
 /temp_edits
 
 .env
+.venv
