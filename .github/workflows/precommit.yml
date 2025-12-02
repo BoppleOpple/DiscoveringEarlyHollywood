@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   build:
-    name: python test
+    name: precommit
     
     runs-on: ${{matrix.os}}
 
