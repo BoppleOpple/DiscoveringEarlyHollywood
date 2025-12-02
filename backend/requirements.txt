@@ -5,3 +5,4 @@ pillow
 firebase-admin
 werkzeug
 pdf2image
+python-dotenv

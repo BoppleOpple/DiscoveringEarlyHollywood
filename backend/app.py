@@ -1,3 +1,5 @@
+import os
+import tempfile
 from flask import (
     Flask,
     render_template,
@@ -8,18 +10,18 @@ from flask import (
     jsonify,
     flash,
 )
-import os
-from flask_cors import CORS
 import pytesseract
+from flask_cors import CORS
 from PIL import Image
 from werkzeug.utils import secure_filename
 from pdf2image import convert_from_path
-import tempfile
+from dotenv import load_dotenv
 
+load_dotenv()
 app = Flask(__name__, template_folder="templates")
 
 CORS(app)
-app.secret_key = "your_secret_key"
+app.secret_key = os.environ["FLASK_SECRET"] or os.urandom(20)
 
 pytesseract.pytesseract.tesseract_cmd = (
     r"C:\Program Files\Tesseract-OCR\tesseract.exe"  # Adjust this path as needed

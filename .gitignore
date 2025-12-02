@@ -3,5 +3,6 @@ img/
 /backend/static/edits
 /temp_edits
 
+.DS_Store
 .env
 .venv
