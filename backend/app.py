@@ -1,5 +1,6 @@
 import os
 import tempfile
+import psycopg2
 from flask import (
     Flask,
     render_template,
@@ -17,11 +18,21 @@ from werkzeug.utils import secure_filename
 from pdf2image import convert_from_path
 from dotenv import load_dotenv
 
+import db_utils
+
 load_dotenv()
 app = Flask(__name__, template_folder="templates")
 
 CORS(app)
 app.secret_key = os.environ["FLASK_SECRET"] or os.urandom(20)
+
+dbConnection = psycopg2.connect(
+    host=os.environ["SQL_HOST"],
+    port=os.environ["SQL_PORT"],
+    dbname=os.environ["SQL_DBNAME"],
+    user=os.environ["SQL_USER"],
+    password=os.environ["SQL_PASSWORD"],
+)
 
 pytesseract.pytesseract.tesseract_cmd = (
     r"C:\Program Files\Tesseract-OCR\tesseract.exe"  # Adjust this path as needed
@@ -196,29 +207,30 @@ def results():
     return render_template("results.html", results=results)
 
 
-@app.route("/view_document/<int:doc_id>")
+@app.route("/view_document/<doc_id>")
 def view_document(doc_id):
     # Using the same dummy data source as your /results route
-    all_documents = [
-        {
-            "id": 1,
-            "title": "Sunset Boulevard",
-            "year": 1950,
-            "type": "feature_film",
-            "actors": ["Gloria Swanson"],
-            "content": "This is an example content.",
-        },
-        {
-            "id": 2,
-            "title": "The Kid",
-            "year": 1921,
-            "type": "short_film",
-            "actors": ["Charlie Chaplin"],
-            "content": "Another sample content.",
-        },
-    ]
+    # all_documents = [
+    #     {
+    #         "id": 1,
+    #         "title": "Sunset Boulevard",
+    #         "year": 1950,
+    #         "type": "feature_film",
+    #         "actors": ["Gloria Swanson"],
+    #         "content": "This is an example content.",
+    #     },
+    #     {
+    #         "id": 2,
+    #         "title": "The Kid",
+    #         "year": 1921,
+    #         "type": "short_film",
+    #         "actors": ["Charlie Chaplin"],
+    #         "content": "Another sample content.",
+    #     },
+    # ]
 
-    document = next((doc for doc in all_documents if doc["id"] == doc_id), None)
+    # document = next((doc for doc in all_documents if doc["id"] == doc_id), None)
+    document = db_utils.get_document(dbConnection, doc_id)
 
     if not document:
         return "Document not found", 404
