@@ -1,42 +1,37 @@
-# Crash Test Dummies - Recovering Early Hollywood
+# Willy N' Gang - Discovering Early Hollywood
 
 ## Project Overview
 
-Crash Test Dummies - Recovering Early Hollywood is a project focused on creating an online database of copyright documents for early Hollywood films. The goal is to digitize, organize, and make these historical records easily accessible for researchers, historians, and enthusiasts.
+Willy N' Gang - Discovering Early Hollywood...
 
-This project leverages OCR (Optical Character Recognition) technology to extract text from scanned documents, allowing for efficient searching and referencing. The project includes a desktop application built with Electron.js that interacts with a Flask-based Python backend for document processing and data storage.
+This repository is a fork of a previous team's work, (Recovering Early Hollywood)[https://github.com/gabrielfitzpatrickcs/CrashTestDummies-RecoveringEarlyHollywood].
 
 ## Team Members
 
+### Current Members
+- Samuel Backer (Client/Project Lead)
+- Xander Dufour (Developer, Client Liaison)
+- Liam Hillery (Developer)
+- Vincent Lin (Developer)
+- Patrick Storer (Developer)
+- Caleb Thurston (Developer)
+
+### Previous Members
+- Samuel Backer (Client/Project Lead)
 - Gabriel Fitzpatrick (Developer)
 - Aspyn Call (Developer)
 - Chimezie Ugbuaja (Developer)
 - Jimmy Ocaya (Developer)
 - Michael Wilkinson (Developer)
-- Samuel Backer (Client/Project Lead)
 
 ## Tech Stack & Dependencies
 
 ### Primary Technologies
 
-- **Electron.js** (For UI/Desktop App)
-- **Node.js** (For backend integration and application framework)
 - **Python** (For OCR processing and backend operations)
 - **Flask** (Python micro-framework to serve the backend API)
-- **Tesseract OCR** (For extracting text from scanned documents)
-- **Firebase Firestore & Storage** (For document storage and retrieval)
-
-### Node.js Dependencies
-
-Before running the project, install the following:
-
-```
-npm install electron axios form-data
-```
-
-- **Electron** (For creating the desktop application)
-- **Axios** (For handling HTTP requests between Electron and Flask backend)
-- **Form-Data** (For handling file uploads in Axios requests)
+- **LLM (TBD)** (For labelling and transcribing documents)
+- **PostgreSQL** (For database creation and management)
 
 ### Python Dependencies
 
@@ -145,12 +140,6 @@ This will start the Electron application, which connects to the Flask backend.
 - Stores and retrieves OCR results in Firestore (`/retrieve_image/<doc_id>` route)
 - Provides document search functionality based on metadata (`/search` route)
 - Manages user browsing history (`/history`, `/clear_history`, `/remove_from_history/<doc_id>` routes)
-
-### Electron Frontend
-
-- Displays the Flask-powered web interface
-- Allows users to upload images and PDFs for OCR processing
-- Handles communication with the backend using Axios
 
 ## Contributing
 

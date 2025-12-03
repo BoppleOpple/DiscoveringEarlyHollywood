@@ -13,6 +13,10 @@ header {
     align-items: center;
 }
 
+main {
+    margin: 10px;
+}
+
 .header-container {
     display: flex;
     justify-content: space-between;
@@ -34,7 +38,12 @@ nav a {
     margin-left: 1em;
 }
 
-
+.pageContainer {
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    display: flex;
+}
 
 
 h1 {
@@ -45,6 +54,10 @@ h1 {
     max-width: 600px; /* Restrict the width to align with the search bar */
     margin-left: auto;
     margin-right: auto;
+}
+
+td {
+    padding: 4px;
 }
 
 

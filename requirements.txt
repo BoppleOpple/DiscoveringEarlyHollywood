@@ -1,0 +1,9 @@
+flask
+flask-cors
+pytesseract
+pillow
+firebase-admin
+werkzeug
+pdf2image
+python-dotenv
+psycopg2

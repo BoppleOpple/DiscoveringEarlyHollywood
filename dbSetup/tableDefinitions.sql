@@ -20,8 +20,7 @@ CREATE TABLE users (
 CREATE TABLE documents (
     id varchar(15) PRIMARY KEY,
     copyright_year integer,
-    studio varchar(50),
-    image_path path,
+    studio text,
     reel_count integer,
     uploaded_by varchar(20),
     uploaded_time timestamp,
@@ -43,7 +42,7 @@ CREATE TABLE queries (
     end_year integer,
     start_runtime integer,
     end_runtime integer,
-    studio varchar(50),
+    studio text,
     actors text,
     genres text,
     tags text,
