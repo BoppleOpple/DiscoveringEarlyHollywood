@@ -1,5 +1,6 @@
 import os
 import tempfile
+import math
 from flask import (
     Flask,
     render_template,
@@ -10,6 +11,7 @@ from flask import (
     jsonify,
     flash,
 )
+import psycopg2
 import pytesseract
 from flask_cors import CORS
 from PIL import Image
@@ -17,11 +19,21 @@ from werkzeug.utils import secure_filename
 from pdf2image import convert_from_path
 from dotenv import load_dotenv
 
+import db_utils
+
 load_dotenv()
 app = Flask(__name__, template_folder="templates")
 
 CORS(app)
 app.secret_key = os.environ["FLASK_SECRET"] or os.urandom(20)
+
+dbConnection = psycopg2.connect(
+    host=os.environ["SQL_HOST"],
+    port=os.environ["SQL_PORT"],
+    dbname=os.environ["SQL_DBNAME"],
+    user=os.environ["SQL_USER"],
+    password=os.environ["SQL_PASSWORD"],
+)
 
 pytesseract.pytesseract.tesseract_cmd = (
     r"C:\Program Files\Tesseract-OCR\tesseract.exe"  # Adjust this path as needed
@@ -29,6 +41,7 @@ pytesseract.pytesseract.tesseract_cmd = (
 # Adjust this path as needed
 poppler_path = r"C:\Users\shtgu\Documents\CodingPackages\poppler-24.08.0\Library\bin"
 
+RESULTS_PER_PAGE = 20
 UPLOAD_FOLDER = "backend/static/img"
 EDITS_FOLDER = "backend/static/edits"
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "pdf"}
@@ -38,6 +51,14 @@ app.config["EDITS_FOLDER"] = EDITS_FOLDER
 
 def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+@app.context_processor
+def utility_processor():
+    def modify_args_on_page(page: str, args: dict):
+        return url_for("results", **{**request.args, **args})
+
+    return dict(modify_args_on_page=modify_args_on_page)
 
 
 @app.route("/")
@@ -162,63 +183,80 @@ def save_ocr_content():
         return jsonify({"error": str(e)}), 500
 
 
+def print_kwargs(**kwargs):
+    print(kwargs)
+
+
 @app.route("/results", methods=["GET", "POST"])
 def results():
-    query = request.args.get("query", "")
-    year = request.args.get("year", "")
+    # query = request.args.get("query", "")
+    # year = request.args.get("year", "")
+    page = request.args.get("page", 1, type=int)
+
+    print_kwargs(**request.args)
 
     # TODO: Replace this with real data loading (e.g., from Firestore or JSON)
-    all_documents = [
-        {
-            "id": 1,
-            "title": "Sunset Boulevard",
-            "year": 1950,
-            "type": "feature_film",
-            "actors": ["Gloria Swanson"],
-        },
-        {
-            "id": 2,
-            "title": "The Kid",
-            "year": 1921,
-            "type": "short_film",
-            "actors": ["Charlie Chaplin"],
-        },
-    ]
+    # all_documents = [
+    #     {
+    #         "id": 1,
+    #         "title": "Sunset Boulevard",
+    #         "year": 1950,
+    #         "type": "feature_film",
+    #         "actors": ["Gloria Swanson"],
+    #     },
+    #     {
+    #         "id": 2,
+    #         "title": "The Kid",
+    #         "year": 1921,
+    #         "type": "short_film",
+    #         "actors": ["Charlie Chaplin"],
+    #     },
+    # ]
 
     # Filter documents based on query and year
-    results = []
-    for doc in all_documents:
-        if (not query or query.lower() in doc["title"].lower()) and (
-            not year or str(doc["year"]) == year
-        ):
-            results.append(doc)
+    # results = []
+    # for doc in all_documents:
+    #     if (not query or query.lower() in doc["title"].lower()) and (
+    #         not year or str(doc["year"]) == year
+    #     ):
+    #         results.append(doc)
 
-    return render_template("results.html", results=results)
+    results = db_utils.search_results(dbConnection, page, RESULTS_PER_PAGE)
+
+    num_results = db_utils.get_num_results(dbConnection)
+
+    return render_template(
+        "results.html",
+        results=results,
+        page=page,
+        num_pages=math.ceil(num_results / RESULTS_PER_PAGE),
+    )
 
 
-@app.route("/view_document/<int:doc_id>")
+@app.route("/view_document/<doc_id>")
 def view_document(doc_id):
     # Using the same dummy data source as your /results route
-    all_documents = [
-        {
-            "id": 1,
-            "title": "Sunset Boulevard",
-            "year": 1950,
-            "type": "feature_film",
-            "actors": ["Gloria Swanson"],
-            "content": "This is an example content.",
-        },
-        {
-            "id": 2,
-            "title": "The Kid",
-            "year": 1921,
-            "type": "short_film",
-            "actors": ["Charlie Chaplin"],
-            "content": "Another sample content.",
-        },
-    ]
+    # all_documents = [
+    #     {
+    #         "id": 1,
+    #         "title": "Sunset Boulevard",
+    #         "year": 1950,
+    #         "type": "feature_film",
+    #         "actors": ["Gloria Swanson"],
+    #         "content": "This is an example content.",
+    #     },
+    #     {
+    #         "id": 2,
+    #         "title": "The Kid",
+    #         "year": 1921,
+    #         "type": "short_film",
+    #         "actors": ["Charlie Chaplin"],
+    #         "content": "Another sample content.",
+    #     },
+    # ]
 
-    document = next((doc for doc in all_documents if doc["id"] == doc_id), None)
+    # document = next((doc for doc in all_documents if doc["id"] == doc_id), None)
+    document = db_utils.get_document(dbConnection, doc_id)
 
     if not document:
         return "Document not found", 404

@@ -6,3 +6,4 @@ firebase-admin
 werkzeug
 pdf2image
 python-dotenv
+psycopg2
