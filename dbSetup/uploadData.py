@@ -2,6 +2,7 @@ import os
 import argparse
 import json
 import datetime
+from pathlib import Path
 from dotenv import load_dotenv
 from tqdm import tqdm
 
@@ -15,17 +16,28 @@ the Discovering Early Hollywood PostgreSQL database",
     epilog="Willy N' Gang, 2025",
 )
 
-parser.add_argument("-d", "--document-directory", default="./data/film_copyright")
+parser.add_argument(
+    "-d", "--document-directory", default="./data/film_copyright", type=Path
+)
 parser.add_argument(
     "-t",
     "--transcript-directory",
     default="./data/Hollywood_Copyright_Materials_Base_Transcriptions",
+    type=Path,
 )
 parser.add_argument(
     "-m",
     "--metadata-directory",
     required=False,
     default="./data/cleaned_copyright_with_metadata",
+    type=Path,
+)
+parser.add_argument(
+    "-a",
+    "--analysis-directory",
+    required=False,
+    default="./data/no_shot_gpt_analysis",
+    type=Path,
 )
 
 
@@ -44,9 +56,12 @@ def loadData(args: argparse.Namespace, cursor: psycopg2.extras._cursor):
     for document_id in tqdm(ids):
         currentMovieEntry = [document_id, None, None, datetime.datetime.now()]
 
-        with open(
-            f"{args.metadata_directory}/{document_id}with_added_metadata.json"
-        ) as metadataJson:
+        metadataFile: Path = (
+            args.metadata_directory / f"{document_id}with_added_metadata.json"
+        )
+        analysisFile: Path = args.analysis_directory / f"{document_id}.json"
+
+        with open(metadataFile, "r") as metadataJson:
             metadata = json.load(metadataJson)
 
             currentMovieEntry[1] = metadata["date"]
@@ -55,8 +70,15 @@ def loadData(args: argparse.Namespace, cursor: psycopg2.extras._cursor):
             for page, content in enumerate(metadata["text"]):
                 transcriptData.append((document_id, page, content))
 
+        if analysisFile.exists():
+            with open(analysisFile, "r") as analysisJson:
+                response = json.load(analysisJson)
+                print(response)
+                exit(1)
+
         movieData.append(currentMovieEntry)
 
+    exit(1)
     print("Adding documents to database")
     psycopg2.extras.execute_batch(
         cursor,

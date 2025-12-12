@@ -4,7 +4,7 @@ from psycopg2.extensions import connection, cursor
 def formatDocument(query_result: tuple, transcripts: list = None) -> dict:
     return {
         "id": query_result[0],
-        "title": None,
+        "title": query_result[3],
         "year": query_result[1],
         "type": None,
         "actors": [],
@@ -20,7 +20,7 @@ def search_results(conn: connection, page: int, results_per_page: int = 50):
     cur: cursor
     with conn.cursor() as cur:
         cur.execute(
-            "SELECT id, copyright_year, studio \
+            "SELECT id, copyright_year, studio, title \
             FROM documents \
             LIMIT %s \
             OFFSET %s;",
@@ -60,7 +60,7 @@ def get_document(conn: connection, doc_id: str) -> dict:
     cur: cursor
     with conn.cursor() as cur:
         cur.execute(
-            "SELECT id, copyright_year, studio \
+            "SELECT id, copyright_year, studio, title \
             FROM documents \
             WHERE id=%s;",
             [doc_id.lower()],
