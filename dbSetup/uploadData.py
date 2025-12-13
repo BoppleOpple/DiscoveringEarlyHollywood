@@ -2,6 +2,7 @@ import os
 import argparse
 import json
 import datetime
+import re
 from pathlib import Path
 from dotenv import load_dotenv
 from tqdm import tqdm
@@ -46,65 +47,169 @@ def createTables(cursor: psycopg2.extras._cursor):
     with open("tableDefinitions.sql", "r") as f:
         cursor.execute(f.read())
 
+def formatLLMAnalysis(analysis: dict) -> dict:
+    formattedAnalysis: dict = {
+        "title": None,
+        "actors": [],
+        "failed": False
+    }
+    if analysis:
+        try:
+            responses = analysis["response"].split("```json")
+
+            responseList = []
+
+            for response in responses:
+                # locate the JSON content
+                minCharacter: int = min(
+                    response.index("{") if "{" in response else len(response),
+                    response.index("[") if "[" in response else len(response)
+                )
+                maxCharacter: int = max(
+                    response.rindex("}") if "}" in response else 0,
+                    response.rindex("]") if "]" in response else 0
+                )
+
+                # ignore the string if there are no JSON opening or closing brackets
+                if minCharacter == len(response) or maxCharacter == 0:
+                    continue
+                
+                cleanedResponse, n = re.subn(r",(?=\s*[\}\]])", "", response[minCharacter:maxCharacter+1])
+                
+                # LLM allows comments in JSON files
+                cleanedResponse, n = re.subn(r"//.*\n", "", cleanedResponse)
+
+                # account for multiple documents being stored in the same JSON object
+                responseObject = json.loads(cleanedResponse)
+                if type(responseObject) is dict:
+                    if "Films" not in responseObject:
+                        responseList.append(responseObject)
+                    else:
+                        responseList.extend(responseObject["Films"])
+                elif type(responseObject) is list:
+                    responseList.extend(responseObject)
+
+            if len(responseList) == 1:
+                responseDict = responseList[0]
+                # parse "Title" field
+                if "Title" in responseDict:
+                    formattedAnalysis["title"] = responseDict["Title"]
+                else:
+                    print(f"Analysis of {analysis["File_Name"]} is missing key 'Title': {responseDict}")
+
+                # parse "Actors" field
+                if "Actors" in responseDict:
+                    actors = responseDict["Actors"]
+
+                    # no actors can be represented as "N/A", ["N/A"], or []
+                    if type(actors) is list:
+                        if "N/A" not in actors:
+                            formattedAnalysis["actors"] = actors
+                        else:
+                            formattedAnalysis["actors"] = []
+
+                    elif type(actors) is str:
+                        if actors != "N/A":
+                            # Assume the string contains the actor's name
+                            formattedAnalysis["actors"] = [actors]
+                        else:
+                            formattedAnalysis["actors"] = []
+            else:
+                formattedAnalysis["failed"] = True
+                print(f"Analysis of {analysis["File_Name"]} includes {len(responseList)} documents (expected 1)")
+
+        except json.decoder.JSONDecodeError as e:
+            formattedAnalysis["failed"] = True
+            print(f"Error while decoding {analysis["File_Name"]}:")
+            print(e)
+    else:
+        formattedAnalysis["failed"] = True
+    
+    return formattedAnalysis
 
 def loadData(args: argparse.Namespace, cursor: psycopg2.extras._cursor):
     print("parsing movies")
     ids: list[str] = [fname[:-24] for fname in os.listdir(args.metadata_directory)]
-    movieData: list = []
-    transcriptData: list = []
 
+    # iterate through every document id that contains metadata
     for document_id in tqdm(ids):
-        currentMovieEntry = [document_id, None, None, datetime.datetime.now()]
+        transcriptData: list = []
 
         metadataFile: Path = (
             args.metadata_directory / f"{document_id}with_added_metadata.json"
         )
         analysisFile: Path = args.analysis_directory / f"{document_id}.json"
 
+        metadata: dict = None
         with open(metadataFile, "r") as metadataJson:
             metadata = json.load(metadataJson)
 
-            currentMovieEntry[1] = metadata["date"]
-            currentMovieEntry[2] = metadata["producer"]
+        for page, content in enumerate(metadata["text"]):
+            transcriptData.append((document_id, page, content))
 
-            for page, content in enumerate(metadata["text"]):
-                transcriptData.append((document_id, page, content))
-
+        analysis: dict = None
         if analysisFile.exists():
             with open(analysisFile, "r") as analysisJson:
-                response = json.load(analysisJson)
-                print(response)
-                exit(1)
+                analysis = json.load(analysisJson)
 
-        movieData.append(currentMovieEntry)
+        formattedAnalysis = formatLLMAnalysis(analysis)
 
-    exit(1)
-    print("Adding documents to database")
-    psycopg2.extras.execute_batch(
-        cursor,
-        "INSERT INTO documents ( \
-            id, \
-            copyright_year, \
-            studio, \
-            uploaded_time \
-        ) VALUES (%s, %s, %s, %s) \
-        ON CONFLICT DO NOTHING;",
-        tqdm(movieData),
-        page_size=500,
-    )
+        cursor.execute(
+            "INSERT INTO documents ( \
+                id, \
+                copyright_year, \
+                studio, \
+                title, \
+                uploaded_time \
+            ) VALUES (%s, %s, %s, %s, %s) \
+            ON CONFLICT DO NOTHING;",
+            (
+                document_id,
+                metadata["date"],
+                metadata["producer"],
+                formattedAnalysis["title"],
+                datetime.datetime.now()
+            )
+        )
 
-    print("Adding transcripts to database")
-    psycopg2.extras.execute_batch(
-        cursor,
-        "INSERT INTO transcripts ( \
-            document_id, \
-            page_number, \
-            content \
-        ) VALUES (%s, %s, %s) \
-        ON CONFLICT DO NOTHING;",
-        tqdm(transcriptData),
-        page_size=500,
-    )
+        psycopg2.extras.execute_batch(
+            cursor,
+            "INSERT INTO transcripts ( \
+                document_id, \
+                page_number, \
+                content \
+            ) VALUES (%s, %s, %s) \
+            ON CONFLICT DO NOTHING;",
+            transcriptData
+        )
+
+    # print("Adding documents to database")
+    # psycopg2.extras.execute_batch(
+    #     cursor,
+    #     "INSERT INTO documents ( \
+    #         id, \
+    #         copyright_year, \
+    #         studio, \
+    #         title, \
+    #         uploaded_time \
+    #     ) VALUES (%s, %s, %s, %s, %s) \
+    #     ON CONFLICT DO NOTHING;",
+    #     tqdm(movieData),
+    #     page_size=500,
+    # )
+
+    # print("Adding transcripts to database")
+    # psycopg2.extras.execute_batch(
+    #     cursor,
+    #     "INSERT INTO transcripts ( \
+    #         document_id, \
+    #         page_number, \
+    #         content \
+    #     ) VALUES (%s, %s, %s) \
+    #     ON CONFLICT DO NOTHING;",
+    #     tqdm(transcriptData),
+    #     page_size=500,
+    # )
 
 
 def main(argv=None):
