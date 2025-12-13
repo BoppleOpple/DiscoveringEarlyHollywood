@@ -1,8 +1,9 @@
 from psycopg2.extensions import connection, cursor
-from functools import partial
 
 
-def formatDocument(documentQuery: tuple, transcriptQuery: list = None, actorQuery: list = None) -> dict:
+def formatDocument(
+    documentQuery: tuple, transcriptQuery: list = None, actorQuery: list = None
+) -> dict:
     return {
         "id": documentQuery[0],
         "title": documentQuery[3],
@@ -43,12 +44,7 @@ def search_results(conn: connection, page: int, results_per_page: int = 50):
 
     conn.commit()
 
-    return list(map(
-        formatDocument,
-        documents,
-        [None for doc in documents],
-        actors
-    ))
+    return list(map(formatDocument, documents, [None for doc in documents], actors))
 
 
 def get_num_results(conn: connection):
@@ -74,7 +70,7 @@ def get_document(conn: connection, doc_id: str) -> dict:
     if not conn:
         raise Exception("No SQL connection found")
 
-    documents: list = []
+    document: tuple = None
     transcripts: list = []
     actors: list = []
     cur: cursor = None

@@ -47,12 +47,9 @@ def createTables(cursor: psycopg2.extras._cursor):
     with open("tableDefinitions.sql", "r") as f:
         cursor.execute(f.read())
 
+
 def formatLLMAnalysis(analysis: dict) -> dict:
-    formattedAnalysis: dict = {
-        "title": None,
-        "actors": [],
-        "failed": False
-    }
+    formattedAnalysis: dict = {"title": None, "actors": [], "failed": False}
     if analysis:
         try:
             responses = analysis["response"].split("```json")
@@ -63,19 +60,23 @@ def formatLLMAnalysis(analysis: dict) -> dict:
                 # locate the JSON content
                 minCharacter: int = min(
                     response.index("{") if "{" in response else len(response),
-                    response.index("[") if "[" in response else len(response)
+                    response.index("[") if "[" in response else len(response),
                 )
                 maxCharacter: int = max(
                     response.rindex("}") if "}" in response else 0,
-                    response.rindex("]") if "]" in response else 0
+                    response.rindex("]") if "]" in response else 0,
                 )
 
                 # ignore the string if there are no JSON opening or closing brackets
                 if minCharacter == len(response) or maxCharacter == 0:
                     continue
-                
-                cleanedResponse, n = re.subn(r",(?=\s*[\}\]])", "", response[minCharacter:maxCharacter+1])
-                
+
+                cleanedResponse, n = re.subn(
+                    r",(?=\s*[\}\]])",
+                    "",
+                    response[minCharacter : maxCharacter + 1],  # noqa E203
+                )
+
                 # LLM allows comments in JSON files
                 cleanedResponse, n = re.subn(r"//.*\n", "", cleanedResponse)
 
@@ -95,7 +96,9 @@ def formatLLMAnalysis(analysis: dict) -> dict:
                 if "Title" in responseDict:
                     formattedAnalysis["title"] = responseDict["Title"]
                 else:
-                    print(f"Analysis of {analysis["File_Name"]} is missing key 'Title': {responseDict}")
+                    print(
+                        f"Analysis of {analysis["File_Name"]} is missing key 'Title': {responseDict}"  # noqa E501
+                    )
 
                 # parse "Actors" field
                 if "Actors" in responseDict:
@@ -116,7 +119,9 @@ def formatLLMAnalysis(analysis: dict) -> dict:
                             formattedAnalysis["actors"] = []
             else:
                 formattedAnalysis["failed"] = True
-                print(f"Analysis of {analysis["File_Name"]} includes {len(responseList)} documents (expected 1)")
+                print(
+                    f"Analysis of {analysis["File_Name"]} includes {len(responseList)} documents (expected 1)"  # noqa E501
+                )
 
         except json.decoder.JSONDecodeError as e:
             formattedAnalysis["failed"] = True
@@ -124,8 +129,9 @@ def formatLLMAnalysis(analysis: dict) -> dict:
             print(e)
     else:
         formattedAnalysis["failed"] = True
-    
+
     return formattedAnalysis
+
 
 def loadData(args: argparse.Namespace, cursor: psycopg2.extras._cursor):
     print("parsing movies")
@@ -168,8 +174,8 @@ def loadData(args: argparse.Namespace, cursor: psycopg2.extras._cursor):
                 metadata["date"],
                 metadata["producer"],
                 formattedAnalysis["title"],
-                datetime.datetime.now()
-            )
+                datetime.datetime.now(),
+            ),
         )
 
         # insert actors, if any are present
@@ -180,7 +186,7 @@ def loadData(args: argparse.Namespace, cursor: psycopg2.extras._cursor):
                     name \
                 ) VALUES (%s) \
                 ON CONFLICT DO NOTHING;",
-                [[actor] for actor in formattedAnalysis["actors"]]
+                [[actor] for actor in formattedAnalysis["actors"]],
             )
 
             psycopg2.extras.execute_batch(
@@ -191,7 +197,7 @@ def loadData(args: argparse.Namespace, cursor: psycopg2.extras._cursor):
                     role \
                 ) VALUES (%s, %s, %s) \
                 ON CONFLICT DO NOTHING;",
-                [(document_id, actor, None) for actor in formattedAnalysis["actors"]]
+                [(document_id, actor, None) for actor in formattedAnalysis["actors"]],
             )
 
         # insert transcripts, if any are present
@@ -204,7 +210,7 @@ def loadData(args: argparse.Namespace, cursor: psycopg2.extras._cursor):
                     content \
                 ) VALUES (%s, %s, %s) \
                 ON CONFLICT DO NOTHING;",
-                transcriptData
+                transcriptData,
             )
 
     # print("Adding documents to database")
