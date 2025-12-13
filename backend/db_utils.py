@@ -1,13 +1,14 @@
 from psycopg2.extensions import connection, cursor
+from functools import partial
 
 
-def formatDocument(query_result: tuple, transcripts: list = None) -> dict:
+def formatDocument(query_result: tuple, transcripts: list = None, actors: list = None) -> dict:
     return {
         "id": query_result[0],
         "title": query_result[3],
         "year": query_result[1],
         "type": None,
-        "actors": [],
+        "actors": actors,
         "studio": query_result[2],
         "content": transcripts,
     }
@@ -17,7 +18,9 @@ def search_results(conn: connection, page: int, results_per_page: int = 50):
     if not conn:
         raise Exception("No SQL connection found")
 
-    cur: cursor
+    documents: list = []
+    actors: list = []
+    cur: cursor = None
     with conn.cursor() as cur:
         cur.execute(
             "SELECT id, copyright_year, studio, title \
@@ -29,9 +32,23 @@ def search_results(conn: connection, page: int, results_per_page: int = 50):
 
         documents = cur.fetchall()
 
+        for document in documents:
+            cur.execute(
+                "SELECT actor_name \
+                FROM has_actor \
+                WHERE document_id=%s;",
+                [document[0]],
+            )
+            actors.append([result[0] for result in cur.fetchall()])
+
     conn.commit()
 
-    return list(map(formatDocument, documents))
+    return list(map(
+        formatDocument,
+        documents,
+        [None for doc in documents],
+        actors
+    ))
 
 
 def get_num_results(conn: connection):
@@ -57,7 +74,10 @@ def get_document(conn: connection, doc_id: str) -> dict:
     if not conn:
         raise Exception("No SQL connection found")
 
-    cur: cursor
+    documents: list = []
+    transcripts: list = []
+    actors: list = []
+    cur: cursor = None
     with conn.cursor() as cur:
         cur.execute(
             "SELECT id, copyright_year, studio, title \
@@ -77,9 +97,18 @@ def get_document(conn: connection, doc_id: str) -> dict:
 
         transcripts = cur.fetchall()
 
+        cur.execute(
+            "SELECT actor_name \
+            FROM has_actor \
+            WHERE document_id=%s;",
+            [doc_id.lower()],
+        )
+
+        actors = cur.fetchall()
+
     conn.commit()
 
-    return formatDocument(document, transcripts)
+    return formatDocument(document, transcripts=transcripts, actors=actors)
 
 
 if __name__ == "__main__":

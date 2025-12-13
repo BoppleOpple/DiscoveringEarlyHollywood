@@ -133,8 +133,6 @@ def loadData(args: argparse.Namespace, cursor: psycopg2.extras._cursor):
 
     # iterate through every document id that contains metadata
     for document_id in tqdm(ids):
-        transcriptData: list = []
-
         metadataFile: Path = (
             args.metadata_directory / f"{document_id}with_added_metadata.json"
         )
@@ -144,6 +142,7 @@ def loadData(args: argparse.Namespace, cursor: psycopg2.extras._cursor):
         with open(metadataFile, "r") as metadataJson:
             metadata = json.load(metadataJson)
 
+        transcriptData: list = []
         for page, content in enumerate(metadata["text"]):
             transcriptData.append((document_id, page, content))
 
@@ -154,6 +153,7 @@ def loadData(args: argparse.Namespace, cursor: psycopg2.extras._cursor):
 
         formattedAnalysis = formatLLMAnalysis(analysis)
 
+        # insert document data
         cursor.execute(
             "INSERT INTO documents ( \
                 id, \
@@ -172,16 +172,40 @@ def loadData(args: argparse.Namespace, cursor: psycopg2.extras._cursor):
             )
         )
 
-        psycopg2.extras.execute_batch(
-            cursor,
-            "INSERT INTO transcripts ( \
-                document_id, \
-                page_number, \
-                content \
-            ) VALUES (%s, %s, %s) \
-            ON CONFLICT DO NOTHING;",
-            transcriptData
-        )
+        # insert actors, if any are present
+        if formattedAnalysis["actors"]:
+            psycopg2.extras.execute_batch(
+                cursor,
+                "INSERT INTO actors ( \
+                    name \
+                ) VALUES (%s) \
+                ON CONFLICT DO NOTHING;",
+                [[actor] for actor in formattedAnalysis["actors"]]
+            )
+
+            psycopg2.extras.execute_batch(
+                cursor,
+                "INSERT INTO has_actor ( \
+                    document_id, \
+                    actor_name, \
+                    role \
+                ) VALUES (%s, %s, %s) \
+                ON CONFLICT DO NOTHING;",
+                [(document_id, actor, None) for actor in formattedAnalysis["actors"]]
+            )
+
+        # insert transcripts, if any are present
+        if transcriptData:
+            psycopg2.extras.execute_batch(
+                cursor,
+                "INSERT INTO transcripts ( \
+                    document_id, \
+                    page_number, \
+                    content \
+                ) VALUES (%s, %s, %s) \
+                ON CONFLICT DO NOTHING;",
+                transcriptData
+            )
 
     # print("Adding documents to database")
     # psycopg2.extras.execute_batch(
