@@ -2,15 +2,15 @@ from psycopg2.extensions import connection, cursor
 from functools import partial
 
 
-def formatDocument(query_result: tuple, transcripts: list = None, actors: list = None) -> dict:
+def formatDocument(documentQuery: tuple, transcriptQuery: list = None, actorQuery: list = None) -> dict:
     return {
-        "id": query_result[0],
-        "title": query_result[3],
-        "year": query_result[1],
+        "id": documentQuery[0],
+        "title": documentQuery[3],
+        "year": documentQuery[1],
         "type": None,
-        "actors": actors,
-        "studio": query_result[2],
-        "content": transcripts,
+        "actors": [result[0] for result in actorQuery],
+        "studio": documentQuery[2],
+        "content": transcriptQuery,
     }
 
 
@@ -39,7 +39,7 @@ def search_results(conn: connection, page: int, results_per_page: int = 50):
                 WHERE document_id=%s;",
                 [document[0]],
             )
-            actors.append([result[0] for result in cur.fetchall()])
+            actors.append(cur.fetchall())
 
     conn.commit()
 
@@ -108,7 +108,7 @@ def get_document(conn: connection, doc_id: str) -> dict:
 
     conn.commit()
 
-    return formatDocument(document, transcripts=transcripts, actors=actors)
+    return formatDocument(document, transcriptQuery=transcripts, actorQuery=actors)
 
 
 if __name__ == "__main__":
