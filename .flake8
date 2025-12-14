@@ -11,5 +11,7 @@ exclude =
 	.eggs
 	*.egg
 	.venv
+ignore =
+	D401
 max-line-length = 100
-docstring-convention = google
+docstring-convention = numpy

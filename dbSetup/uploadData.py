@@ -1,3 +1,5 @@
+"""A CLI program that uploads LoC data from the local filesystem to a PostgreSQL database."""
+
 import os
 import argparse
 import json
@@ -43,11 +45,12 @@ parser.add_argument(
 
 
 def createTables(cursor: psycopg2.extensions.cursor):
-    """Given a `psycopg2` cursor, create all SQL relations.
+    """Given a ``psycopg2`` cursor, create all SQL relations.
 
-    Args:
-        cursor (psycopg2.extensions.cursor):
-            The psycopg2 cursor object with which the query is performed
+    Parameters
+    ----------
+    cursor : psycopg2.extensions.cursor
+        The ``psycopg2`` ``cursor`` object with which the query is performed
     """
     print("Adding relations to database")
     with open("tableDefinitions.sql", "r") as f:
@@ -55,25 +58,27 @@ def createTables(cursor: psycopg2.extensions.cursor):
 
 
 def formatLLMAnalysis(analysis: dict) -> dict:
-    """Form a `dict` from metadata extracted by an LLM.
+    """Form a ``dict`` from metadata extracted by an LLM.
 
-    Args:
-        analysis (dict):
-            A `dict` of the form::
+    Parameters
+    ----------
+    analysis : dict
+        A ``dict`` of the form::
 
-                {
-                    "File_Name": A string containing the document id,
-                    "text": A string containing the transcript of the document,
-                    "response": A string containing:
-                        - a JSON of a single analysis
-                        - a JSON of an array of analyses
-                        - a markdown block for either above JSON
-                        - several markdown blocks for either above JSON
-                }
+            {
+                "File_Name": A string containing the document id,
+                "text": A string containing the transcript of the document,
+                "response": A string containing:
+                    - a JSON of a single analysis
+                    - a JSON of an array of analyses
+                    - a markdown block for either above JSON
+                    - several markdown blocks for either above JSON
+            }
 
-    Returns:
-        formattedAnalysis (dict):
-            A `dict` of the form:
+    Returns
+    -------
+    formattedAnalysis : dict
+        A ``dict`` of the form::
 
             {
                 "title": str,
@@ -165,7 +170,27 @@ def formatLLMAnalysis(analysis: dict) -> dict:
     return formattedAnalysis
 
 
-def loadData(args: argparse.Namespace, cursor: psycopg2.extras._cursor):
+def loadData(args: argparse.Namespace, cursor: psycopg2.extensions.cursor):
+    """Format documents in directories specified by ``args`` and uploads them to ``cursor``.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        A ``Namespace`` containing data specified through argparse. It must include:
+
+        - document_directory (:obj:`pathlib.Path`): The path to a directory containing each
+            document ``{id}.pdf`` in a subdirectory of name ``{id}``
+        - transcript_directory (:obj:`pathlib.Path`): The path to a directory containing each
+            transcript with the name ``{id}.txt``
+        - metadata_directory (:obj:`pathlib.Path`): The path to a directory containing each
+            metadata file with the name ``{id}with_added_metadata.json``
+        - analysis_directory (:obj:`pathlib.Path`): The path to a directory containing each
+            LLM analysis with the name ``{id}.json``
+
+    cursor : psycopg2.extensions.cursor
+        A ``cursor`` object referencing the desired ``psycopg2`` session to use when uploading
+        data.
+    """
     print("parsing movies")
     ids: list[str] = [fname[:-24] for fname in os.listdir(args.metadata_directory)]
 
@@ -247,6 +272,7 @@ def loadData(args: argparse.Namespace, cursor: psycopg2.extras._cursor):
 
 
 def main(argv=None):
+    """Upload data to the database specified in ``.env``."""
     args = parser.parse_args(argv)
     load_dotenv()
 
