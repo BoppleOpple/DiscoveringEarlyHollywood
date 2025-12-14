@@ -1,2 +1,15 @@
 [flake8]
+exclude =
+	.svn
+	CVS
+	.bzr
+	.hg
+	.git
+	__pycache__
+	.tox
+	.nox
+	.eggs
+	*.egg
+	.venv
 max-line-length = 100
+docstring-convention = google

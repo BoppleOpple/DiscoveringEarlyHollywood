@@ -42,13 +42,45 @@ parser.add_argument(
 )
 
 
-def createTables(cursor: psycopg2.extras._cursor):
+def createTables(cursor: psycopg2.extensions.cursor):
+    """Given a `psycopg2` cursor, create all SQL relations.
+
+    Args:
+        cursor (psycopg2.extensions.cursor):
+            The psycopg2 cursor object with which the query is performed
+    """
     print("Adding relations to database")
     with open("tableDefinitions.sql", "r") as f:
         cursor.execute(f.read())
 
 
 def formatLLMAnalysis(analysis: dict) -> dict:
+    """Form a `dict` from metadata extracted by an LLM.
+
+    Args:
+        analysis (dict):
+            A `dict` of the form::
+
+                {
+                    "File_Name": A string containing the document id,
+                    "text": A string containing the transcript of the document,
+                    "response": A string containing:
+                        - a JSON of a single analysis
+                        - a JSON of an array of analyses
+                        - a markdown block for either above JSON
+                        - several markdown blocks for either above JSON
+                }
+
+    Returns:
+        formattedAnalysis (dict):
+            A `dict` of the form:
+
+            {
+                "title": str,
+                "actors": list[str],
+                "failed": bool
+            }
+    """
     formattedAnalysis: dict = {"title": None, "actors": [], "failed": False}
     if analysis:
         try:
@@ -213,34 +245,6 @@ def loadData(args: argparse.Namespace, cursor: psycopg2.extras._cursor):
                 transcriptData,
             )
 
-    # print("Adding documents to database")
-    # psycopg2.extras.execute_batch(
-    #     cursor,
-    #     "INSERT INTO documents ( \
-    #         id, \
-    #         copyright_year, \
-    #         studio, \
-    #         title, \
-    #         uploaded_time \
-    #     ) VALUES (%s, %s, %s, %s, %s) \
-    #     ON CONFLICT DO NOTHING;",
-    #     tqdm(movieData),
-    #     page_size=500,
-    # )
-
-    # print("Adding transcripts to database")
-    # psycopg2.extras.execute_batch(
-    #     cursor,
-    #     "INSERT INTO transcripts ( \
-    #         document_id, \
-    #         page_number, \
-    #         content \
-    #     ) VALUES (%s, %s, %s) \
-    #     ON CONFLICT DO NOTHING;",
-    #     tqdm(transcriptData),
-    #     page_size=500,
-    # )
-
 
 def main(argv=None):
     args = parser.parse_args(argv)
@@ -259,7 +263,7 @@ def main(argv=None):
             createTables(cursor)
             dbConnection.commit()
         except Exception:
-            print("error?")
+            print("tables already exist!")
             dbConnection.rollback()
 
         loadData(args, cursor)
