@@ -1,3 +1,5 @@
+"""A CLI script that hosts a Flask server for the Discovering Early Hollywood research tool."""
+
 import os
 import tempfile
 import math
@@ -198,7 +200,7 @@ def process_image():
 
 @app.route("/save_ocr_content", methods=["POST"])
 def save_ocr_content():
-    """Register a new route for storing transcript data to the database"""
+    """Register a new route for storing transcript data to the database."""
     data = request.get_json()
     image_filename = data["image_filename"]
     updated_ocr_text = data["ocr_text"]
@@ -238,7 +240,6 @@ def results():
 @app.route("/view_document/<doc_id>")
 def view_document(doc_id):
     """Register a new route for the ``view_document`` page of the app."""
-
     document = db_utils.get_document(dbConnection, doc_id)
 
     if not document:
