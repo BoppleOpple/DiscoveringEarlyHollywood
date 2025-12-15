@@ -41,6 +41,7 @@ pytesseract.pytesseract.tesseract_cmd = (
 # Adjust this path as needed
 poppler_path = r"C:\Users\shtgu\Documents\CodingPackages\poppler-24.08.0\Library\bin"
 
+# TODO: manage globals in a better way, will look into standard practice for this
 RESULTS_PER_PAGE = 20
 UPLOAD_FOLDER = "backend/static/img"
 EDITS_FOLDER = "backend/static/edits"
@@ -195,32 +196,6 @@ def results():
 
     print_kwargs(**request.args)
 
-    # TODO: Replace this with real data loading (e.g., from Firestore or JSON)
-    # all_documents = [
-    #     {
-    #         "id": 1,
-    #         "title": "Sunset Boulevard",
-    #         "year": 1950,
-    #         "type": "feature_film",
-    #         "actors": ["Gloria Swanson"],
-    #     },
-    #     {
-    #         "id": 2,
-    #         "title": "The Kid",
-    #         "year": 1921,
-    #         "type": "short_film",
-    #         "actors": ["Charlie Chaplin"],
-    #     },
-    # ]
-
-    # Filter documents based on query and year
-    # results = []
-    # for doc in all_documents:
-    #     if (not query or query.lower() in doc["title"].lower()) and (
-    #         not year or str(doc["year"]) == year
-    #     ):
-    #         results.append(doc)
-
     results = db_utils.search_results(dbConnection, page, RESULTS_PER_PAGE)
 
     num_results = db_utils.get_num_results(dbConnection)
@@ -235,27 +210,7 @@ def results():
 
 @app.route("/view_document/<doc_id>")
 def view_document(doc_id):
-    # Using the same dummy data source as your /results route
-    # all_documents = [
-    #     {
-    #         "id": 1,
-    #         "title": "Sunset Boulevard",
-    #         "year": 1950,
-    #         "type": "feature_film",
-    #         "actors": ["Gloria Swanson"],
-    #         "content": "This is an example content.",
-    #     },
-    #     {
-    #         "id": 2,
-    #         "title": "The Kid",
-    #         "year": 1921,
-    #         "type": "short_film",
-    #         "actors": ["Charlie Chaplin"],
-    #         "content": "Another sample content.",
-    #     },
-    # ]
 
-    # document = next((doc for doc in all_documents if doc["id"] == doc_id), None)
     document = db_utils.get_document(dbConnection, doc_id)
 
     if not document:
