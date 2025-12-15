@@ -127,7 +127,7 @@ def process_image():
                     images.pop()
 
                 for i, image in enumerate(images):
-                    image_filename = f"{os.path.splitext(filename)[0]}_page_{i+1}.jpg"
+                    image_filename = f"{os.path.splitext(filename)[0]}_page_{i + 1}.jpg"
                     image_path = os.path.join(
                         app.config["UPLOAD_FOLDER"], image_filename
                     )
