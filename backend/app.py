@@ -50,20 +50,44 @@ app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 app.config["EDITS_FOLDER"] = EDITS_FOLDER
 
 
-def allowed_file(filename):
+def allowed_file(filename: str):
+    """Checks if a file is uploadable based on file extension."""
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+def print_kwargs(**kwargs):
+    """Prints keyword arguments to the server console."""
+    print(kwargs)
 
 
 @app.context_processor
 def utility_processor():
+    """A ``Flask.context_processor`` that provides helper functions to template."""
+
     def modify_args_on_page(page: str, args: dict):
-        return url_for("results", **{**request.args, **args})
+        """A helper that modifies a page's URL arguments to include different or new values.
+
+        Parameters
+        ----------
+        page : str
+            The Flask page to which arguments are appended
+        args : dict
+            A ``dict`` containing the URL arguments to modify or add
+
+        Examples
+        --------
+        >>> # executing on page ``http://localhost:3388/results?query=How+to+Perform+Electrolysis&page=1``
+        >>> modify_args_on_page("results", {"page": 2}})
+        "http://localhost:3388/results?query=How+to+Perform+Electrolysis&page=2"
+        """  # noqa E501
+        return url_for(page, **{**request.args, **args})
 
     return dict(modify_args_on_page=modify_args_on_page)
 
 
 @app.route("/")
 def home():
+    """Register a new route for the ``home`` page of the app."""
     earliest_year = 1887
     current_year = 2025
     years = list(range(earliest_year, current_year + 1))
@@ -72,6 +96,7 @@ def home():
 
 @app.route("/history")
 def history():
+    """Register a new route for the history page of the app."""
     # viewed_docs_ids = session.get("viewed_documents", [])
     viewed_documents = []  # Fetch from client-side if needed
     return render_template("history.html", documents=viewed_documents)
@@ -79,12 +104,14 @@ def history():
 
 @app.route("/clear_history")
 def clear_history():
+    """Register a new route for clearing viewing history."""
     session.pop("viewed_documents", None)
     return redirect(url_for("history"))
 
 
 @app.route("/remove_from_history/<int:doc_id>")
 def remove_from_history(doc_id):
+    """Register a new route for removing specific documents from viewing history."""
     if "viewed_documents" in session:
         session["viewed_documents"] = [
             id for id in session["viewed_documents"] if id != doc_id
@@ -95,11 +122,13 @@ def remove_from_history(doc_id):
 
 @app.route("/upload", methods=["GET"])
 def upload_page():
+    """Register a new route for the ``upload`` page of the app."""
     return render_template("upload.html")
 
 
 @app.route("/process_image", methods=["POST"])
 def process_image():
+    """Register a new route for the processing of uploaded files."""
     uploaded_files = request.files.getlist("file")
 
     if not uploaded_files or all(f.filename == "" for f in uploaded_files):
@@ -169,6 +198,7 @@ def process_image():
 
 @app.route("/save_ocr_content", methods=["POST"])
 def save_ocr_content():
+    """Register a new route for storing transcript data to the database"""
     data = request.get_json()
     image_filename = data["image_filename"]
     updated_ocr_text = data["ocr_text"]
@@ -184,12 +214,9 @@ def save_ocr_content():
         return jsonify({"error": str(e)}), 500
 
 
-def print_kwargs(**kwargs):
-    print(kwargs)
-
-
 @app.route("/results", methods=["GET", "POST"])
 def results():
+    """Register a new route for the ``results`` page of the app."""
     # query = request.args.get("query", "")
     # year = request.args.get("year", "")
     page = request.args.get("page", 1, type=int)
@@ -210,6 +237,7 @@ def results():
 
 @app.route("/view_document/<doc_id>")
 def view_document(doc_id):
+    """Register a new route for the ``view_document`` page of the app."""
 
     document = db_utils.get_document(dbConnection, doc_id)
 
@@ -221,6 +249,7 @@ def view_document(doc_id):
 
 @app.route("/upload_pdf", methods=["GET", "POST"])
 def upload_pdf():
+    """Register a new route for the ``upload_pdf`` page of the app."""
     return render_template("upload_pdf.html")
 
 
