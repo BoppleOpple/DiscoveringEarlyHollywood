@@ -57,6 +57,7 @@ def createTables(cursor: psycopg2.extensions.cursor):
         cursor.execute(f.read())
 
 
+# TODO improve code commenting post-prototype
 def formatLLMAnalysis(analysis: dict) -> dict:
     """Form a ``dict`` from metadata extracted by an LLM.
 

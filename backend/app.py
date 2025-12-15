@@ -43,7 +43,7 @@ pytesseract.pytesseract.tesseract_cmd = (
 # Adjust this path as needed
 poppler_path = r"C:\Users\shtgu\Documents\CodingPackages\poppler-24.08.0\Library\bin"
 
-# TODO: manage globals in a better way, will look into standard practice for this
+# TODO manage globals in a better way, will look into standard practice for this
 RESULTS_PER_PAGE = 20
 UPLOAD_FOLDER = "backend/static/img"
 EDITS_FOLDER = "backend/static/edits"
