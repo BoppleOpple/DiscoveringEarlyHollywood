@@ -21,6 +21,7 @@ CREATE TABLE documents (
     id varchar(15) PRIMARY KEY,
     copyright_year integer,
     studio text,
+    title text,
     reel_count integer,
     uploaded_by varchar(20),
     uploaded_time timestamp,
@@ -106,3 +107,4 @@ CREATE TABLE has_tag (
 
 CREATE INDEX idx_studio ON documents(studio);
 CREATE INDEX idx_copyright_year ON documents(studio);
+CREATE INDEX idx_title ON documents(title);

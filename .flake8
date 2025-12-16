@@ -1,2 +1,17 @@
 [flake8]
+exclude =
+	.svn
+	CVS
+	.bzr
+	.hg
+	.git
+	__pycache__
+	.tox
+	.nox
+	.eggs
+	*.egg
+	.venv
+ignore =
+	D401
 max-line-length = 100
+docstring-convention = numpy

@@ -1,26 +1,126 @@
+"""A collection of helpers for sending and recieving data to/from the PostgreSQL database."""
+
 from psycopg2.extensions import connection, cursor
 
 
-def formatDocument(query_result: tuple, transcripts: list = None) -> dict:
+def formatDocument(
+    documentQuery: tuple,
+    transcriptQuery: list[tuple] = None,
+    actorQuery: list[tuple] = None,
+) -> dict:
+    """Format the results of several SQL queries as a ``dict``.
+
+    Parameters
+    ----------
+    documentQuery : tuple
+        A ``tuple`` with the following elements:
+
+        - ``[0]``: Document ID
+        - ``[1]``: Copyright year
+        - ``[2]``: Copyright holder
+        - ``[3]``: Document title
+
+    transcriptQuery : list[tuple]
+        A ``list`` of ``tuple``s with the following elements:
+
+        - ``[0]``: Page number
+        - ``[1]``: Transcript of page
+
+    actorQuery : list[tuple]
+        A ``list`` of ``tuple``s with the following elements:
+
+        - ``[0]``: Actor name
+
+    Returns
+    -------
+    formattedDocument : dict
+        A ``dict`` with the following keys:
+
+        id : str
+            The document's ID
+        title : str
+            The document's title
+        year : int
+            The copyright year
+        type : str, default = None
+            The type of document
+        actors : list[str]
+            A list of all actors present in the document
+        studio : str
+            The document's copyright holder
+        content : str
+            A ``list`` of ``tuple``s with the following elements:
+
+            - ``[0]``: Page number
+            - ``[1]``: Transcript of page
+
+    Notes
+    -----
+    The return values of this function may be modified to a class structure in the future
+    """
     return {
-        "id": query_result[0],
-        "title": None,
-        "year": query_result[1],
+        "id": documentQuery[0],
+        "title": documentQuery[3],
+        "year": documentQuery[1],
         "type": None,
-        "actors": [],
-        "studio": query_result[2],
-        "content": transcripts,
+        "actors": [result[0] for result in actorQuery],
+        "studio": documentQuery[2],
+        "content": transcriptQuery,
     }
 
 
 def search_results(conn: connection, page: int, results_per_page: int = 50):
+    """Return a page of search results.
+
+    Parameters
+    ----------
+    conn : :obj:`psycopg2.extensions.connection`
+        A ``psycopg2`` connection to perform queries with
+    page : int
+        The index of the page of results to return
+    results_per_page : int, default = 50
+        The number of results displayed on each page
+
+    Returns
+    -------
+    results : list[dict]
+        A list of documents, formatted in the same way as ``formatDocment``:
+
+        id : str
+            The document's ID
+        title : str
+            The document's title
+        year : int
+            The copyright year
+        type : str, default = None
+            The type of document
+        actors : list[str]
+            A list of all actors present in the document
+        studio : str
+            The document's copyright holder
+        content : str
+            A ``list`` of ``tuple``s with the following elements:
+
+            - ``[0]``: Page number
+            - ``[1]``: Transcript of page
+
+    See Also
+    --------
+    formatDocument : The function used to format returned ``dict``s
+
+    Notes
+    -----
+    The return values of this function may be modified to a class structure in the future
+    """
     if not conn:
         raise Exception("No SQL connection found")
 
-    cur: cursor
+    documents: list = []
+    actors: list = []
+    cur: cursor = None
     with conn.cursor() as cur:
         cur.execute(
-            "SELECT id, copyright_year, studio \
+            "SELECT id, copyright_year, studio, title \
             FROM documents \
             LIMIT %s \
             OFFSET %s;",
@@ -29,12 +129,33 @@ def search_results(conn: connection, page: int, results_per_page: int = 50):
 
         documents = cur.fetchall()
 
+        for document in documents:
+            cur.execute(
+                "SELECT actor_name \
+                FROM has_actor \
+                WHERE document_id=%s;",
+                [document[0]],
+            )
+            actors.append(cur.fetchall())
+
     conn.commit()
 
-    return list(map(formatDocument, documents))
+    return list(map(formatDocument, documents, [None for doc in documents], actors))
 
 
 def get_num_results(conn: connection):
+    """Fetch the number of results for a given query.
+
+    Parameters
+    ----------
+    conn : :obj:`psycopg2.extensions.connection`
+        A ``psycopg2`` connection to perform queries with
+
+    Returns
+    -------
+    count : int
+        The number of relevant results
+    """
     if not conn:
         raise Exception("No SQL connection found")
 
@@ -53,14 +174,56 @@ def get_num_results(conn: connection):
 
 
 def get_document(conn: connection, doc_id: str) -> dict:
+    """Fetch all data pertaining to a document.
 
+    Parameters
+    ----------
+    conn : :obj:`psycopg2.extensions.connection`
+        A ``psycopg2`` connection to perform queries with
+    doc_id : str
+        The id of the desired document
+
+    Returns
+    -------
+    document : dict
+        A document formatted in the same way as ``formatDocment``:
+
+        id : str
+            The document's ID
+        title : str
+            The document's title
+        year : int
+            The copyright year
+        type : str, default = None
+            The type of document
+        actors : list[str]
+            A list of all actors present in the document
+        studio : str
+            The document's copyright holder
+        content : str
+            A ``list`` of ``tuple``s with the following elements:
+
+            - ``[0]``: Page number
+            - ``[1]``: Transcript of page
+
+    See Also
+    --------
+    formatDocument : The function used to format the returned ``dict``
+
+    Notes
+    -----
+    The return values of this function may be modified to a class structure in the future
+    """
     if not conn:
         raise Exception("No SQL connection found")
 
-    cur: cursor
+    document: tuple = None
+    transcripts: list = []
+    actors: list = []
+    cur: cursor = None
     with conn.cursor() as cur:
         cur.execute(
-            "SELECT id, copyright_year, studio \
+            "SELECT id, copyright_year, studio, title \
             FROM documents \
             WHERE id=%s;",
             [doc_id.lower()],
@@ -77,9 +240,18 @@ def get_document(conn: connection, doc_id: str) -> dict:
 
         transcripts = cur.fetchall()
 
+        cur.execute(
+            "SELECT actor_name \
+            FROM has_actor \
+            WHERE document_id=%s;",
+            [doc_id.lower()],
+        )
+
+        actors = cur.fetchall()
+
     conn.commit()
 
-    return formatDocument(document, transcripts)
+    return formatDocument(document, transcriptQuery=transcripts, actorQuery=actors)
 
 
 if __name__ == "__main__":
