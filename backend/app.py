@@ -90,8 +90,9 @@ def utility_processor():
 @app.route("/")
 def home():
     """Register a new route for the ``home`` page of the app."""
-    earliest_year = 1887
-    current_year = 2025
+    # earliest_year = 1887
+    earliest_year = 1912
+    current_year = 1928
     years = list(range(earliest_year, current_year + 1))
     return render_template("home.html", years=years, documents=[])
 
@@ -219,15 +220,30 @@ def save_ocr_content():
 @app.route("/results", methods=["GET", "POST"])
 def results():
     """Register a new route for the ``results`` page of the app."""
-    # query = request.args.get("query", "")
-    # year = request.args.get("year", "")
+    query: str = request.args.get("query", "")
+
+    yearString: str = request.args.get("year", "")
+    year: int = int(yearString) if yearString.isnumeric() else None
+
     page = request.args.get("page", 1, type=int)
 
     print_kwargs(**request.args)
 
-    results = db_utils.search_results(dbConnection, page, RESULTS_PER_PAGE)
+    results = db_utils.search_results(
+        dbConnection,
+        page,
+        resultsPerPage=RESULTS_PER_PAGE,
+        titleQuery=query,
+        minYear=year,
+        maxYear=year,
+    )
 
-    num_results = db_utils.get_num_results(dbConnection)
+    num_results = db_utils.get_num_results(
+        dbConnection,
+        titleQuery=query,
+        minYear=year,
+        maxYear=year,
+    )
 
     return render_template(
         "results.html",

@@ -69,7 +69,15 @@ def formatDocument(
     }
 
 
-def search_results(conn: connection, page: int, results_per_page: int = 50):
+# TODO convert query params to a `query` object
+def search_results(
+    conn: connection,
+    page: int,
+    resultsPerPage: int = 50,
+    titleQuery: str = None,
+    minYear: int = None,
+    maxYear: int = None,
+):
     """Return a page of search results.
 
     Parameters
@@ -78,8 +86,14 @@ def search_results(conn: connection, page: int, results_per_page: int = 50):
         A ``psycopg2`` connection to perform queries with
     page : int
         The index of the page of results to return
-    results_per_page : int, default = 50
+    resultsPerPage : int, default = 50
         The number of results displayed on each page
+    titleQuery : str, default = None
+        Text that must be included in returned documents
+    minYear : int, default = None
+        The minimum year of returned documents
+    maxYear : int, default = None
+        The minimum year of returned documents
 
     Returns
     -------
@@ -113,7 +127,11 @@ def search_results(conn: connection, page: int, results_per_page: int = 50):
     The return values of this function may be modified to a class structure in the future
     """
     if not conn:
+        # TODO make this exception more specific
         raise Exception("No SQL connection found")
+
+    if not titleQuery:
+        titleQuery = None
 
     documents: list = []
     actors: list = []
@@ -122,9 +140,18 @@ def search_results(conn: connection, page: int, results_per_page: int = 50):
         cur.execute(
             "SELECT id, copyright_year, studio, title \
             FROM documents \
-            LIMIT %s \
-            OFFSET %s;",
-            [results_per_page, (page - 1) * results_per_page],
+            WHERE (%(title_query)s IS NULL OR to_tsvector(title) @@ to_tsquery(%(title_query)s)) \
+            AND (%(min_year)s IS NULL OR copyright_year >= %(min_year)s) \
+            AND (%(max_year)s IS NULL OR copyright_year <= %(max_year)s) \
+            LIMIT %(num_results)s \
+            OFFSET %(offset)s;",
+            {
+                "title_query": titleQuery,
+                "min_year": minYear,
+                "max_year": maxYear,
+                "num_results": resultsPerPage,
+                "offset": (page - 1) * resultsPerPage,
+            },
         )
 
         documents = cur.fetchall()
@@ -143,13 +170,24 @@ def search_results(conn: connection, page: int, results_per_page: int = 50):
     return list(map(formatDocument, documents, [None for doc in documents], actors))
 
 
-def get_num_results(conn: connection):
+def get_num_results(
+    conn: connection,
+    titleQuery: str = None,
+    minYear: int = None,
+    maxYear: int = None,
+):
     """Fetch the number of results for a given query.
 
     Parameters
     ----------
     conn : :obj:`psycopg2.extensions.connection`
         A ``psycopg2`` connection to perform queries with
+    titleQuery : str, default = None
+        Text that must be included in returned documents
+    minYear : int, default = None
+        The minimum year of returned documents
+    maxYear : int, default = None
+        The minimum year of returned documents
 
     Returns
     -------
@@ -159,11 +197,22 @@ def get_num_results(conn: connection):
     if not conn:
         raise Exception("No SQL connection found")
 
+    if not titleQuery:
+        titleQuery = None
+
     cur: cursor
     with conn.cursor() as cur:
         cur.execute(
             "SELECT COUNT(*) \
-            FROM documents"
+            FROM documents \
+            WHERE (%(title_query)s IS NULL OR to_tsvector(title) @@ to_tsquery(%(title_query)s)) \
+            AND (%(min_year)s IS NULL OR copyright_year >= %(min_year)s) \
+            AND (%(max_year)s IS NULL OR copyright_year <= %(max_year)s);",
+            {
+                "title_query": titleQuery,
+                "min_year": minYear,
+                "max_year": maxYear,
+            },
         )
 
         count = cur.fetchone()[0]
