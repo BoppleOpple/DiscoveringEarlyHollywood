@@ -1,6 +1,7 @@
 """A collection of classes and types for storing document, query, and user data"""
 
 import datetime
+from pathlib import Path
 from typing import Any, Self, Union
 
 # removing this for now, i think this should be handled by the db anyway
@@ -15,6 +16,56 @@ class Flag:
 
 
 class Metadata:
+    """
+    Class containing in-memory document metadata
+
+    Parameters
+    ----------
+    id: str, default = None
+        The id of the related document
+
+    studio: str, default = None
+        The studio of the related document
+
+    title: str, default = None
+        The title of the related document
+
+    copyrightYear: int, default = None
+        The copyright year of the related document
+
+    reelCount: int, default = None
+        The number of reels for the related document
+
+    uploadedTime: datetime.datetime, default = None
+        The time the related document was uploaded to the database
+
+    uploadedBy: str, default = None
+        The uploader of the related document
+
+    Attributes
+    ----------
+    id: str
+        The id of the related document
+
+    studio: str
+        The studio of the related document
+
+    title: str
+        The title of the related document
+
+    copyrightYear: int
+        The copyright year of the related document
+
+    reelCount: int
+        The number of reels for the related document
+
+    uploadedTime: datetime.datetime
+        The time the related document was uploaded to the database
+
+    uploadedBy: str
+        The uploader of the related document
+    """
+
     id: str = None
     studio: str = None
     title: str = None
@@ -26,14 +77,64 @@ class Metadata:
 
     uploadedBy: str = None
 
+    def __init__(
+        self,
+        id: str = None,
+        studio: str = None,
+        title: str = None,
+        copyrightYear: int = None,
+        reelCount: int = None,
+        uploadedTime: datetime.datetime = None,
+        uploadedBy: str = None,
+    ):
+        self.id = id
+        self.studio = studio
+        self.title = title
+        self.copyrightYear = copyrightYear
+        self.reelCount = reelCount
+        self.uploadedTime = uploadedTime
+        self.uploadedBy = uploadedBy
+
 
 class Document:
     """
     Class containing in-memory document data
 
+    Parameters
+    ----------
+    documentDir: Path
+        Te path to the directory containing document PDFs
+
+    id: str, default = None
+        The id of the related document
+
+    studio: str, default = None
+        The studio of the related document
+
+    title: str, default = None
+        The title of the related document
+
+    copyrightYear: int, default = None
+        The copyright year of the related document
+
+    reelCount: int, default = None
+        The number of reels for the related document
+
+    uploadedTime: datetime.datetime, default = None
+        The time the related document was uploaded to the database
+
+    uploadedBy: str, default = None
+        The uploader of the related document
+
+    transcripts: list[str], default = []
+        A list of the text of each page, in order
+
+    flags: Union[list[Flag], None], default = None
+        A list of all flags on this document, or `None` if they have not yet been fetched
+
     Attributes
     ----------
-    iamges: list[Any]
+    images: list[Any]
         Not yet implemented
 
     transcripts: list[str]
@@ -51,11 +152,30 @@ class Document:
         A helper for getting the `id` of this document
     """
 
-    iamges: list[Any] = None
+    images: list[Any] = None
     transcripts: list[str] = []
     flags: Union[list[Flag], None] = None
 
     metadata: Metadata = Metadata()
+
+    def __init__(
+        self,
+        documentDir: Path,
+        id: str = None,
+        studio: str = None,
+        title: str = None,
+        copyrightYear: int = None,
+        reelCount: int = None,
+        uploadedTime: datetime.datetime = None,
+        uploadedBy: str = None,
+        transcripts: list[str] = [],
+        flags: Union[list[Flag], None] = None,
+    ):
+        self.metadata = Metadata(
+            id, studio, title, copyrightYear, reelCount, uploadedTime, uploadedBy
+        )
+        # TODO load images automatically
+        self.images = None
 
     def getId(self) -> str:
         """
