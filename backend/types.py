@@ -10,6 +10,8 @@ from typing import Any, Self, Union
 
 
 class Flag:
+    """Struct for flags"""
+
     reporterName: str = None
     errorLoaction: str = None
     errorDescription: str = None
