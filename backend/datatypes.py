@@ -16,6 +16,16 @@ class Flag:
     errorLoaction: str = None
     errorDescription: str = None
 
+    def __init__(
+        self,
+        reporterName: str = None,
+        errorLoaction: str = None,
+        errorDescription: str = None,
+    ):
+        self.reporterName = reporterName
+        self.errorLoaction = errorLoaction
+        self.errorDescription = errorDescription
+
 
 class Metadata:
     """

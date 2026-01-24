@@ -1,57 +1,7 @@
 """A collection of helpers for sending and recieving data to/from the PostgreSQL database."""
 
 from psycopg2.extensions import connection, cursor
-from datatypes import Document
-
-
-def formatDocument(
-    documentQuery: tuple,
-    transcriptQuery: list[tuple] = None,
-    actorQuery: list[tuple] = None,
-) -> Document:
-    """Format the results of several SQL queries as a ``Document`` object.
-
-    Parameters
-    ----------
-    documentQuery : tuple
-        A ``tuple`` with the following elements:
-
-        - ``[0]``: Document ID
-        - ``[1]``: Copyright year
-        - ``[2]``: Copyright holder
-        - ``[3]``: Document title
-
-    transcriptQuery : list[tuple]
-        A ``list`` of ``tuple``s with the following elements:
-
-        - ``[0]``: Page number
-        - ``[1]``: Transcript of page
-
-    actorQuery : list[tuple]
-        A ``list`` of ``tuple``s with the following elements:
-
-        - ``[0]``: Actor name
-
-    Returns
-    -------
-    formattedDocument : Document
-        A ``Document`` object with all information from the queries
-    """
-    return Document(
-        None,
-        id=documentQuery[0],
-        studio=documentQuery[2],
-        title=documentQuery[3],
-        documentType=None,
-        copyrightYear=documentQuery[1],
-        reelCount=None,
-        uploadedTime=None,
-        actors=[result[0] for result in actorQuery],
-        tags=[],
-        genres=[],
-        transcripts=transcriptQuery,
-        flags=[],
-    )
+from datatypes import Document, Flag
 
 
 # TODO convert query params to a `query` object
@@ -97,7 +47,6 @@ def search_results(
         titleQuery = None
 
     documents: list = []
-    actors: list = []
     cur: cursor = None
     with conn.cursor() as cur:
         cur.execute(
@@ -117,20 +66,32 @@ def search_results(
             },
         )
 
-        documents = cur.fetchall()
+        documents: list[Document] = [
+            Document(
+                None,  # TODO
+                id=documentQuery[0],
+                studio=documentQuery[2],
+                title=documentQuery[3],
+                copyrightYear=documentQuery[1],
+            )
+            for documentQuery in cur.fetchall()
+        ]
 
         for document in documents:
             cur.execute(
                 "SELECT actor_name \
                 FROM has_actor \
                 WHERE document_id=%s;",
-                [document[0]],
+                [document.getId()],
             )
-            actors.append(cur.fetchall())
+
+            actorQuery = cur.fetchall()
+
+            document.metadata.actors = [result[0] for result in actorQuery]
 
     conn.commit()
 
-    return list(map(formatDocument, documents, [None for doc in documents], actors))
+    return documents
 
 
 def get_num_results(
@@ -186,7 +147,7 @@ def get_num_results(
 
 
 def get_document(conn: connection, doc_id: str) -> dict:
-    """Fetch all data pertaining to a document.
+    """Fetch *all* data pertaining to a document.
 
     Parameters
     ----------
@@ -199,10 +160,6 @@ def get_document(conn: connection, doc_id: str) -> dict:
     -------
     document : Docment
         A ``Docment`` with the specified ``doc_id``, or None
-
-    See Also
-    --------
-    formatDocument : The function used to format the returned ``Document``
     """
     if not conn:
         raise Exception("No SQL connection found")
@@ -213,7 +170,7 @@ def get_document(conn: connection, doc_id: str) -> dict:
     cur: cursor = None
     with conn.cursor() as cur:
         cur.execute(
-            "SELECT id, copyright_year, studio, title \
+            "SELECT id, copyright_year, studio, title, reel_count, uploaded_by, uploaded_time \
             FROM documents \
             WHERE id=%s;",
             [doc_id.lower()],
@@ -239,12 +196,61 @@ def get_document(conn: connection, doc_id: str) -> dict:
 
         actors = cur.fetchall()
 
+        cur.execute(
+            "SELECT genre \
+            FROM has_genre \
+            WHERE document_id=%s;",
+            [doc_id.lower()],
+        )
+
+        genres = cur.fetchall()
+
+        cur.execute(
+            "SELECT tag \
+            FROM has_tag \
+            WHERE document_id=%s;",
+            [doc_id.lower()],
+        )
+
+        tags = cur.fetchall()
+
+        cur.execute(
+            "SELECT user_name, error_location, error_description \
+            FROM flagged_by \
+            WHERE document_id=%s;",
+            [doc_id.lower()],
+        )
+
+        flags = [
+            Flag(
+                reporterName=flagData[0],
+                errorLoaction=flagData[1],
+                errorDescription=flagData[2],
+            )
+            for flagData in cur.fetchall()
+        ]
+
     conn.commit()
 
     if not document:
         return None
 
-    return formatDocument(document, transcriptQuery=transcripts, actorQuery=actors)
+    return Document(
+        None,  # TODO
+        id=document[0],
+        studio=document[2],
+        title=document[3],
+        documentType=None,  # TODO
+        copyrightYear=document[1],
+        reelCount=document[4],
+        uploadedTime=document[6],
+        uploadedBy=document[5],
+        actors=[result[0] for result in actors],
+        tags=tags,
+        genres=genres,
+        transcripts=transcripts,
+        flags=flags,
+    )
 
 
 if __name__ == "__main__":
