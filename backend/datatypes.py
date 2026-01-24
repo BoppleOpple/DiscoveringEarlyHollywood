@@ -32,6 +32,9 @@ class Metadata:
     title: str, default = None
         The title of the related document
 
+    documentType: str, default = None
+        The type of the document (i.e. "script", "synopsis", etc.)
+
     copyrightYear: int, default = None
         The copyright year of the related document
 
@@ -44,6 +47,15 @@ class Metadata:
     uploadedBy: str, default = None
         The uploader of the related document
 
+    actors: list[str], default = []
+        The list of actors associated with this document
+
+    tags: list[str], default = []
+        The list of tags associated with this document
+
+    genres: list[str], default = []
+        The list of genres associated with this document
+
     Attributes
     ----------
     id: str
@@ -54,6 +66,9 @@ class Metadata:
 
     title: str
         The title of the related document
+
+    documentType: str, default = None
+        The type of the document (i.e. "script", "synopsis", etc.)
 
     copyrightYear: int
         The copyright year of the related document
@@ -66,11 +81,21 @@ class Metadata:
 
     uploadedBy: str
         The uploader of the related document
+
+    actors: list[str], default = []
+        The list of actors associated with this document
+
+    tags: list[str], default = []
+        The list of tags associated with this document
+
+    genres: list[str], default = []
+        The list of genres associated with this document
     """
 
     id: str = None
     studio: str = None
     title: str = None
+    documentType: str = None
 
     copyrightYear: int = None
     reelCount: int = None
@@ -79,23 +104,35 @@ class Metadata:
 
     uploadedBy: str = None
 
+    actors: list[str] = []
+    tags: list[str] = []
+    genres: list[str] = []
+
     def __init__(
         self,
         id: str = None,
         studio: str = None,
         title: str = None,
+        documentType: str = None,
         copyrightYear: int = None,
         reelCount: int = None,
         uploadedTime: datetime.datetime = None,
         uploadedBy: str = None,
+        actors: list[str] = [],
+        tags: list[str] = [],
+        genres: list[str] = [],
     ):
         self.id = id
         self.studio = studio
         self.title = title
+        self.documentType = documentType
         self.copyrightYear = copyrightYear
         self.reelCount = reelCount
         self.uploadedTime = uploadedTime
         self.uploadedBy = uploadedBy
+        self.actors = actors
+        self.tags = tags
+        self.genres = genres
 
 
 class Document:
@@ -127,6 +164,15 @@ class Document:
 
     uploadedBy: str, default = None
         The uploader of the related document
+
+    actors: list[str], default = []
+        The list of actors associated with this document
+
+    tags: list[str], default = []
+        The list of tags associated with this document
+
+    genres: list[str], default = []
+        The list of genres associated with this document
 
     transcripts: list[str], default = []
         A list of the text of each page, in order
@@ -166,18 +212,35 @@ class Document:
         id: str = None,
         studio: str = None,
         title: str = None,
+        documentType: str = None,
         copyrightYear: int = None,
         reelCount: int = None,
         uploadedTime: datetime.datetime = None,
         uploadedBy: str = None,
+        actors: list[str] = [],
+        tags: list[str] = [],
+        genres: list[str] = [],
         transcripts: list[str] = [],
         flags: Union[list[Flag], None] = None,
     ):
         self.metadata = Metadata(
-            id, studio, title, copyrightYear, reelCount, uploadedTime, uploadedBy
+            id,
+            studio,
+            title,
+            documentType,
+            copyrightYear,
+            reelCount,
+            uploadedTime,
+            uploadedBy,
+            actors,
+            tags,
+            genres,
         )
         # TODO load images automatically
         self.images = None
+
+        self.transcripts = transcripts
+        self.flags = flags
 
     def getId(self) -> str:
         """

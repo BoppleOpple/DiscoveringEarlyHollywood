@@ -1,14 +1,15 @@
 """A collection of helpers for sending and recieving data to/from the PostgreSQL database."""
 
 from psycopg2.extensions import connection, cursor
+from datatypes import Document
 
 
 def formatDocument(
     documentQuery: tuple,
     transcriptQuery: list[tuple] = None,
     actorQuery: list[tuple] = None,
-) -> dict:
-    """Format the results of several SQL queries as a ``dict``.
+) -> Document:
+    """Format the results of several SQL queries as a ``Document`` object.
 
     Parameters
     ----------
@@ -33,40 +34,24 @@ def formatDocument(
 
     Returns
     -------
-    formattedDocument : dict
-        A ``dict`` with the following keys:
-
-        id : str
-            The document's ID
-        title : str
-            The document's title
-        year : int
-            The copyright year
-        type : str, default = None
-            The type of document
-        actors : list[str]
-            A list of all actors present in the document
-        studio : str
-            The document's copyright holder
-        content : str
-            A ``list`` of ``tuple``s with the following elements:
-
-            - ``[0]``: Page number
-            - ``[1]``: Transcript of page
-
-    Notes
-    -----
-    The return values of this function may be modified to a class structure in the future
+    formattedDocument : Document
+        A ``Document`` object with all information from the queries
     """
-    return {
-        "id": documentQuery[0],
-        "title": documentQuery[3],
-        "year": documentQuery[1],
-        "type": None,
-        "actors": [result[0] for result in actorQuery],
-        "studio": documentQuery[2],
-        "content": transcriptQuery,
-    }
+    return Document(
+        None,
+        id=documentQuery[0],
+        studio=documentQuery[2],
+        title=documentQuery[3],
+        documentType=None,
+        copyrightYear=documentQuery[1],
+        reelCount=None,
+        uploadedTime=None,
+        actors=[result[0] for result in actorQuery],
+        tags=[],
+        genres=[],
+        transcripts=transcriptQuery,
+        flags=[],
+    )
 
 
 # TODO convert query params to a `query` object
@@ -77,7 +62,7 @@ def search_results(
     titleQuery: str = None,
     minYear: int = None,
     maxYear: int = None,
-):
+) -> list[Document]:
     """Return a page of search results.
 
     Parameters
@@ -97,34 +82,12 @@ def search_results(
 
     Returns
     -------
-    results : list[dict]
-        A list of documents, formatted in the same way as ``formatDocment``:
-
-        id : str
-            The document's ID
-        title : str
-            The document's title
-        year : int
-            The copyright year
-        type : str, default = None
-            The type of document
-        actors : list[str]
-            A list of all actors present in the document
-        studio : str
-            The document's copyright holder
-        content : str
-            A ``list`` of ``tuple``s with the following elements:
-
-            - ``[0]``: Page number
-            - ``[1]``: Transcript of page
+    results : list[Document]
+        A list of ``Document``s
 
     See Also
     --------
-    formatDocument : The function used to format returned ``dict``s
-
-    Notes
-    -----
-    The return values of this function may be modified to a class structure in the future
+    formatDocument : The function used to format returned ``Document``s
     """
     if not conn:
         # TODO make this exception more specific
@@ -234,34 +197,12 @@ def get_document(conn: connection, doc_id: str) -> dict:
 
     Returns
     -------
-    document : dict
-        A document formatted in the same way as ``formatDocment``:
-
-        id : str
-            The document's ID
-        title : str
-            The document's title
-        year : int
-            The copyright year
-        type : str, default = None
-            The type of document
-        actors : list[str]
-            A list of all actors present in the document
-        studio : str
-            The document's copyright holder
-        content : str
-            A ``list`` of ``tuple``s with the following elements:
-
-            - ``[0]``: Page number
-            - ``[1]``: Transcript of page
+    document : Docment
+        A ``Docment`` with the specified ``doc_id``, or None
 
     See Also
     --------
-    formatDocument : The function used to format the returned ``dict``
-
-    Notes
-    -----
-    The return values of this function may be modified to a class structure in the future
+    formatDocument : The function used to format the returned ``Document``
     """
     if not conn:
         raise Exception("No SQL connection found")
@@ -299,6 +240,9 @@ def get_document(conn: connection, doc_id: str) -> dict:
         actors = cur.fetchall()
 
     conn.commit()
+
+    if not document:
+        return None
 
     return formatDocument(document, transcriptQuery=transcripts, actorQuery=actors)
 
