@@ -22,7 +22,7 @@ from pdf2image import convert_from_path
 from dotenv import load_dotenv
 
 import db_utils
-from datatypes import Document
+from datatypes import Document, Query
 
 load_dotenv()
 app = Flask(__name__, template_folder="templates")
@@ -221,7 +221,8 @@ def save_ocr_content():
 @app.route("/results", methods=["GET", "POST"])
 def results():
     """Register a new route for the ``results`` page of the app."""
-    query: str = request.args.get("query", "")
+
+    textQuery: str = request.args.get("query", "")
 
     yearString: str = request.args.get("year", "")
     year: int = int(yearString) if yearString.isnumeric() else None
@@ -230,20 +231,28 @@ def results():
 
     print_kwargs(**request.args)
 
-    results: list[Document] = db_utils.search_results(
-        dbConnection,
-        page,
-        resultsPerPage=RESULTS_PER_PAGE,
-        titleQuery=query,
-        minYear=year,
-        maxYear=year,
+    query: Query = Query(
+        actors=[],  # TODO
+        tags=[],  # TODO
+        genres=[],  # TODO
+        keywords=list(
+            filter(lambda s: s != "", textQuery.split(" "))
+        ),  # TODO allow searching both titles and transcripts
+        documentType=None,  # TODO
+        studio=None,  # TODO
+        copyrightYearRange=(year, year),  # TODO allow a start & end value
+        durationRange=(None, None),  # TODO
     )
 
     num_results = db_utils.get_num_results(
         dbConnection,
-        titleQuery=query,
-        minYear=year,
-        maxYear=year,
+        query,
+    )
+
+    results: list[Document] = db_utils.search_results(
+        dbConnection,
+        query,
+        page,
     )
 
     return render_template(

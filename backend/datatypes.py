@@ -329,7 +329,7 @@ class Query:
 
     Methods
     -------
-    setCopyrightRange(start: int, end: int)
+    setCopyrightYearRange(start: int, end: int)
         Sets the year range of the query
 
     setDurationRange(start: int, end: int)
@@ -397,13 +397,13 @@ class Query:
         self.setKeywords(keywords)
         self.setDocumentType(documentType)
         self.setStudio(studio)
-        self.setCopyrightYearRange(copyrightYearRange)
-        self.setDurationRange(durationRange)
+        self.setCopyrightYearRange(copyrightYearRange[0], copyrightYearRange[1])
+        self.setDurationRange(durationRange[0], durationRange[1])
 
         self.viewedDocuments = []
         self.queryTime = datetime.datetime.now()
 
-    def setCopyrightRange(self, start: int, end: int) -> Self:
+    def setCopyrightYearRange(self, start: int, end: int) -> Self:
         """Sets the year range of the query"""
         self.copyrightYearRange = (start, end)
         return self

@@ -1,17 +1,12 @@
 """A collection of helpers for sending and recieving data to/from the PostgreSQL database."""
 
 from psycopg2.extensions import connection, cursor
-from datatypes import Document, Flag
+from datatypes import Document, Query, Flag
 
 
 # TODO convert query params to a `query` object
 def search_results(
-    conn: connection,
-    page: int,
-    resultsPerPage: int = 50,
-    titleQuery: str = None,
-    minYear: int = None,
-    maxYear: int = None,
+    conn: connection, query: Query, page: int, resultsPerPage: int = 50
 ) -> list[Document]:
     """Return a page of search results.
 
@@ -21,14 +16,10 @@ def search_results(
         A ``psycopg2`` connection to perform queries with
     page : int
         The index of the page of results to return
+    query : :obj:`Query`
+        A ``Query`` object specifying the search parameters
     resultsPerPage : int, default = 50
         The number of results displayed on each page
-    titleQuery : str, default = None
-        Text that must be included in returned documents
-    minYear : int, default = None
-        The minimum year of returned documents
-    maxYear : int, default = None
-        The minimum year of returned documents
 
     Returns
     -------
@@ -43,12 +34,14 @@ def search_results(
         # TODO make this exception more specific
         raise Exception("No SQL connection found")
 
-    if not titleQuery:
-        titleQuery = None
+    titleQuery = " ".join(query.keywords) if query.keywords else None
 
     documents: list = []
     cur: cursor = None
     with conn.cursor() as cur:
+        # gather only the attributes needed for the results page
+        # TODO this query should be optimized significantly\
+        # TODO add other fields of `Query` to this filter
         cur.execute(
             "SELECT id, copyright_year, studio, title \
             FROM documents \
@@ -59,8 +52,8 @@ def search_results(
             OFFSET %(offset)s;",
             {
                 "title_query": titleQuery,
-                "min_year": minYear,
-                "max_year": maxYear,
+                "min_year": query.copyrightYearRange[0],
+                "max_year": query.copyrightYearRange[1],
                 "num_results": resultsPerPage,
                 "offset": (page - 1) * resultsPerPage,
             },
@@ -94,24 +87,16 @@ def search_results(
     return documents
 
 
-def get_num_results(
-    conn: connection,
-    titleQuery: str = None,
-    minYear: int = None,
-    maxYear: int = None,
-):
+# TODO combine with `search_results` instead of performing 2 queries
+def get_num_results(conn: connection, query: Query):
     """Fetch the number of results for a given query.
 
     Parameters
     ----------
     conn : :obj:`psycopg2.extensions.connection`
         A ``psycopg2`` connection to perform queries with
-    titleQuery : str, default = None
-        Text that must be included in returned documents
-    minYear : int, default = None
-        The minimum year of returned documents
-    maxYear : int, default = None
-        The minimum year of returned documents
+    query : :obj:`Query`
+        A ``Query`` object specifying the search parameters
 
     Returns
     -------
@@ -121,9 +106,8 @@ def get_num_results(
     if not conn:
         raise Exception("No SQL connection found")
 
-    if not titleQuery:
-        titleQuery = None
-
+    titleQuery = " ".join(query.keywords) if query.keywords else None
+    print(query.keywords)
     cur: cursor
     with conn.cursor() as cur:
         cur.execute(
@@ -134,8 +118,8 @@ def get_num_results(
             AND (%(max_year)s IS NULL OR copyright_year <= %(max_year)s);",
             {
                 "title_query": titleQuery,
-                "min_year": minYear,
-                "max_year": maxYear,
+                "min_year": query.copyrightYearRange[0],
+                "max_year": query.copyrightYearRange[1],
             },
         )
 
