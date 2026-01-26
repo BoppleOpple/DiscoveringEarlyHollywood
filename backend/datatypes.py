@@ -1,0 +1,464 @@
+"""A collection of classes and types for storing document, query, and user data"""
+
+import datetime
+from pathlib import Path
+from typing import Any, Self, Union
+
+# removing this for now, i think this should be handled by the db anyway
+# class User:
+#     name: str = None
+
+
+class Flag:
+    """Struct for flags"""
+
+    reporterName: str = None
+    errorLoaction: str = None
+    errorDescription: str = None
+
+    def __init__(
+        self,
+        reporterName: str = None,
+        errorLoaction: str = None,
+        errorDescription: str = None,
+    ):
+        self.reporterName = reporterName
+        self.errorLoaction = errorLoaction
+        self.errorDescription = errorDescription
+
+
+class Metadata:
+    """
+    Class containing in-memory document metadata
+
+    Parameters
+    ----------
+    id: str, default = None
+        The id of the related document
+
+    studio: str, default = None
+        The studio of the related document
+
+    title: str, default = None
+        The title of the related document
+
+    documentType: str, default = None
+        The type of the document (i.e. "script", "synopsis", etc.)
+
+    copyrightYear: int, default = None
+        The copyright year of the related document
+
+    reelCount: int, default = None
+        The number of reels for the related document
+
+    uploadedTime: datetime.datetime, default = None
+        The time the related document was uploaded to the database
+
+    uploadedBy: str, default = None
+        The uploader of the related document
+
+    actors: list[str], default = []
+        The list of actors associated with this document
+
+    tags: list[str], default = []
+        The list of tags associated with this document
+
+    genres: list[str], default = []
+        The list of genres associated with this document
+
+    Attributes
+    ----------
+    id: str
+        The id of the related document
+
+    studio: str
+        The studio of the related document
+
+    title: str
+        The title of the related document
+
+    documentType: str, default = None
+        The type of the document (i.e. "script", "synopsis", etc.)
+
+    copyrightYear: int
+        The copyright year of the related document
+
+    reelCount: int
+        The number of reels for the related document
+
+    uploadedTime: datetime.datetime
+        The time the related document was uploaded to the database
+
+    uploadedBy: str
+        The uploader of the related document
+
+    actors: list[str], default = []
+        The list of actors associated with this document
+
+    tags: list[str], default = []
+        The list of tags associated with this document
+
+    genres: list[str], default = []
+        The list of genres associated with this document
+    """
+
+    id: str = None
+    studio: str = None
+    title: str = None
+    documentType: str = None
+
+    copyrightYear: int = None
+    reelCount: int = None
+
+    uploadedTime: datetime.datetime = None
+
+    uploadedBy: str = None
+
+    actors: list[str] = []
+    tags: list[str] = []
+    genres: list[str] = []
+
+    def __init__(
+        self,
+        id: str = None,
+        studio: str = None,
+        title: str = None,
+        documentType: str = None,
+        copyrightYear: int = None,
+        reelCount: int = None,
+        uploadedTime: datetime.datetime = None,
+        uploadedBy: str = None,
+        actors: list[str] = [],
+        tags: list[str] = [],
+        genres: list[str] = [],
+    ):
+        self.id = id
+        self.studio = studio
+        self.title = title
+        self.documentType = documentType
+        self.copyrightYear = copyrightYear
+        self.reelCount = reelCount
+        self.uploadedTime = uploadedTime
+        self.uploadedBy = uploadedBy
+        self.actors = actors
+        self.tags = tags
+        self.genres = genres
+
+
+class Document:
+    """
+    Class containing in-memory document data
+
+    Parameters
+    ----------
+    documentDir: Path
+        Te path to the directory containing document PDFs
+
+    id: str, default = None
+        The id of the related document
+
+    studio: str, default = None
+        The studio of the related document
+
+    title: str, default = None
+        The title of the related document
+
+    copyrightYear: int, default = None
+        The copyright year of the related document
+
+    reelCount: int, default = None
+        The number of reels for the related document
+
+    uploadedTime: datetime.datetime, default = None
+        The time the related document was uploaded to the database
+
+    uploadedBy: str, default = None
+        The uploader of the related document
+
+    actors: list[str], default = []
+        The list of actors associated with this document
+
+    tags: list[str], default = []
+        The list of tags associated with this document
+
+    genres: list[str], default = []
+        The list of genres associated with this document
+
+    transcripts: list[str], default = []
+        A list of the text of each page, in order
+
+    flags: Union[list[Flag], None], default = None
+        A list of all flags on this document, or `None` if they have not yet been fetched
+
+    Attributes
+    ----------
+    images: list[Any]
+        Not yet implemented
+
+    transcripts: list[str]
+        A list of the text of each page, in order
+
+    flags: Union[list[Flag], None]
+        A list of all flags on this document, or `None` if they have not yet been fetched
+
+    metadata: Metadata
+        A `Metadata` object containing all additional data associated with this document
+
+    Methods
+    -------
+    getId()
+        A helper for getting the `id` of this document
+    """
+
+    images: list[Any] = None
+    transcripts: list[str] = []
+    flags: Union[list[Flag], None] = None
+
+    metadata: Metadata = Metadata()
+
+    def __init__(
+        self,
+        documentDir: Path,
+        id: str = None,
+        studio: str = None,
+        title: str = None,
+        documentType: str = None,
+        copyrightYear: int = None,
+        reelCount: int = None,
+        uploadedTime: datetime.datetime = None,
+        uploadedBy: str = None,
+        actors: list[str] = [],
+        tags: list[str] = [],
+        genres: list[str] = [],
+        transcripts: list[str] = [],
+        flags: Union[list[Flag], None] = None,
+    ):
+        self.metadata = Metadata(
+            id,
+            studio,
+            title,
+            documentType,
+            copyrightYear,
+            reelCount,
+            uploadedTime,
+            uploadedBy,
+            actors,
+            tags,
+            genres,
+        )
+        # TODO load images automatically
+        self.images = None
+
+        self.transcripts = transcripts
+        self.flags = flags
+
+    def getId(self) -> str:
+        """
+        A helper for getting the `id` of this document
+
+        Returns
+        -------
+        id: Union[str, None]
+            The `id` of the document if available, otherwise None
+        """
+        return self.metadata.id if self.metadata else None
+
+
+class Query:
+    """
+    Class containing all data required to make a query
+
+    Parameters
+    ----------
+    actors: list[str], default = []
+        The list of actors that must be present in matched documents
+
+    tags: list[str], default = []
+        The list of tags that must be present in matched documents
+
+    genres: list[str], default = []
+        The list of genres that must be present in matched documents
+
+    keywords: list[str], default = []
+        The list of keywords that must be present in matched documents
+
+    documentType: str, default = None
+        The type that matched documents must be (`None` for no filter)
+
+    studio: str, default = None
+        The studio that matched documents must be from (`None` for no filter)
+
+    copyrightYearRange: tuple[int, int], default = (None, None)
+        The range of acceptable copyright years
+
+    durationRange: tuple[int, int], default = (None, None)
+        The range of acceptable durations (in reels)
+
+    Attributes
+    ----------
+    viewedDocuments: list[str]
+        The `id`s of all documents that have been viewed in this query
+
+    actors: list[str]
+        The list of actors that must be present in matched documents
+
+    tags: list[str]
+        The list of tags that must be present in matched documents
+
+    genres: list[str]
+        The list of genres that must be present in matched documents
+
+    keywords: list[str]
+        The list of keywords that must be present in matched documents
+
+    documentType: str
+        The type that matched documents must be (`None` for no filter)
+
+    studio: str
+        The studio that matched documents must be from (`None` for no filter)
+
+    copyrightYearRange: tuple[int, int]
+        The range of acceptable copyright years
+
+    durationRange: tuple[int, int]
+        The range of acceptable durations (in reels)
+
+    queryTime: datetime.datetime
+        The time the query was created (used to filter the database and keep
+        queries consistent as documents are added)
+
+    Methods
+    -------
+    setCopyrightYearRange(start: int, end: int)
+        Sets the year range of the query
+
+    setDurationRange(start: int, end: int)
+        Sets the duration range of the query
+
+    setActors(actors: list[str])
+        Sets the actors that must be present in the query
+
+    addActor(actor: str)
+        Adds an actor that must be present to the query
+
+    setTags(tags: list[str])
+        Sets the tags that must be present in the query
+
+    addTag(tag: str)
+        Adds an tag that must be present to the query
+
+    setGenres(genres: list[str])
+        Sets the genres that must be present in the query
+
+    addGenre(genre: str)
+        Adds an genre that must be present to the query
+
+    setKeywords(keywords: list[str])
+        Sets the keywords that must be present in the query
+
+    addKeyword(keyword: str)
+        Adds an keyword that must be present to the query
+
+    setDocumentType(documentType: str)
+        Sets the document type of the query
+
+    setStudio(studio: str)
+        Sets the studio that the copyrighted film must be from
+    """
+
+    viewedDocuments: list[str] = []
+    actors: list[str] = []
+    tags: list[str] = []
+    genres: list[str] = []
+    keywords: list[str] = []
+
+    documentType: str = None
+    studio: str = None
+
+    copyrightYearRange: tuple[int, int] = (None, None)
+    durationRange: tuple[int, int] = (None, None)
+
+    queryTime: datetime.datetime = None
+
+    def __init__(
+        self,
+        actors: list[str] = [],
+        tags: list[str] = [],
+        genres: list[str] = [],
+        keywords: list[str] = [],
+        documentType: str = None,
+        studio: str = None,
+        copyrightYearRange: tuple[int, int] = (None, None),
+        durationRange: tuple[int, int] = (None, None),
+    ):
+        self.setActors(actors)
+        self.setTags(tags)
+        self.setGenres(genres)
+        self.setKeywords(keywords)
+        self.setDocumentType(documentType)
+        self.setStudio(studio)
+        self.setCopyrightYearRange(copyrightYearRange[0], copyrightYearRange[1])
+        self.setDurationRange(durationRange[0], durationRange[1])
+
+        self.viewedDocuments = []
+        self.queryTime = datetime.datetime.now()
+
+    def setCopyrightYearRange(self, start: int, end: int) -> Self:
+        """Sets the year range of the query"""
+        self.copyrightYearRange = (start, end)
+        return self
+
+    def setDurationRange(self, start: int, end: int) -> Self:
+        """Sets the duration range of the query"""
+        self.durationRange = (start, end)
+        return self
+
+    def setActors(self, actors: list[str]) -> Self:
+        """Sets the actors that must be present in the query"""
+        self.actors = actors if actors else []
+        return self
+
+    def addActor(self, actor: str) -> Self:
+        """Adds an actor that must be present to the query"""
+        self.actors.append(actor)
+        return self
+
+    def setTags(self, tags: list[str]) -> Self:
+        """Sets the tags that must be present in the query"""
+        self.tags = tags if tags else []
+        return self
+
+    def addTag(self, tag: str) -> Self:
+        """Adds an tag that must be present to the query"""
+        self.tags.append(tag)
+        return self
+
+    def setGenres(self, genres: list[str]) -> Self:
+        """Sets the genres that must be present in the query"""
+        self.genres = genres if genres else []
+        return self
+
+    def addGenre(self, genre: str) -> Self:
+        """Adds an genre that must be present to the query"""
+        self.genres.append(genre)
+        return self
+
+    def setKeywords(self, keywords: list[str]) -> Self:
+        """Sets the keywords that must be present in the query"""
+        self.keywords = keywords if keywords else []
+        return self
+
+    def addKeyword(self, keyword: str) -> Self:
+        """Adds an keyword that must be present to the query"""
+        self.keywords.append(keyword)
+        return self
+
+    def setDocumentType(self, documentType: str) -> Self:
+        """Sets the document type of the query"""
+        self.documentType = documentType
+        return self
+
+    def setStudio(self, studio: str) -> Self:
+        """Sets the studio that the copyrighted film must be from"""
+        self.studio = studio
+        return self

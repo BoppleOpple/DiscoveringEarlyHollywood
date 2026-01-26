@@ -1,83 +1,105 @@
 """A collection of helpers for sending and recieving data to/from the PostgreSQL database."""
 
+import psycopg2.sql as sql
 from psycopg2.extensions import connection, cursor
+from datatypes import Document, Query, Flag
 
 
-def formatDocument(
-    documentQuery: tuple,
-    transcriptQuery: list[tuple] = None,
-    actorQuery: list[tuple] = None,
-) -> dict:
-    """Format the results of several SQL queries as a ``dict``.
+def column_relates_to_values(
+    columnName: str, valueColumnName: str, relation: str, values: list
+) -> sql.SQL:
+    tableSQL: sql.SQL = sql.SQL(
+        "SELECT {column_name} \
+        FROM {relation} \
+        WHERE {value_conditions} \
+        GROUP BY {column_name} \
+        HAVING COUNT(distinct {value_column_name}) >= {num_actors}"
+    ).format(
+        column_name=sql.Identifier(columnName),
+        value_column_name=sql.Identifier(valueColumnName),
+        relation=sql.Identifier(relation),
+        value_conditions=sql.SQL(" OR ").join(
+            [
+                sql.SQL("{} = {}").format(
+                    sql.Identifier(valueColumnName), sql.Literal(value)
+                )
+                for value in values
+            ]
+        ),
+        num_actors=sql.Literal(len(values)),
+    )
 
-    Parameters
-    ----------
-    documentQuery : tuple
-        A ``tuple`` with the following elements:
+    return tableSQL
 
-        - ``[0]``: Document ID
-        - ``[1]``: Copyright year
-        - ``[2]``: Copyright holder
-        - ``[3]``: Document title
 
-    transcriptQuery : list[tuple]
-        A ``list`` of ``tuple``s with the following elements:
+def get_base_query(
+    query: Query,
+    replacements: dict,
+    prefix: sql.SQL = sql.SQL("SELECT id, copyright_year, studio, title"),
+    suffix: sql.SQL = sql.SQL(";"),
+) -> sql.SQL:
 
-        - ``[0]``: Page number
-        - ``[1]``: Transcript of page
+    sqlLines: list[sql.SQL] = []
 
-    actorQuery : list[tuple]
-        A ``list`` of ``tuple``s with the following elements:
+    sqlLines.append(prefix)
+    sqlLines.append(sql.SQL("FROM documents"))
+    sqlLines.append(sql.SQL("WHERE TRUE"))
 
-        - ``[0]``: Actor name
+    if "title_query" in replacements and replacements["title_query"]:
+        sqlLines.append(
+            sql.SQL(
+                "AND (%(title_query)s IS NULL OR to_tsvector(title) @@ to_tsquery(%(title_query)s))"
+            )
+        )
 
-    Returns
-    -------
-    formattedDocument : dict
-        A ``dict`` with the following keys:
+    if "min_year" in replacements and replacements["min_year"]:
+        sqlLines.append(sql.SQL("AND copyright_year >= %(min_year)s"))
 
-        id : str
-            The document's ID
-        title : str
-            The document's title
-        year : int
-            The copyright year
-        type : str, default = None
-            The type of document
-        actors : list[str]
-            A list of all actors present in the document
-        studio : str
-            The document's copyright holder
-        content : str
-            A ``list`` of ``tuple``s with the following elements:
+    if "max_year" in replacements and replacements["max_year"]:
+        sqlLines.append(sql.SQL("AND copyright_year <= %(max_year)s"))
 
-            - ``[0]``: Page number
-            - ``[1]``: Transcript of page
+    if "studio" in replacements and replacements["studio"]:
+        sqlLines.append(sql.SQL("AND studio = %(studio)s"))
 
-    Notes
-    -----
-    The return values of this function may be modified to a class structure in the future
-    """
-    return {
-        "id": documentQuery[0],
-        "title": documentQuery[3],
-        "year": documentQuery[1],
-        "type": None,
-        "actors": [result[0] for result in actorQuery],
-        "studio": documentQuery[2],
-        "content": transcriptQuery,
-    }
+    if "query_time" in replacements and replacements["query_time"]:
+        sqlLines.append(sql.SQL("AND uploaded_time <= %(query_time)s"))
+
+    if query.actors:
+        sqlLines.append(
+            sql.SQL("AND id in ( {} )").format(
+                column_relates_to_values(
+                    "document_id", "actor_name", "has_actor", query.actors
+                )
+            )
+        )
+
+    if query.tags:
+        sqlLines.append(
+            sql.SQL("AND id in ( {} )").format(
+                column_relates_to_values("document_id", "tag", "has_tag", query.tags)
+            )
+        )
+
+    if query.genres:
+        sqlLines.append(
+            sql.SQL("AND id in ( {} )").format(
+                column_relates_to_values(
+                    "document_id", "genre", "has_genre", query.genres
+                )
+            )
+        )
+
+    sqlLines.append(suffix)
+
+    SQLQuery: sql.SQL = sql.SQL("\n").join(sqlLines)
+
+    return SQLQuery
 
 
 # TODO convert query params to a `query` object
 def search_results(
-    conn: connection,
-    page: int,
-    resultsPerPage: int = 50,
-    titleQuery: str = None,
-    minYear: int = None,
-    maxYear: int = None,
-):
+    conn: connection, query: Query, page: int, resultsPerPage: int = 50
+) -> list[Document]:
     """Return a page of search results.
 
     Parameters
@@ -86,108 +108,89 @@ def search_results(
         A ``psycopg2`` connection to perform queries with
     page : int
         The index of the page of results to return
+    query : :obj:`Query`
+        A ``Query`` object specifying the search parameters
     resultsPerPage : int, default = 50
         The number of results displayed on each page
-    titleQuery : str, default = None
-        Text that must be included in returned documents
-    minYear : int, default = None
-        The minimum year of returned documents
-    maxYear : int, default = None
-        The minimum year of returned documents
 
     Returns
     -------
-    results : list[dict]
-        A list of documents, formatted in the same way as ``formatDocment``:
-
-        id : str
-            The document's ID
-        title : str
-            The document's title
-        year : int
-            The copyright year
-        type : str, default = None
-            The type of document
-        actors : list[str]
-            A list of all actors present in the document
-        studio : str
-            The document's copyright holder
-        content : str
-            A ``list`` of ``tuple``s with the following elements:
-
-            - ``[0]``: Page number
-            - ``[1]``: Transcript of page
+    results : list[Document]
+        A list of ``Document``s
 
     See Also
     --------
-    formatDocument : The function used to format returned ``dict``s
-
-    Notes
-    -----
-    The return values of this function may be modified to a class structure in the future
+    formatDocument : The function used to format returned ``Document``s
     """
     if not conn:
         # TODO make this exception more specific
         raise Exception("No SQL connection found")
 
-    if not titleQuery:
-        titleQuery = None
+    titleQuery = " ".join(query.keywords) if query.keywords else None
+
+    replacements: dict = {
+        "title_query": titleQuery,
+        "min_year": query.copyrightYearRange[0],
+        "max_year": query.copyrightYearRange[1],
+        "studio": query.studio,
+        "query_time": query.queryTime,
+        "num_results": resultsPerPage,
+        "offset": (page - 1) * resultsPerPage,
+    }
+
+    SQLQuery: sql.SQL = get_base_query(
+        query,
+        replacements,
+        suffix=sql.SQL("LIMIT %(num_results)s \n OFFSET %(offset)s;"),
+    ).as_string(conn)
+
+    print(SQLQuery)
 
     documents: list = []
-    actors: list = []
     cur: cursor = None
     with conn.cursor() as cur:
-        cur.execute(
-            "SELECT id, copyright_year, studio, title \
-            FROM documents \
-            WHERE (%(title_query)s IS NULL OR to_tsvector(title) @@ to_tsquery(%(title_query)s)) \
-            AND (%(min_year)s IS NULL OR copyright_year >= %(min_year)s) \
-            AND (%(max_year)s IS NULL OR copyright_year <= %(max_year)s) \
-            LIMIT %(num_results)s \
-            OFFSET %(offset)s;",
-            {
-                "title_query": titleQuery,
-                "min_year": minYear,
-                "max_year": maxYear,
-                "num_results": resultsPerPage,
-                "offset": (page - 1) * resultsPerPage,
-            },
-        )
+        # gather only the attributes needed for the results page
 
-        documents = cur.fetchall()
+        cur.execute(SQLQuery, replacements)
+
+        documents: list[Document] = [
+            Document(
+                None,  # TODO
+                id=documentQuery[0],
+                studio=documentQuery[2],
+                title=documentQuery[3],
+                copyrightYear=documentQuery[1],
+            )
+            for documentQuery in cur.fetchall()
+        ]
 
         for document in documents:
             cur.execute(
                 "SELECT actor_name \
                 FROM has_actor \
                 WHERE document_id=%s;",
-                [document[0]],
+                [document.getId()],
             )
-            actors.append(cur.fetchall())
+
+            actorQuery = cur.fetchall()
+
+            document.metadata.actors = [result[0] for result in actorQuery]
 
     conn.commit()
 
-    return list(map(formatDocument, documents, [None for doc in documents], actors))
+    return documents
 
 
-def get_num_results(
-    conn: connection,
-    titleQuery: str = None,
-    minYear: int = None,
-    maxYear: int = None,
-):
+# TODO combine with `search_results` instead of performing 2 queries
+def get_num_results(conn: connection, query: Query):
     """Fetch the number of results for a given query.
 
     Parameters
     ----------
     conn : :obj:`psycopg2.extensions.connection`
         A ``psycopg2`` connection to perform queries with
-    titleQuery : str, default = None
-        Text that must be included in returned documents
-    minYear : int, default = None
-        The minimum year of returned documents
-    maxYear : int, default = None
-        The minimum year of returned documents
+    query : :obj:`Query`
+        A ``Query`` object specifying the search parameters
 
     Returns
     -------
@@ -197,23 +200,25 @@ def get_num_results(
     if not conn:
         raise Exception("No SQL connection found")
 
-    if not titleQuery:
-        titleQuery = None
+    titleQuery = " ".join(query.keywords) if query.keywords else None
+
+    replacements: dict = {
+        "title_query": titleQuery,
+        "min_year": query.copyrightYearRange[0],
+        "max_year": query.copyrightYearRange[1],
+        "studio": query.studio,
+        "query_time": query.queryTime,
+    }
+
+    SQLQuery: sql.SQL = get_base_query(
+        query,
+        replacements,
+        prefix=sql.SQL("SELECT COUNT(*)"),
+    ).as_string(conn)
 
     cur: cursor
     with conn.cursor() as cur:
-        cur.execute(
-            "SELECT COUNT(*) \
-            FROM documents \
-            WHERE (%(title_query)s IS NULL OR to_tsvector(title) @@ to_tsquery(%(title_query)s)) \
-            AND (%(min_year)s IS NULL OR copyright_year >= %(min_year)s) \
-            AND (%(max_year)s IS NULL OR copyright_year <= %(max_year)s);",
-            {
-                "title_query": titleQuery,
-                "min_year": minYear,
-                "max_year": maxYear,
-            },
-        )
+        cur.execute(SQLQuery, replacements)
 
         count = cur.fetchone()[0]
 
@@ -223,7 +228,7 @@ def get_num_results(
 
 
 def get_document(conn: connection, doc_id: str) -> dict:
-    """Fetch all data pertaining to a document.
+    """Fetch *all* data pertaining to a document.
 
     Parameters
     ----------
@@ -234,34 +239,8 @@ def get_document(conn: connection, doc_id: str) -> dict:
 
     Returns
     -------
-    document : dict
-        A document formatted in the same way as ``formatDocment``:
-
-        id : str
-            The document's ID
-        title : str
-            The document's title
-        year : int
-            The copyright year
-        type : str, default = None
-            The type of document
-        actors : list[str]
-            A list of all actors present in the document
-        studio : str
-            The document's copyright holder
-        content : str
-            A ``list`` of ``tuple``s with the following elements:
-
-            - ``[0]``: Page number
-            - ``[1]``: Transcript of page
-
-    See Also
-    --------
-    formatDocument : The function used to format the returned ``dict``
-
-    Notes
-    -----
-    The return values of this function may be modified to a class structure in the future
+    document : Docment
+        A ``Docment`` with the specified ``doc_id``, or None
     """
     if not conn:
         raise Exception("No SQL connection found")
@@ -272,7 +251,7 @@ def get_document(conn: connection, doc_id: str) -> dict:
     cur: cursor = None
     with conn.cursor() as cur:
         cur.execute(
-            "SELECT id, copyright_year, studio, title \
+            "SELECT id, copyright_year, studio, title, reel_count, uploaded_by, uploaded_time \
             FROM documents \
             WHERE id=%s;",
             [doc_id.lower()],
@@ -298,9 +277,61 @@ def get_document(conn: connection, doc_id: str) -> dict:
 
         actors = cur.fetchall()
 
+        cur.execute(
+            "SELECT genre \
+            FROM has_genre \
+            WHERE document_id=%s;",
+            [doc_id.lower()],
+        )
+
+        genres = cur.fetchall()
+
+        cur.execute(
+            "SELECT tag \
+            FROM has_tag \
+            WHERE document_id=%s;",
+            [doc_id.lower()],
+        )
+
+        tags = cur.fetchall()
+
+        cur.execute(
+            "SELECT user_name, error_location, error_description \
+            FROM flagged_by \
+            WHERE document_id=%s;",
+            [doc_id.lower()],
+        )
+
+        flags = [
+            Flag(
+                reporterName=flagData[0],
+                errorLoaction=flagData[1],
+                errorDescription=flagData[2],
+            )
+            for flagData in cur.fetchall()
+        ]
+
     conn.commit()
 
-    return formatDocument(document, transcriptQuery=transcripts, actorQuery=actors)
+    if not document:
+        return None
+
+    return Document(
+        None,  # TODO
+        id=document[0],
+        studio=document[2],
+        title=document[3],
+        documentType=None,  # TODO
+        copyrightYear=document[1],
+        reelCount=document[4],
+        uploadedTime=document[6],
+        uploadedBy=document[5],
+        actors=[result[0] for result in actors],
+        tags=tags,
+        genres=genres,
+        transcripts=transcripts,
+        flags=flags,
+    )
 
 
 if __name__ == "__main__":

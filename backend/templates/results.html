@@ -5,11 +5,11 @@
     <ul>
     {% for result in results %}
         <li>
-            <strong>{{ result.id }}: <i>{{ result.title }}</i></strong> ({{ result.year }})
+            <strong>{{ result.metadata.id }}: <i>{{ result.metadata.title }}</i></strong> ({{ result.metadata.copyrightYear }})
             <br>
-            <em>Type:</em> {{ result.type }} | <em>Actors:</em> {{ ", ".join(result.actors) }}
+            <em>Type:</em> {{ result.metadata.documentType }} | <em>Actors:</em> {{ ", ".join(result.metadata.actors) }}
             <br>
-            <a href="{{ url_for('view_document', doc_id=result.id) }}">View Document</a>
+            <a href="{{ url_for('view_document', doc_id=result.metadata.id) }}">View Document</a>
         </li>
     {% endfor %}
     </ul>
