@@ -1,7 +1,98 @@
 """A collection of helpers for sending and recieving data to/from the PostgreSQL database."""
 
+import psycopg2.sql as sql
 from psycopg2.extensions import connection, cursor
 from datatypes import Document, Query, Flag
+
+
+def column_relates_to_values(
+    columnName: str, valueColumnName: str, relation: str, values: list
+) -> sql.SQL:
+    tableSQL: sql.SQL = sql.SQL(
+        "SELECT {column_name} \
+        FROM {relation} \
+        WHERE {value_conditions} \
+        GROUP BY {column_name} \
+        HAVING COUNT(distinct {column_name}) >= {num_actors}"
+    ).format(
+        column_name=sql.Identifier(columnName),
+        relation=sql.Identifier(relation),
+        value_conditions=sql.SQL(" OR ").join(
+            [
+                sql.SQL("{} = {}").format(
+                    sql.Identifier(valueColumnName), sql.Literal(value)
+                )
+                for value in values
+            ]
+        ),
+        num_actors=sql.Literal(len(values)),
+    )
+
+    return tableSQL
+
+
+def get_base_query(
+    query: Query,
+    replacements: dict,
+    prefix: sql.SQL = sql.SQL("SELECT id, copyright_year, studio, title"),
+    suffix: sql.SQL = sql.SQL(";"),
+) -> sql.SQL:
+
+    sqlLines: list[sql.SQL] = []
+
+    sqlLines.append(prefix)
+    sqlLines.append(sql.SQL("FROM documents"))
+    sqlLines.append(sql.SQL("WHERE TRUE"))
+
+    if "title_query" in replacements and replacements["title_query"]:
+        sqlLines.append(
+            sql.SQL(
+                "AND (%(title_query)s IS NULL OR to_tsvector(title) @@ to_tsquery(%(title_query)s))"
+            )
+        )
+
+    if "min_year" in replacements and replacements["min_year"]:
+        sqlLines.append(sql.SQL("AND copyright_year >= %(min_year)s"))
+
+    if "max_year" in replacements and replacements["max_year"]:
+        sqlLines.append(sql.SQL("AND copyright_year <= %(max_year)s"))
+
+    if "studio" in replacements and replacements["studio"]:
+        sqlLines.append(sql.SQL("AND studio = %(studio)s"))
+
+    if "query_time" in replacements and replacements["query_time"]:
+        sqlLines.append(sql.SQL("AND uploaded_time <= %(query_time)s"))
+
+    if query.actors:
+        sqlLines.append(
+            sql.SQL("AND id in ( {} )").format(
+                column_relates_to_values(
+                    "document_id", "actor_name", "has_actor", query.actors
+                )
+            )
+        )
+
+    if query.tags:
+        sqlLines.append(
+            sql.SQL("AND id in ( {} )").format(
+                column_relates_to_values("document_id", "tag", "has_tag", query.tags)
+            )
+        )
+
+    if query.genres:
+        sqlLines.append(
+            sql.SQL("AND id in ( {} )").format(
+                column_relates_to_values(
+                    "document_id", "genre", "has_genre", query.genres
+                )
+            )
+        )
+
+    sqlLines.append(suffix)
+
+    SQLQuery: sql.SQL = sql.SQL("\n").join(sqlLines)
+
+    return SQLQuery
 
 
 # TODO convert query params to a `query` object
@@ -36,28 +127,30 @@ def search_results(
 
     titleQuery = " ".join(query.keywords) if query.keywords else None
 
+    replacements: dict = {
+        "title_query": titleQuery,
+        "min_year": query.copyrightYearRange[0],
+        "max_year": query.copyrightYearRange[1],
+        "studio": query.studio,
+        "query_time": query.queryTime,
+        "num_results": resultsPerPage,
+        "offset": (page - 1) * resultsPerPage,
+    }
+
+    SQLQuery: sql.SQL = get_base_query(
+        query,
+        replacements,
+        suffix=sql.SQL("LIMIT %(num_results)s \n OFFSET %(offset)s;"),
+    ).as_string(conn)
+
+    print(SQLQuery)
+
     documents: list = []
     cur: cursor = None
     with conn.cursor() as cur:
         # gather only the attributes needed for the results page
-        # TODO this query should be optimized significantly\
-        # TODO add other fields of `Query` to this filter
-        cur.execute(
-            "SELECT id, copyright_year, studio, title \
-            FROM documents \
-            WHERE (%(title_query)s IS NULL OR to_tsvector(title) @@ to_tsquery(%(title_query)s)) \
-            AND (%(min_year)s IS NULL OR copyright_year >= %(min_year)s) \
-            AND (%(max_year)s IS NULL OR copyright_year <= %(max_year)s) \
-            LIMIT %(num_results)s \
-            OFFSET %(offset)s;",
-            {
-                "title_query": titleQuery,
-                "min_year": query.copyrightYearRange[0],
-                "max_year": query.copyrightYearRange[1],
-                "num_results": resultsPerPage,
-                "offset": (page - 1) * resultsPerPage,
-            },
-        )
+
+        cur.execute(SQLQuery, replacements)
 
         documents: list[Document] = [
             Document(
@@ -107,21 +200,24 @@ def get_num_results(conn: connection, query: Query):
         raise Exception("No SQL connection found")
 
     titleQuery = " ".join(query.keywords) if query.keywords else None
-    print(query.keywords)
+
+    replacements: dict = {
+        "title_query": titleQuery,
+        "min_year": query.copyrightYearRange[0],
+        "max_year": query.copyrightYearRange[1],
+        "studio": query.studio,
+        "query_time": query.queryTime,
+    }
+
+    SQLQuery: sql.SQL = get_base_query(
+        query,
+        replacements,
+        prefix=sql.SQL("SELECT COUNT(*)"),
+    ).as_string(conn)
+
     cur: cursor
     with conn.cursor() as cur:
-        cur.execute(
-            "SELECT COUNT(*) \
-            FROM documents \
-            WHERE (%(title_query)s IS NULL OR to_tsvector(title) @@ to_tsquery(%(title_query)s)) \
-            AND (%(min_year)s IS NULL OR copyright_year >= %(min_year)s) \
-            AND (%(max_year)s IS NULL OR copyright_year <= %(max_year)s);",
-            {
-                "title_query": titleQuery,
-                "min_year": query.copyrightYearRange[0],
-                "max_year": query.copyrightYearRange[1],
-            },
-        )
+        cur.execute(SQLQuery, replacements)
 
         count = cur.fetchone()[0]
 
