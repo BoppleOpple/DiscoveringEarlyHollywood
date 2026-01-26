@@ -13,9 +13,10 @@ def column_relates_to_values(
         FROM {relation} \
         WHERE {value_conditions} \
         GROUP BY {column_name} \
-        HAVING COUNT(distinct {column_name}) >= {num_actors}"
+        HAVING COUNT(distinct {value_column_name}) >= {num_actors}"
     ).format(
         column_name=sql.Identifier(columnName),
+        value_column_name=sql.Identifier(valueColumnName),
         relation=sql.Identifier(relation),
         value_conditions=sql.SQL(" OR ").join(
             [
