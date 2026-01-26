@@ -232,7 +232,7 @@ def results():
     print_kwargs(**request.args)
 
     query: Query = Query(
-        actors=["Gladys Kingsbury", "Fred Gamble"],  # TODO
+        actors=[],  # TODO
         tags=[],  # TODO
         genres=[],  # TODO
         keywords=list(
