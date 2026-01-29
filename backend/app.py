@@ -1,19 +1,53 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash, send_file
+import os
+import tempfile
+import math
+from flask import (
+    Flask,
+    render_template,
+    request,
+    redirect,
+    url_for,
+    session,
+    jsonify,
+    flash,
+)
+import psycopg2
+import pytesseract
+from flask_cors import CORS
+from PIL import Image
 from werkzeug.utils import secure_filename
 import os
 from datetime import datetime
+from pdf2image import convert_from_path
+from dotenv import load_dotenv
 import csv
 from io import StringIO
+import db_utils
+from datatypes import Document, Query
 
 app = Flask(__name__)
-app.secret_key = os.environ["FLASK_SECRET"] or os.urandom(20)
+app.secret_key = os.urandom(20)
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB max file size
 
 # Ensure upload folder exists
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-# Mock document data
+dbConnection = psycopg2.connect(
+    host=os.environ["SQL_HOST"],
+    port=os.environ["SQL_PORT"],
+    dbname=os.environ["SQL_DBNAME"],
+    user=os.environ["SQL_USER"],
+    password=os.environ["SQL_PASSWORD"],
+)
+
+pytesseract.pytesseract.tesseract_cmd = (
+    r"C:\Program Files\Tesseract-OCR\tesseract.exe"  # Adjust this path as needed
+)
+# Adjust this path as needed
+poppler_path = r"C:\Users\shtgu\Documents\CodingPackages\poppler-24.08.0\Library\bin"
+
+RESULTS_PER_PAGE = 20
 DOCUMENTS = [
     {
         "id": 1,
@@ -178,8 +212,6 @@ VIEW_HISTORY = [
         "viewedDate": "Nov 12, 2025"
     }
 ]
-
-
 @app.route('/')
 def index():
     search = request.args.get('search', '')

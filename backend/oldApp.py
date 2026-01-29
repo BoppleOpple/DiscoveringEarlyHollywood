@@ -22,6 +22,7 @@ from pdf2image import convert_from_path
 from dotenv import load_dotenv
 
 import db_utils
+from datatypes import Document, Query
 
 load_dotenv()
 app = Flask(__name__, template_folder="templates")
@@ -90,8 +91,9 @@ def utility_processor():
 @app.route("/")
 def home():
     """Register a new route for the ``home`` page of the app."""
-    earliest_year = 1887
-    current_year = 2025
+    # earliest_year = 1887
+    earliest_year = 1912
+    current_year = 1928
     years = list(range(earliest_year, current_year + 1))
     return render_template("home.html", years=years, documents=[])
 
@@ -219,15 +221,39 @@ def save_ocr_content():
 @app.route("/results", methods=["GET", "POST"])
 def results():
     """Register a new route for the ``results`` page of the app."""
-    # query = request.args.get("query", "")
-    # year = request.args.get("year", "")
+
+    textQuery: str = request.args.get("query", "")
+
+    yearString: str = request.args.get("year", "")
+    year: int = int(yearString) if yearString.isnumeric() else None
+
     page = request.args.get("page", 1, type=int)
 
     print_kwargs(**request.args)
 
-    results = db_utils.search_results(dbConnection, page, RESULTS_PER_PAGE)
+    query: Query = Query(
+        actors=[],  # TODO
+        tags=[],  # TODO
+        genres=[],  # TODO
+        keywords=list(
+            filter(lambda s: s != "", textQuery.split(" "))
+        ),  # TODO allow searching both titles and transcripts
+        documentType=None,  # TODO
+        studio=None,  # TODO
+        copyrightYearRange=(year, year),  # TODO allow a start & end value
+        durationRange=(None, None),  # TODO
+    )
 
-    num_results = db_utils.get_num_results(dbConnection)
+    num_results = db_utils.get_num_results(
+        dbConnection,
+        query,
+    )
+
+    results: list[Document] = db_utils.search_results(
+        dbConnection,
+        query,
+        page,
+    )
 
     return render_template(
         "results.html",
@@ -240,7 +266,7 @@ def results():
 @app.route("/view_document/<doc_id>")
 def view_document(doc_id):
     """Register a new route for the ``view_document`` page of the app."""
-    document = db_utils.get_document(dbConnection, doc_id)
+    document: Document = db_utils.get_document(dbConnection, doc_id)
 
     if not document:
         return "Document not found", 404
