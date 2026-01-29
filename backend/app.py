@@ -1,5 +1,4 @@
 import os
-import tempfile
 import math
 from flask import (
     Flask,
@@ -13,25 +12,21 @@ from flask import (
 )
 import psycopg2
 import pytesseract
-from flask_cors import CORS
-from PIL import Image
 from werkzeug.utils import secure_filename
-import os
-from datetime import datetime
-from pdf2image import convert_from_path
 from dotenv import load_dotenv
 import csv
 from io import StringIO
 import db_utils
 from datatypes import Document, Query
 
+load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.environ["FLASK_SECRET"] or os.urandom(20)
-app.config['UPLOAD_FOLDER'] = 'uploads'
-app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB max file size
+app.config["UPLOAD_FOLDER"] = "uploads"
+app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024  # 50MB max file size
 
 # Ensure upload folder exists
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
 dbConnection = psycopg2.connect(
     host=os.environ["SQL_HOST"],
@@ -59,7 +54,12 @@ DOCUMENTS = [
         "studio": "Paramount Pictures",
         "genre": "Film Noir / Drama",
         "director": "Billy Wilder",
-        "actors": ["Gloria Swanson", "William Holden", "Erich von Stroheim", "Nancy Olson"],
+        "actors": [
+            "Gloria Swanson",
+            "William Holden",
+            "Erich von Stroheim",
+            "Nancy Olson",
+        ],
         "runtime": "110 minutes",
         "language": "English",
         "flags": [
@@ -67,21 +67,21 @@ DOCUMENTS = [
                 "id": 1,
                 "user": "Dr. Sarah Mitchell",
                 "reason": "Document appears to have incorrect filing date. Should be cross-referenced with studio records.",
-                "date": "Nov 15, 2025"
+                "date": "Nov 15, 2025",
             },
             {
                 "id": 2,
                 "user": "James Rodriguez",
                 "reason": "Missing signature on page 3 of the copyright registration form.",
-                "date": "Nov 12, 2025"
+                "date": "Nov 12, 2025",
             },
             {
                 "id": 3,
                 "user": "Emily Chen",
                 "reason": "Potential discrepancy in the listed production company name.",
-                "date": "Nov 10, 2025"
-            }
-        ]
+                "date": "Nov 10, 2025",
+            },
+        ],
     },
     {
         "id": 2,
@@ -95,7 +95,7 @@ DOCUMENTS = [
         "director": "Alan Crosland",
         "actors": ["Al Jolson", "May McAvoy", "Warner Oland", "Eugenie Besserer"],
         "runtime": "88 minutes",
-        "language": "English"
+        "language": "English",
     },
     {
         "id": 3,
@@ -107,7 +107,12 @@ DOCUMENTS = [
         "studio": "UFA (Universum Film AG)",
         "genre": "Science Fiction / Drama",
         "director": "Fritz Lang",
-        "actors": ["Brigitte Helm", "Gustav Fröhlich", "Alfred Abel", "Rudolf Klein-Rogge"],
+        "actors": [
+            "Brigitte Helm",
+            "Gustav Fröhlich",
+            "Alfred Abel",
+            "Rudolf Klein-Rogge",
+        ],
         "runtime": "153 minutes",
         "language": "Silent (German intertitles)",
         "flags": [
@@ -115,15 +120,15 @@ DOCUMENTS = [
                 "id": 4,
                 "user": "Prof. Heinrich Weber",
                 "reason": "Translation of German text may be inaccurate. Requires verification by native speaker.",
-                "date": "Nov 14, 2025"
+                "date": "Nov 14, 2025",
             },
             {
                 "id": 5,
                 "user": "Anna Foster",
                 "reason": "Document quality is poor - some text illegible. May need restoration or alternative source.",
-                "date": "Nov 8, 2025"
-            }
-        ]
+                "date": "Nov 8, 2025",
+            },
+        ],
     },
     {
         "id": 4,
@@ -135,9 +140,14 @@ DOCUMENTS = [
         "studio": "United Artists",
         "genre": "Romance / Comedy",
         "director": "Charlie Chaplin",
-        "actors": ["Charlie Chaplin", "Virginia Cherrill", "Florence Lee", "Harry Myers"],
+        "actors": [
+            "Charlie Chaplin",
+            "Virginia Cherrill",
+            "Florence Lee",
+            "Harry Myers",
+        ],
         "runtime": "87 minutes",
-        "language": "Silent with music"
+        "language": "Silent with music",
     },
     {
         "id": 5,
@@ -151,7 +161,7 @@ DOCUMENTS = [
         "director": "Merian C. Cooper, Ernest B. Schoedsack",
         "actors": ["Fay Wray", "Robert Armstrong", "Bruce Cabot"],
         "runtime": "100 minutes",
-        "language": "English"
+        "language": "English",
     },
     {
         "id": 6,
@@ -163,7 +173,12 @@ DOCUMENTS = [
         "studio": "Metro-Goldwyn-Mayer",
         "genre": "Historical Romance / Drama",
         "director": "Victor Fleming",
-        "actors": ["Vivien Leigh", "Clark Gable", "Olivia de Havilland", "Leslie Howard"],
+        "actors": [
+            "Vivien Leigh",
+            "Clark Gable",
+            "Olivia de Havilland",
+            "Leslie Howard",
+        ],
         "runtime": "238 minutes",
         "language": "English",
         "flags": [
@@ -171,10 +186,10 @@ DOCUMENTS = [
                 "id": 6,
                 "user": "Michael Thompson",
                 "reason": "Multiple versions of this document exist in archive. Need to verify which is the original filing.",
-                "date": "Nov 13, 2025"
+                "date": "Nov 13, 2025",
             }
-        ]
-    }
+        ],
+    },
 ]
 
 # Mock history data
@@ -183,7 +198,7 @@ SEARCH_HISTORY = [
     {"id": 2, "query": "Charlie Chaplin", "date": "Nov 14, 2025"},
     {"id": 3, "query": "1927 films", "date": "Nov 12, 2025"},
     {"id": 4, "query": "film noir", "date": "Nov 10, 2025"},
-    {"id": 5, "query": "Gone with the Wind", "date": "Nov 8, 2025"}
+    {"id": 5, "query": "Gone with the Wind", "date": "Nov 8, 2025"},
 ]
 
 VIEW_HISTORY = [
@@ -193,7 +208,7 @@ VIEW_HISTORY = [
         "description": "Copyright registration documents for the classic film noir about a screenwriter and a faded silent film star.",
         "year": "1950",
         "documentType": "Copyright Registration",
-        "viewedDate": "Nov 15, 2025"
+        "viewedDate": "Nov 15, 2025",
     },
     {
         "id": 4,
@@ -201,7 +216,7 @@ VIEW_HISTORY = [
         "description": "Charlie Chaplin's romantic comedy-drama about a tramp who falls in love with a blind flower girl.",
         "year": "1931",
         "documentType": "Copyright Registration",
-        "viewedDate": "Nov 14, 2025"
+        "viewedDate": "Nov 14, 2025",
     },
     {
         "id": 2,
@@ -209,139 +224,190 @@ VIEW_HISTORY = [
         "description": "Historic copyright filing for the first feature-length motion picture with synchronized dialogue sequences.",
         "year": "1927",
         "documentType": "Copyright Registration",
-        "viewedDate": "Nov 12, 2025"
-    }
+        "viewedDate": "Nov 12, 2025",
+    },
 ]
-@app.route('/')
+
+
+@app.route("/")
 def index():
-    search = request.args.get('search', '')
-    genre = request.args.get('genre', '')
-    year_min = request.args.get('year_min', 1915)
-    year_max = request.args.get('year_max', 1926)
-    
+    search = request.args.get("search", "")
+    genre = request.args.get("genre", None)
+    year_min: int = request.args.get("year_min", 1915, type=int)
+    year_max: int = request.args.get("year_max", 1926, type=int)
+    page: int = request.args.get("page", 1, type=int)
+
     # Filter documents
-    filtered_docs = DOCUMENTS
-    if search:
-        filtered_docs = [d for d in filtered_docs if search.lower() in d['title'].lower() or search.lower() in d['description'].lower()]
-    
-    return render_template('index.html', documents=filtered_docs, search=search, genre=genre)
+    # filtered_docs = DOCUMENTS
+    # if search:
+    #     filtered_docs = [d for d in filtered_docs if search.lower() in d['title'].lower() or search.lower() in d['description'].lower()]
+
+    query: Query = Query(
+        actors=[],  # TODO
+        tags=[],  # TODO
+        genres=[genre] if genre else [],
+        keywords=list(
+            filter(lambda s: s != "", search.split(" ")) if search else []
+        ),  # TODO allow searching both titles and transcripts
+        documentType=None,  # TODO
+        studio=None,  # TODO
+        copyrightYearRange=(year_min, year_max),  # TODO allow a start & end value
+        durationRange=(None, None),  # TODO
+    )
+
+    num_results = db_utils.get_num_results(
+        dbConnection,
+        query,
+    )
+
+    results: list[Document] = db_utils.search_results(
+        dbConnection,
+        query,
+        page,
+    )
+
+    return render_template(
+        "index.html",
+        documents=results,
+        search=search,
+        genre=genre,
+        page=page,
+        num_results=num_results,
+        results_per_page=RESULTS_PER_PAGE,
+    )
 
 
-@app.route('/document/<int:doc_id>')
+@app.route("/document/<doc_id>")
 def document_detail(doc_id):
-    document = next((d for d in DOCUMENTS if d['id'] == doc_id), None)
+    document = next((d for d in DOCUMENTS if d["id"] == doc_id), None)
+    # this is probably what you want to replace this line with
+    # document = db_utils.get_document(dbConnection, doc_id)
     if not document:
-        flash('Document not found', 'error')
-        return redirect(url_for('index'))
-    return render_template('document_detail.html', document=document)
+        flash("Document not found", "error")
+        return redirect(url_for("index"))
+    return render_template("document_detail.html", document=document)
 
 
-@app.route('/history')
+@app.route("/history")
 def view_history():
-    return render_template('view_history.html', 
-                         history=VIEW_HISTORY, 
-                         searches=SEARCH_HISTORY)
+    return render_template(
+        "view_history.html", history=VIEW_HISTORY, searches=SEARCH_HISTORY
+    )
 
 
-@app.route('/history/download')
+@app.route("/history/download")
 def download_history():
     # Create CSV
     output = StringIO()
     writer = csv.writer(output)
-    writer.writerow(['Title', 'Year', 'Document Type', 'Description', 'Viewed Date'])
+    writer.writerow(["Title", "Year", "Document Type", "Description", "Viewed Date"])
     for doc in VIEW_HISTORY:
-        writer.writerow([doc['title'], doc['year'], doc['documentType'], doc['description'], doc['viewedDate']])
-    
+        writer.writerow(
+            [
+                doc["title"],
+                doc["year"],
+                doc["documentType"],
+                doc["description"],
+                doc["viewedDate"],
+            ]
+        )
+
     # Create response
     output.seek(0)
     return send_file(
         StringIO(output.getvalue()),
-        mimetype='text/csv',
+        mimetype="text/csv",
         as_attachment=True,
-        download_name='viewing-history.csv'
+        download_name="viewing-history.csv",
     )
 
 
-@app.route('/flagged')
+@app.route("/flagged")
 def flagged_documents():
-    flagged = [d for d in DOCUMENTS if 'flags' in d and len(d['flags']) > 0]
-    return render_template('flagged_documents.html', documents=flagged)
+    flagged = [d for d in DOCUMENTS if "flags" in d and len(d["flags"]) > 0]
+    return render_template("flagged_documents.html", documents=flagged)
 
 
-@app.route('/manager')
+@app.route("/manager")
 def documents_manager():
-    search = request.args.get('search', '')
+    search = request.args.get("search", "")
     docs = DOCUMENTS
     if search:
-        docs = [d for d in docs if search.lower() in d['title'].lower() 
-                or search.lower() in d.get('studio', '').lower() 
-                or search in d['year']]
-    return render_template('documents_manager.html', documents=docs, search=search)
+        docs = [
+            d
+            for d in docs
+            if search.lower() in d["title"].lower()
+            or search.lower() in d.get("studio", "").lower()
+            or search in d["year"]
+        ]
+    return render_template("documents_manager.html", documents=docs, search=search)
 
 
-@app.route('/login', methods=['POST'])
+@app.route("/login", methods=["POST"])
 def login():
-    email = request.form.get('email')
-    password = request.form.get('password')
-    
+    email = request.form.get("email")
+    password = request.form.get("password")
+
     # Mock authentication - in production, validate credentials properly
-    session['user'] = email
-    flash('Successfully logged in!', 'success')
-    return redirect(url_for('index'))
+    session["user"] = email
+    flash("Successfully logged in!", "success")
+    return redirect(url_for("index"))
 
 
-@app.route('/signup', methods=['POST'])
+@app.route("/signup", methods=["POST"])
 def signup():
-    email = request.form.get('email')
-    password = request.form.get('password')
-    full_name = request.form.get('full_name')
-    
+    email = request.form.get("email")
+    password = request.form.get("password")
+    full_name = request.form.get("full_name")
+
     # Mock signup - in production, create user in database
-    session['user'] = email
-    flash('Account created successfully!', 'success')
-    return redirect(url_for('index'))
+    session["user"] = email
+    flash("Account created successfully!", "success")
+    return redirect(url_for("index"))
 
 
-@app.route('/logout')
+@app.route("/logout")
 def logout():
-    session.pop('user', None)
-    flash('Logged out successfully', 'success')
-    return redirect(url_for('index'))
+    session.pop("user", None)
+    flash("Logged out successfully", "success")
+    return redirect(url_for("index"))
 
 
-@app.route('/upload', methods=['POST'])
+@app.route("/upload", methods=["POST"])
 def upload_documents():
-    upload_type = request.form.get('upload_type', 'zip')
-    
-    if upload_type == 'zip':
-        zip_file = request.files.get('zip_file')
+    upload_type = request.form.get("upload_type", "zip")
+
+    if upload_type == "zip":
+        zip_file = request.files.get("zip_file")
         if zip_file:
             filename = secure_filename(zip_file.filename)
-            zip_file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            flash(f'ZIP file "{filename}" uploaded successfully!', 'success')
+            zip_file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
+            flash(f'ZIP file "{filename}" uploaded successfully!', "success")
     else:
-        document_file = request.files.get('document_file')
-        metadata_file = request.files.get('metadata_file')
-        transcript_file = request.files.get('transcript_file')
-        
+        document_file = request.files.get("document_file")
+        metadata_file = request.files.get("metadata_file")
+        transcript_file = request.files.get("transcript_file")
+
         files_uploaded = []
         if document_file:
             filename = secure_filename(document_file.filename)
-            document_file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            document_file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
             files_uploaded.append(filename)
         if metadata_file:
             filename = secure_filename(metadata_file.filename)
-            metadata_file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            metadata_file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
             files_uploaded.append(filename)
         if transcript_file:
             filename = secure_filename(transcript_file.filename)
-            transcript_file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            transcript_file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
             files_uploaded.append(filename)
-        
+
         if files_uploaded:
-            flash(f'Files uploaded: {", ".join(files_uploaded)}', 'success')
-    
-    return redirect(url_for('documents_manager'))
+            flash(f'Files uploaded: {", ".join(files_uploaded)}', "success")
+
+    return redirect(url_for("documents_manager"))
+
+
 @app.route("/save_ocr_content", methods=["POST"])
 def save_ocr_content():
     """Register a new route for storing transcript data to the database."""
@@ -405,14 +471,16 @@ def results():
     )
 
 
-@app.route('/remove', methods=['POST'])
+@app.route("/remove", methods=["POST"])
 def remove_documents():
     # Get selected document IDs from form
-    doc_ids = request.form.getlist('selected_docs')
-    
+    doc_ids = request.form.getlist("selected_docs")
+
     # Mock removal - in production, remove from database
-    flash(f'Removed {len(doc_ids)} document(s) from database', 'success')
-    return redirect(url_for('documents_manager'))
+    flash(f"Removed {len(doc_ids)} document(s) from database", "success")
+    return redirect(url_for("documents_manager"))
+
+
 @app.route("/view_document/<doc_id>")
 def view_document(doc_id):
     """Register a new route for the ``view_document`` page of the app."""
@@ -424,12 +492,12 @@ def view_document(doc_id):
     return render_template("view_document.html", document=document)
 
 
-@app.route('/flag/<int:doc_id>', methods=['POST'])
+@app.route("/flag/<int:doc_id>", methods=["POST"])
 def flag_document(doc_id):
     # Mock flagging - in production, save to database
-    flash('Document flagged for review', 'success')
-    return redirect(url_for('document_detail', doc_id=doc_id))
+    flash("Document flagged for review", "success")
+    return redirect(url_for("document_detail", doc_id=doc_id))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run(debug=True, port=5000)

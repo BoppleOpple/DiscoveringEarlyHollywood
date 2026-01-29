@@ -65,13 +65,13 @@
                 Copyright Documents from Early Hollywood
             </h2>
             <p class="text-[#666666] mt-1">
-                {{ documents|length }} documents found
+                {{ num_results }} documents found
             </p>
         </div>
 
         <div class="space-y-4">
             {% for doc in documents %}
-            <a href="{{ url_for('document_detail', doc_id=doc.id) }}" 
+            <a href="{{ url_for('document_detail', doc_id=doc.metadata.id) }}" 
                class="block w-full bg-white border-2 border-[#E0E0E0] rounded-lg p-4 hover:border-[#8B0000] transition-colors">
                 <div class="flex gap-4">
                     <div class="flex-shrink-0">
@@ -83,12 +83,12 @@
                         </div>
                     </div>
                     <div class="flex-1">
-                        <h3 class="text-[#800080] text-lg font-medium mb-2">{{ doc.title }}</h3>
+                        <h3 class="text-[#800080] text-lg font-medium mb-2">{{ doc.metadata.title }}</h3>
                         <p class="text-[#666666] mb-3">{{ doc.description }}</p>
                         <div class="flex gap-4">
-                            <span class="text-[#2B6CB0]">{{ doc.year }}</span>
+                            <span class="text-[#2B6CB0]">{{ doc.metadata.copyrightYear }}</span>
                             <span class="text-[#666666]">•</span>
-                            <span class="text-[#666666]">{{ doc.documentType }}</span>
+                            <span class="text-[#666666]">{{ doc.metadata.documentType }}</span>
                         </div>
                     </div>
                 </div>
