@@ -26,7 +26,7 @@ import db_utils
 from datatypes import Document, Query
 
 app = Flask(__name__)
-app.secret_key = os.urandom(20)
+app.secret_key = os.environ["FLASK_SECRET"] or os.urandom(20)
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB max file size
 
