@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}View History - Recovering Early Hollywood{% endblock %}
+
+{% block content %}
+<div class="flex max-w-7xl mx-auto">
+    <!-- Left Sidebar - Previous Searches -->
+    <aside class="w-64 p-6 border-r-2 border-[#E0E0E0] min-h-screen">
+        <h3 class="text-[#2C2C2C] text-lg font-medium mb-4">Previous Searches</h3>
+        
+        <div class="space-y-3">
+            {% for search in searches %}
+            <button class="w-full text-left p-3 bg-white border-2 border-[#E0E0E0] rounded hover:border-[#8B0000] transition-colors group">
+                <div class="flex items-start gap-2">
+                    <svg class="w-4 h-4 text-[#2B6CB0] mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-[#2C2C2C] truncate group-hover:text-[#8B0000] transition-colors">
+                            {{ search.query }}
+                        </p>
+                        <p class="text-[#666666] text-sm mt-1">
+                            {{ search.date }}
+                        </p>
+                    </div>
+                </div>
+            </button>
+            {% endfor %}
+        </div>
+
+        <button class="w-full mt-6 bg-white hover:bg-[#F5F5F0] text-[#2C2C2C] border-2 border-[#E0E0E0] hover:border-[#8B0000] transition-colors py-2 px-4 rounded">
+            Clear Search History
+        </button>
+    </aside>
+
+    <!-- Main Content - Viewing History -->
+    <div class="flex-1 p-6">
+        <div class="mb-6 flex items-center justify-between">
+            <div>
+                <h2 class="text-[#2C2C2C] text-xl font-medium">Your Viewing History</h2>
+                <p class="text-[#666666] mt-1">
+                    {{ history|length }} documents viewed
+                </p>
+            </div>
+            <div class="flex gap-3">
+                <a href="{{ url_for('index') }}" 
+                   class="inline-flex items-center bg-white hover:bg-[#F5F5F0] text-[#2C2C2C] border-2 border-[#E0E0E0] hover:border-[#8B0000] transition-colors py-2 px-4 rounded">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                    </svg>
+                    Home
+                </a>
+                <a href="{{ url_for('download_history') }}" 
+                   class="inline-flex items-center bg-[#2C2C2C] hover:bg-[#8B0000] text-white py-2 px-4 rounded transition-colors">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                    </svg>
+                    Download History
+                </a>
+            </div>
+        </div>
+
+        <div class="space-y-4">
+            {% for doc in history %}
+            <div class="relative">
+                <a href="{{ url_for('document_detail', doc_id=doc.id) }}" 
+                   class="block w-full bg-white border-2 border-[#E0E0E0] rounded-lg p-4 hover:border-[#8B0000] transition-colors">
+                    <div class="flex gap-4">
+                        <div class="flex-shrink-0">
+                            <div class="w-24 h-32 bg-[#F5F5F0] border border-[#CCCCCC] rounded flex items-center justify-center">
+                                <svg class="w-12 h-12 text-[#666666]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                          d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-[#800080] text-lg font-medium mb-2">{{ doc.title }}</h3>
+                            <p class="text-[#666666] mb-3">{{ doc.description }}</p>
+                            <div class="flex gap-4">
+                                <span class="text-[#2B6CB0]">{{ doc.year }}</span>
+                                <span class="text-[#666666]">•</span>
+                                <span class="text-[#666666]">{{ doc.documentType }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+                <div class="absolute top-4 right-4 text-[#666666] text-sm">
+                    Viewed: {{ doc.viewedDate }}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

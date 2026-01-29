@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}{{ document.title }} - Recovering Early Hollywood{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto p-6">
+    <a href="{{ url_for('index') }}" 
+       class="inline-flex items-center mb-6 bg-white hover:bg-[#F5F5F0] text-[#2C2C2C] border-2 border-[#E0E0E0] hover:border-[#8B0000] transition-colors py-2 px-4 rounded">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+        </svg>
+        Back to Results
+    </a>
+
+    <div class="bg-white border-2 border-[#E0E0E0] rounded-lg p-8">
+        <div class="flex gap-8">
+            <!-- PDF Image - Top Left -->
+            <div class="flex-shrink-0">
+                <div class="w-64 h-80 bg-[#F5F5F0] border-2 border-[#CCCCCC] rounded-lg flex items-center justify-center">
+                    <div class="text-center">
+                        <svg class="w-24 h-24 text-[#666666] mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" 
+                                  d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                        </svg>
+                        <p class="text-[#666666]">
+                            Copyright Document
+                        </p>
+                        <p class="text-[#666666] mt-1">
+                            {{ document.year }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content - Right Side -->
+            <div class="flex-1">
+                <div class="float-right border-[#E0E0E0]">
+                    <form action="{{ url_for('flag_document', doc_id=document.id) }}" method="POST" class="inline">
+                        <button type="submit" class="bg-[#2C2C2C] hover:bg-[#8B0000] text-white py-2 px-4 rounded transition-colors">
+                            Flag Document
+                        </button>
+                    </form>
+                </div>
+                <h2 class="text-[#800080] text-xl font-medium mb-4">
+                    {{ document.title }}
+                </h2>
+
+                <div class="mb-6">
+                    <h3 class="text-[#2C2C2C] text-lg font-medium mb-2">
+                        Description
+                    </h3>
+                    <p class="text-[#666666] leading-relaxed">
+                        {{ document.fullDescription }}
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="text-[#2C2C2C] font-medium mb-3">
+                            Film Details
+                        </h4>
+                        <div class="space-y-2">
+                            <div class="flex">
+                                <span class="text-[#666666] w-24">Year:</span>
+                                <span class="text-[#2C2C2C]">{{ document.year }}</span>
+                            </div>
+                            <div class="flex">
+                                <span class="text-[#666666] w-24">Studio:</span>
+                                <span class="text-[#2C2C2C]">{{ document.studio }}</span>
+                            </div>
+                            <div class="flex">
+                                <span class="text-[#666666] w-24">Genre:</span>
+                                <span class="text-[#2C2C2C]">{{ document.genre }}</span>
+                            </div>
+                            <div class="flex">
+                                <span class="text-[#666666] w-24">Director:</span>
+                                <span class="text-[#2C2C2C]">{{ document.director }}</span>
+                            </div>
+                            <div class="flex">
+                                <span class="text-[#666666] w-24">Runtime:</span>
+                                <span class="text-[#2C2C2C]">{{ document.runtime }}</span>
+                            </div>
+                            <div class="flex">
+                                <span class="text-[#666666] w-24">Language:</span>
+                                <span class="text-[#2C2C2C]">{{ document.language }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h4 class="text-[#2C2C2C] font-medium mb-3">Cast</h4>
+                        <div class="space-y-1">
+                            {% for actor in document.actors %}
+                            <p class="text-[#2C2C2C]">{{ actor }}</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="col-span-2 mt-4">
+                        <h4 class="text-[#2C2C2C] font-medium mb-3">
+                            Document Information
+                        </h4>
+                        <div class="flex gap-8">
+                            <div class="flex">
+                                <span class="text-[#666666] w-32">Document Type:</span>
+                                <span class="text-[#2C2C2C]">{{ document.documentType }}</span>
+                            </div>
+                            <div class="flex">
+                                <span class="text-[#666666] w-32">Registration Date:</span>
+                                <span class="text-[#2C2C2C]">{{ document.year }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-8 pt-6 border-t-2 border-[#E0E0E0]">
+                    <button class="bg-[#2C2C2C] hover:bg-[#8B0000] text-white py-2 px-4 rounded transition-colors">
+                        Download Document
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
