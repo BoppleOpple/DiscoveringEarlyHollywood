@@ -4,7 +4,7 @@
 
 Willy N' Gang - Discovering Early Hollywood...
 
-This repository is a fork of a previous team's work, (Recovering Early Hollywood)[https://github.com/gabrielfitzpatrickcs/CrashTestDummies-RecoveringEarlyHollywood].
+This repository is a fork of a previous team's work, [Recovering Early Hollywood](https://github.com/gabrielfitzpatrickcs/CrashTestDummies-RecoveringEarlyHollywood). 
 
 ## Team Members
 
