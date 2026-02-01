@@ -334,5 +334,88 @@ def get_document(conn: connection, doc_id: str) -> dict:
     )
 
 
+def create_user(conn: connection, username: str, password_hash: str) -> bool:
+    """Create a new user in the database.
+
+    Parameters
+    ----------
+    conn : :obj:`psycopg2.extensions.connection`
+        A ``psycopg2`` connection to perform queries with
+    username : str
+        The username for the new user
+    password_hash : str
+        The hashed password for the new user
+
+    Returns
+    -------
+    success : bool
+        True if user was created successfully, False if user already exists
+    """
+    try:
+        cur: cursor
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO users (name, encoded_password) VALUES (%s, %s);",
+                [username, password_hash],
+            )
+        conn.commit()
+        return True
+    except sql.IntegrityError:
+        # User already exists
+        conn.rollback()
+        return False
+    except Exception as e:
+        conn.rollback()
+        raise e
+
+
+def get_user_password_hash(conn: connection, username: str) -> str | None:
+    """Get the password hash for a user.
+
+    Parameters
+    ----------
+    conn : :obj:`psycopg2.extensions.connection`
+        A ``psycopg2`` connection to perform queries with
+    username : str
+        The username to look up
+
+    Returns
+    -------
+    password_hash : str | None
+        Gets the password hash if user exists, None otherwise
+    """
+    cur: cursor
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT encoded_password FROM users WHERE name = %s;",
+            [username],
+        )
+        result = cur.fetchone()
+        if result:
+            return result[0]
+        return None
+
+
+def user_exists(conn: connection, username: str) -> bool:
+    """Check if a user exists in the database.
+
+    Parameters
+    ----------
+    conn : :obj:`psycopg2.extensions.connection`
+        A ``psycopg2`` connection to perform queries with
+    username : str
+        The username to check
+
+    Returns
+    -------
+    exists : bool
+        True if user exists, False otherwise
+    """
+    cur: cursor
+    with conn.cursor() as cur:
+        cur.execute("SELECT 1 FROM users WHERE name = %s;", [username])
+        return cur.fetchone() is not None
+
+
 if __name__ == "__main__":
     pass

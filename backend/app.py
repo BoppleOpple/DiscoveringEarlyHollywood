@@ -18,6 +18,7 @@ import pytesseract
 from flask_cors import CORS
 from PIL import Image
 from werkzeug.utils import secure_filename
+from flask_bcrypt import Bcrypt
 from pdf2image import convert_from_path
 from dotenv import load_dotenv
 
@@ -25,7 +26,12 @@ import db_utils
 from datatypes import Document, Query
 
 load_dotenv()
+# Add these debug lines:
+print("Current directory:", os.getcwd())
+print("FLASK_SECRET exists:", "FLASK_SECRET" in os.environ)
+print("FLASK_SECRET value:", os.environ.get("FLASK_SECRET", "NOT FOUND"))
 app = Flask(__name__, template_folder="templates")
+bcrypt = Bcrypt(app)
 
 CORS(app)
 app.secret_key = os.environ["FLASK_SECRET"] or os.urandom(20)
@@ -278,6 +284,98 @@ def view_document(doc_id):
 def upload_pdf():
     """Register a new route for the ``upload_pdf`` page of the app."""
     return render_template("upload_pdf.html")
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    """Handle user login."""
+    msgs = []
+    
+    if request.method == 'POST':
+        username = request.form.get('username', '').strip()
+        password = request.form.get('password', '')
+        
+        if not username:
+            msgs.append('Username is required!')
+        
+        if not password:
+            msgs.append('Password is required!')
+        
+        if not msgs:
+            password_hash = db_utils.get_user_password_hash(dbConnection, username)
+            
+            if password_hash and bcrypt.check_password_hash(password_hash, password):
+                session['loggedin'] = True
+                session['username'] = username
+                return redirect(url_for('home'))
+            else:
+                msgs.append('Incorrect username or password!')
+    
+    return render_template('login.html', msgs=msgs)
+
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    """Handle user registration."""
+    msgs = []
+    
+    if request.method == 'POST':
+        username = request.form.get('username', '').strip()
+        password = request.form.get('password', '')
+        
+        #  username validation errors
+        if not username:
+            msgs.append('Username is required!')
+        
+        if not password:
+            msgs.append('Password is required!')
+        
+        if username and not username.replace('_', '').isalnum():
+            msgs.append('Username must contain only letters, numbers, and underscores!')
+        
+        if username and len(username) > 20:
+            msgs.append('Username must be 20 characters or less!')
+
+        # password validation errors
+        if password and len(password) < 8:
+            msgs.append('password must be at least 8 characters!')
+
+        if password and not any(c.isupper() for c in password):
+            msgs.append('Password must contain at least one uppercase letter!')
+
+        if password and not any(c.islower() for c in password):
+            msgs.append('Password must contain at least one lowercase letter!')
+
+        if password and not any(c.isdigit() for c in password):
+            msgs.append('Password must contain at least one number!')
+
+        if password and not any(c in '!@#$%^&*()_+-=[]{}|;:,.<>?' for c in password):
+            msgs.append('Password must contain at least one special character (!@#$%^&*()_+-=[]{}|;:,.<>?)')
+        
+        #check database if no validation errors
+        if not msgs:
+            if db_utils.user_exists(dbConnection, username):
+                msgs.append('username already exists')
+            else:
+                password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
+                success = db_utils.create_user(dbConnection, username, password_hash)
+                
+                if success:
+                    session['loggedin'] = True
+                    session['username'] = username
+                    return redirect(url_for('home'))
+                else:
+                    msgs.append('failed to create account. please try again.')
+    
+    return render_template('register.html', msgs=msgs)
+
+
+@app.route('/logout')
+def logout():
+    """Handle user logout."""
+    session.pop('loggedin', None)
+    session.pop('username', None)
+    return redirect(url_for('login'))
 
 
 if __name__ == "__main__":
