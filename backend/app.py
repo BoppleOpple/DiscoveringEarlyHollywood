@@ -5,6 +5,7 @@ from flask import (
     render_template,
     request,
     redirect,
+    send_file,
     url_for,
     session,
     jsonify,
@@ -238,9 +239,14 @@ def index():
     page: int = request.args.get("page", 1, type=int)
 
     # Filter documents
-    # filtered_docs = DOCUMENTS
-    # if search:
-    #     filtered_docs = [d for d in filtered_docs if search.lower() in d['title'].lower() or search.lower() in d['description'].lower()]
+    filtered_docs = DOCUMENTS
+    if search:
+        filtered_docs = [
+            d
+            for d in filtered_docs
+            if search.lower() in d["title"].lower()
+            or search.lower() in d["description"].lower()
+        ]
 
     query: Query = Query(
         actors=[],  # TODO
@@ -326,6 +332,11 @@ def download_history():
 def flagged_documents():
     flagged = [d for d in DOCUMENTS if "flags" in d and len(d["flags"]) > 0]
     return render_template("flagged_documents.html", documents=flagged)
+
+
+def print_kwargs(**kwargs):
+    """Prints keyword arguments to the server console."""
+    print(kwargs)
 
 
 @app.route("/manager")
