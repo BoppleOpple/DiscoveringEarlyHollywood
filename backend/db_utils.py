@@ -32,12 +32,38 @@ def column_relates_to_values(
     return tableSQL
 
 
-def get_base_query(
+def execute_document_query(
+    cursor: cursor,
     query: Query,
-    replacements: dict,
     prefix: sql.SQL = sql.SQL("SELECT id, copyright_year, studio, title"),
     suffix: sql.SQL = sql.SQL(";"),
-) -> sql.SQL:
+):
+    """Create a SQL query from a ``Query`` object.
+
+    Parameters
+    ----------
+    cursor : :obj:`psycopg2.extensions.cursor`
+        The cursor upon which the query will be executed
+
+    query : :obj:`Query`
+        A ``Query`` object containing all relevant information for the SQL query
+
+    prefix : :obj:`psycopg2.sql.SQL`, default = SQL("SELECT id, copyright_year, studio, title")
+        Optional SQL to be inserted before the "FROM" clause
+
+    suffix : :obj:`psycopg2.sql.SQL`, default = SQL(";")
+        Optional SQL to be inserted after the "WHERE" clause(s)
+    """
+
+    titleQuery = " ".join(query.keywords) if query.keywords else None
+
+    replacements: dict = {
+        "title_query": titleQuery,
+        "min_year": query.copyrightYearRange[0],
+        "max_year": query.copyrightYearRange[1],
+        "studio": query.studio,
+        "query_time": query.queryTime,
+    }
 
     sqlLines: list[sql.SQL] = []
 
@@ -93,7 +119,7 @@ def get_base_query(
 
     SQLQuery: sql.SQL = sql.SQL("\n").join(sqlLines)
 
-    return SQLQuery
+    cursor.execute(SQLQuery, replacements)
 
 
 # TODO convert query params to a `query` object
@@ -126,32 +152,24 @@ def search_results(
         # TODO make this exception more specific
         raise Exception("No SQL connection found")
 
-    titleQuery = " ".join(query.keywords) if query.keywords else None
-
-    replacements: dict = {
-        "title_query": titleQuery,
-        "min_year": query.copyrightYearRange[0],
-        "max_year": query.copyrightYearRange[1],
-        "studio": query.studio,
-        "query_time": query.queryTime,
-        "num_results": resultsPerPage,
-        "offset": (page - 1) * resultsPerPage,
-    }
-
-    SQLQuery: sql.SQL = get_base_query(
-        query,
-        replacements,
-        suffix=sql.SQL("LIMIT %(num_results)s \n OFFSET %(offset)s;"),
-    ).as_string(conn)
-
-    print(SQLQuery)
-
     documents: list = []
     cur: cursor = None
     with conn.cursor() as cur:
         # gather only the attributes needed for the results page
 
-        cur.execute(SQLQuery, replacements)
+        execute_document_query(
+            cur,
+            query,
+            suffix=sql.Composed(
+                [
+                    sql.SQL("LIMIT "),
+                    sql.Literal(resultsPerPage),
+                    sql.SQL("\nOFFSET "),
+                    sql.Literal(resultsPerPage * (page - 1)),
+                    sql.SQL(";"),
+                ]
+            ),
+        )
 
         documents: list[Document] = [
             Document(
@@ -200,25 +218,13 @@ def get_num_results(conn: connection, query: Query):
     if not conn:
         raise Exception("No SQL connection found")
 
-    titleQuery = " ".join(query.keywords) if query.keywords else None
-
-    replacements: dict = {
-        "title_query": titleQuery,
-        "min_year": query.copyrightYearRange[0],
-        "max_year": query.copyrightYearRange[1],
-        "studio": query.studio,
-        "query_time": query.queryTime,
-    }
-
-    SQLQuery: sql.SQL = get_base_query(
-        query,
-        replacements,
-        prefix=sql.SQL("SELECT COUNT(*)"),
-    ).as_string(conn)
-
-    cur: cursor
+    cur: cursor = None
     with conn.cursor() as cur:
-        cur.execute(SQLQuery, replacements)
+        execute_document_query(
+            cur,
+            query,
+            prefix=sql.SQL("SELECT COUNT(*)"),
+        )
 
         count = cur.fetchone()[0]
 
