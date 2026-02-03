@@ -54,42 +54,50 @@ def execute_document_query(
     suffix : :obj:`psycopg2.sql.SQL`, default = SQL(";")
         Optional SQL to be inserted after the "WHERE" clause(s)
     """
-
-    titleQuery = " ".join(query.keywords) if query.keywords else None
-
-    replacements: dict = {
-        "title_query": titleQuery,
-        "min_year": query.copyrightYearRange[0],
-        "max_year": query.copyrightYearRange[1],
-        "studio": query.studio,
-        "query_time": query.queryTime,
-    }
-
+    # manual SQL composition since binding variables in `execute()`
+    # does not allow for a variable number of variables
     sqlLines: list[sql.SQL] = []
 
     sqlLines.append(prefix)
     sqlLines.append(sql.SQL("FROM documents"))
     sqlLines.append(sql.SQL("WHERE TRUE"))
 
-    if "title_query" in replacements and replacements["title_query"]:
+    # handle filtering by title
+    titleQuery = " ".join(query.keywords) if query.keywords else None
+    if titleQuery:
         sqlLines.append(
             sql.SQL(
-                "AND (%(title_query)s IS NULL OR to_tsvector(title) @@ to_tsquery(%(title_query)s))"
+                "AND ({title} IS NULL OR to_tsvector(title) @@ to_tsquery({title}))"
+            ).format(title=titleQuery)
+        )
+
+    # handle filtering by minimum year
+    if query.copyrightYearRange[0] is not None:
+        sqlLines.append(
+            sql.SQL("AND copyright_year >= {}").format(
+                sql.Literal(query.copyrightYearRange[0])
             )
         )
 
-    if "min_year" in replacements and replacements["min_year"]:
-        sqlLines.append(sql.SQL("AND copyright_year >= %(min_year)s"))
+    # handle filtering by maximum year
+    if query.copyrightYearRange[1] is not None:
+        sqlLines.append(
+            sql.SQL("AND copyright_year <= {}").format(
+                sql.Literal(query.copyrightYearRange[1])
+            )
+        )
 
-    if "max_year" in replacements and replacements["max_year"]:
-        sqlLines.append(sql.SQL("AND copyright_year <= %(max_year)s"))
+    # handle filtering by studio/copyright holder
+    if query.studio:
+        sqlLines.append(sql.SQL("AND studio = {}").format(sql.Literal(query.studio)))
 
-    if "studio" in replacements and replacements["studio"]:
-        sqlLines.append(sql.SQL("AND studio = %(studio)s"))
+    # handle filtering by document upload time
+    if query.queryTime:
+        sqlLines.append(
+            sql.SQL("AND uploaded_time = {}").format(sql.Literal(query.queryTime))
+        )
 
-    if "query_time" in replacements and replacements["query_time"]:
-        sqlLines.append(sql.SQL("AND uploaded_time <= %(query_time)s"))
-
+    # handle filtering by actors (list of required actors)
     if query.actors:
         sqlLines.append(
             sql.SQL("AND id in ( {} )").format(
@@ -99,6 +107,7 @@ def execute_document_query(
             )
         )
 
+    # handle filtering by tags (list of required tags)
     if query.tags:
         sqlLines.append(
             sql.SQL("AND id in ( {} )").format(
@@ -106,6 +115,7 @@ def execute_document_query(
             )
         )
 
+    # handle filtering by genres (list of required genres)
     if query.genres:
         sqlLines.append(
             sql.SQL("AND id in ( {} )").format(
@@ -117,9 +127,11 @@ def execute_document_query(
 
     sqlLines.append(suffix)
 
+    # finally compose the query
     SQLQuery: sql.SQL = sql.SQL("\n").join(sqlLines)
 
-    cursor.execute(SQLQuery, replacements)
+    # execute the query, with replacement variables already in-place
+    cursor.execute(SQLQuery)
 
 
 # TODO convert query params to a `query` object
