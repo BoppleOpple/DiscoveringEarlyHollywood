@@ -5,7 +5,7 @@ from psycopg2.extensions import connection, cursor
 from datatypes import Document, Query, Flag
 
 
-def relation_from_item_to_all_values(
+def relation_from_id_to_all_values(
     idColumn: str, valueColumn: str, relation: str, values: list
 ) -> sql.SQL:
     """Generates SQL for a table containing rows from ``columnName`` relating to each of ``values``
@@ -151,7 +151,7 @@ def execute_document_query(
     if query.actors:
         sqlLines.append(
             sql.SQL("AND id in ( {} )").format(
-                relation_from_item_to_all_values(
+                relation_from_id_to_all_values(
                     "document_id", "actor_name", "has_actor", query.actors
                 )
             )
@@ -161,7 +161,7 @@ def execute_document_query(
     if query.tags:
         sqlLines.append(
             sql.SQL("AND id in ( {} )").format(
-                relation_from_item_to_all_values(
+                relation_from_id_to_all_values(
                     "document_id", "tag", "has_tag", query.tags
                 )
             )
@@ -171,7 +171,7 @@ def execute_document_query(
     if query.genres:
         sqlLines.append(
             sql.SQL("AND id in ( {} )").format(
-                relation_from_item_to_all_values(
+                relation_from_id_to_all_values(
                     "document_id", "genre", "has_genre", query.genres
                 )
             )
