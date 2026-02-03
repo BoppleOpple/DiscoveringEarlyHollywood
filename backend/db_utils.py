@@ -5,9 +5,56 @@ from psycopg2.extensions import connection, cursor
 from datatypes import Document, Query, Flag
 
 
-def column_relates_to_values(
-    columnName: str, valueColumnName: str, relation: str, values: list
+def relation_from_item_to_all_values(
+    idColumn: str, valueColumn: str, relation: str, values: list
 ) -> sql.SQL:
+    """Generates SQL for a table containing rows from ``columnName`` relating to each of ``values``
+
+    Parameters
+    ----------
+    idColumn : str
+        The name of the column that is being filtered (i.e. the ``id`` column when finding all
+        ``id``s with some ``value``)
+
+    valueColumn : str
+        The name of the column that the ``idColumn`` is filtered by (i.e. the ``value`` column when
+        finding all ``id``s with some ``value``)
+
+    relation : str
+        The name of the relation containing both ``idColumn`` and ``valueColumn``
+
+    values : list
+        The list of ``value``s that each ``id`` must relate to to appear in the resulting relation
+
+    Returns
+    -------
+    tableSQL: psycopg2.sql.SQL
+        The SQL query for a relation containing only those ``id``s which are related to each
+        ``value``
+
+    Examples
+    --------
+
+    >>> # +----------------------+
+    >>> # |      has_genre       |
+    >>> # +-------------+--------|
+    >>> # | document_id | genre  |
+    >>> # +-------------+--------+
+    >>> # | s0000l11111 | comedy |
+    >>> # | s0000l11111 | drama  |
+    >>> # | s2222l33333 | drama  |
+    >>> # +-------------+--------+
+
+
+    >>> # To find all documents with both genres "comedy" and "drama":
+    >>> relation_from_id_to_all_values("document_id", "genre", "has_genre", ["comedy", "drama"])
+        psycopg2.sql.SQL("SELECT document_id \
+FROM has_genre \
+WHERE genre = 'comedy' OR genre = 'drama' \
+GROUP BY genre \
+HAVING COUNT(distinct document_id) >= 2")
+    """
+
     tableSQL: sql.SQL = sql.SQL(
         "SELECT {column_name} \
         FROM {relation} \
@@ -15,15 +62,18 @@ def column_relates_to_values(
         GROUP BY {column_name} \
         HAVING COUNT(distinct {value_column_name}) >= {num_actors}"
     ).format(
-        column_name=sql.Identifier(columnName),
-        value_column_name=sql.Identifier(valueColumnName),
+        column_name=sql.Identifier(idColumn),
+        value_column_name=sql.Identifier(valueColumn),
         relation=sql.Identifier(relation),
+        # OR since we are matching all rows containing any value.
+        # those ids that contain more than 1 value will have more than 1 row in the resulting table
+        # (before the HAVING clause)
         value_conditions=sql.SQL(" OR ").join(
             [
                 sql.SQL("{} = {}").format(
-                    sql.Identifier(valueColumnName), sql.Literal(value)
+                    sql.Identifier(valueColumn), sql.Literal(value)
                 )
-                for value in values
+                for value in set(values)
             ]
         ),
         num_actors=sql.Literal(len(values)),
@@ -94,14 +144,14 @@ def execute_document_query(
     # handle filtering by document upload time
     if query.queryTime:
         sqlLines.append(
-            sql.SQL("AND uploaded_time = {}").format(sql.Literal(query.queryTime))
+            sql.SQL("AND uploaded_time <= {}").format(sql.Literal(query.queryTime))
         )
 
     # handle filtering by actors (list of required actors)
     if query.actors:
         sqlLines.append(
             sql.SQL("AND id in ( {} )").format(
-                column_relates_to_values(
+                relation_from_item_to_all_values(
                     "document_id", "actor_name", "has_actor", query.actors
                 )
             )
@@ -111,7 +161,9 @@ def execute_document_query(
     if query.tags:
         sqlLines.append(
             sql.SQL("AND id in ( {} )").format(
-                column_relates_to_values("document_id", "tag", "has_tag", query.tags)
+                relation_from_item_to_all_values(
+                    "document_id", "tag", "has_tag", query.tags
+                )
             )
         )
 
@@ -119,7 +171,7 @@ def execute_document_query(
     if query.genres:
         sqlLines.append(
             sql.SQL("AND id in ( {} )").format(
-                column_relates_to_values(
+                relation_from_item_to_all_values(
                     "document_id", "genre", "has_genre", query.genres
                 )
             )
@@ -129,6 +181,7 @@ def execute_document_query(
 
     # finally compose the query
     SQLQuery: sql.SQL = sql.SQL("\n").join(sqlLines)
+    # print(SQLQuery.as_string(cursor.connection))
 
     # execute the query, with replacement variables already in-place
     cursor.execute(SQLQuery)
