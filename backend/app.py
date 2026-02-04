@@ -239,7 +239,11 @@ def index():
     page: int = request.args.get("page", 1, type=int)
 
     # Filter documents
-    filtered_docs = DOCUMENTS
+    #filtered_docs = db_utils.search_results(
+    #    dbConnection,
+    #    query,
+    #)
+
     if search:
         filtered_docs = [
             d
@@ -285,9 +289,7 @@ def index():
 
 @app.route("/document/<doc_id>")
 def document_detail(doc_id):
-    document = next((d for d in DOCUMENTS if d["id"] == doc_id), None)
-    # this is probably what you want to replace this line with
-    # document = db_utils.get_document(dbConnection, doc_id)
+    document = db_utils.get_document(dbConnection, doc_id)
     if not document:
         flash("Document not found", "error")
         return redirect(url_for("index"))
@@ -330,7 +332,7 @@ def download_history():
 
 @app.route("/flagged")
 def flagged_documents():
-    flagged = [d for d in DOCUMENTS if "flags" in d and len(d["flags"]) > 0]
+    flagged = db_utils.get_flagged(dbConnection)
     return render_template("flagged_documents.html", documents=flagged)
 
 
@@ -341,8 +343,19 @@ def print_kwargs(**kwargs):
 
 @app.route("/manager")
 def documents_manager():
+    query: Query = Query(
+        actors=[],  # TODO
+        tags=[],  # TODO
+        keywords=list(
+            filter(lambda s: s != "", search.split(" ")) if search else []
+        ),  # TODO allow searching both titles and transcripts
+        documentType=None,  # TODO
+        studio=None,  # TODO
+        durationRange=(None, None),  # TODO
+    )
+
     search = request.args.get("search", "")
-    docs = DOCUMENTS
+    docs = db_utils.search_results(dbConnection, query)
     if search:
         docs = [
             d

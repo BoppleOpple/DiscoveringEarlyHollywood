@@ -1,5 +1,7 @@
 """A collection of helpers for sending and recieving data to/from the PostgreSQL database."""
 
+from pathlib import Path
+from re import search
 import psycopg2.sql as sql
 from psycopg2.extensions import connection, cursor
 from datatypes import Document, Query, Flag
@@ -176,6 +178,16 @@ def search_results(
 
             document.metadata.actors = [result[0] for result in actorQuery]
 
+            cur.execute(
+                "SELECT page_number, content \
+                FROM transcripts \
+                WHERE document_id=%s \
+                ORDER BY page_number;",
+                [document.getId()],
+            )
+
+            document.transcripts = cur.fetchall()
+
     conn.commit()
 
     return documents
@@ -226,6 +238,52 @@ def get_num_results(conn: connection, query: Query):
 
     return count
 
+   
+def get_flagged(conn: connection) -> list[Document]:
+    """Return a page of flagged documents. (minimal working version)
+
+    Parameters
+    ----------
+    conn : :obj:`psycopg2.extensions.connection`
+        A ``psycopg2`` connection to perform queries with
+
+    Returns
+    -------
+    results : list[Document]
+        A list of ``Document``s
+
+    """
+    if not conn:
+        raise Exception("No SQL connection found")
+
+    sql_query = """
+        SELECT
+            d.id,
+            d.copyright_year,
+            d.studio,
+            d.title
+        FROM documents d
+        JOIN flagged_by f
+          ON f.document_id = d.id
+    """
+
+    documents: list[Document] = []
+
+    with conn.cursor() as cur:
+        cur.execute(sql_query)
+
+        for row in cur.fetchall():
+            documents.append(
+                Document(
+                    documentDir= Path,
+                    id=row[0],
+                    copyrightYear=row[1],
+                    studio=row[2],
+                    title=row[3],
+                )
+            )
+
+    return documents
 
 def get_document(conn: connection, doc_id: str) -> dict:
     """Fetch *all* data pertaining to a document.
@@ -262,7 +320,8 @@ def get_document(conn: connection, doc_id: str) -> dict:
         cur.execute(
             "SELECT page_number, content \
             FROM transcripts \
-            WHERE document_id=%s;",
+            WHERE document_id=%s \
+            ORDER BY page_number;",
             [doc_id.lower()],
         )
 
@@ -305,7 +364,7 @@ def get_document(conn: connection, doc_id: str) -> dict:
         flags = [
             Flag(
                 reporterName=flagData[0],
-                errorLoaction=flagData[1],
+                errorLocation=flagData[1],
                 errorDescription=flagData[2],
             )
             for flagData in cur.fetchall()

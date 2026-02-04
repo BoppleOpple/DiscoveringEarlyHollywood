@@ -84,7 +84,11 @@
                     </div>
                     <div class="flex-1">
                         <h3 class="text-[#800080] text-lg font-medium mb-2">{{ doc.metadata.title }}</h3>
-                        <p class="text-[#666666] mb-3">{{ doc.description }}</p>
+                        {% if doc.transcripts %}
+                        <p class="text-[#666666] mb-3">{{ doc.transcripts[0][1] }}</p>
+                        {% else %}
+                        <p class="text-[#666666] mb-3">No transcript available.</p>
+                        {% endif %}
                         <div class="flex gap-4">
                             <span class="text-[#2B6CB0]">{{ doc.metadata.copyrightYear }}</span>
                             <span class="text-[#666666]">•</span>

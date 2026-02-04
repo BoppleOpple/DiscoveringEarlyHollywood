@@ -13,17 +13,17 @@ class Flag:
     """Struct for flags"""
 
     reporterName: str = None
-    errorLoaction: str = None
+    errorLocation: str = None
     errorDescription: str = None
 
     def __init__(
         self,
         reporterName: str = None,
-        errorLoaction: str = None,
+        errorLocation: str = None,
         errorDescription: str = None,
     ):
         self.reporterName = reporterName
-        self.errorLoaction = errorLoaction
+        self.errorLocation = errorLocation
         self.errorDescription = errorDescription
 
 
