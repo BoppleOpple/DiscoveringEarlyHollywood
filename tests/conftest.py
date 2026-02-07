@@ -4,8 +4,11 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 # Mock DB connection 
-_mock_connect = patch("psycopg2.connect", return_value=MagicMock())
-_mock_connect.start()
+try:
+    _mock_connect = patch("psycopg2.connect", return_value=MagicMock())
+    _mock_connect.start()
+except ModuleNotFoundError:
+    pass
 
 os.environ.setdefault("FLASK_SECRET", "test-secret-key-for-pytest")
 
