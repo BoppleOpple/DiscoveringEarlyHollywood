@@ -1,1 +1,0 @@
-"""A module containing code for testing other modules of the 'Discovering Early Hollywood' research tool."""

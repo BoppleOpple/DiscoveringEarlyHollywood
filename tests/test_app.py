@@ -1,7 +1,5 @@
 # Flask routes and allowed_file utility
 
-import pytest
-
 from backend.app import allowed_file
 
 
