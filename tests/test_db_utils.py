@@ -14,7 +14,7 @@ class TestRelationFromIdToAllValues:
             values=["comedy", "drama"],
         )
         assert result is not None
-        assert isinstance(result, sql.SQL)
+        assert isinstance(result, sql.Composed)
 
     def test_handles_single_value(self):
         result = relation_from_id_to_all_values(
@@ -24,7 +24,7 @@ class TestRelationFromIdToAllValues:
             values=["Charlie Chaplin"],
         )
         assert result is not None
-        assert isinstance(result, sql.SQL)
+        assert isinstance(result, sql.Composed)
 
     def test_deduplicates_values(self):
         result = relation_from_id_to_all_values(
