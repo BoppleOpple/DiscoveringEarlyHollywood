@@ -1,5 +1,3 @@
-"""A CLI script that hosts a Flask server for the Discovering Early Hollywood research tool."""
-
 import os
 import tempfile
 import math

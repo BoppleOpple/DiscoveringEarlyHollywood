@@ -8,3 +8,6 @@ img/
 
 .venv
 __pycache__
+.pytest_cache
+htmlcov
+.coverage
