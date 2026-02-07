@@ -5,9 +5,56 @@ from psycopg2.extensions import connection, cursor
 from datatypes import Document, Query, Flag
 
 
-def column_relates_to_values(
-    columnName: str, valueColumnName: str, relation: str, values: list
+def relation_from_id_to_all_values(
+    idColumn: str, valueColumn: str, relation: str, values: list
 ) -> sql.SQL:
+    """Generates SQL for a table containing rows from ``columnName`` relating to each of ``values``
+
+    Parameters
+    ----------
+    idColumn : str
+        The name of the column that is being filtered (i.e. the ``id`` column when finding all
+        ``id``s with some ``value``)
+
+    valueColumn : str
+        The name of the column that the ``idColumn`` is filtered by (i.e. the ``value`` column when
+        finding all ``id``s with some ``value``)
+
+    relation : str
+        The name of the relation containing both ``idColumn`` and ``valueColumn``
+
+    values : list
+        The list of ``value``s that each ``id`` must relate to to appear in the resulting relation
+
+    Returns
+    -------
+    tableSQL: psycopg2.sql.SQL
+        The SQL query for a relation containing only those ``id``s which are related to each
+        ``value``
+
+    Examples
+    --------
+
+    >>> # +----------------------+
+    >>> # |      has_genre       |
+    >>> # +-------------+--------|
+    >>> # | document_id | genre  |
+    >>> # +-------------+--------+
+    >>> # | s0000l11111 | comedy |
+    >>> # | s0000l11111 | drama  |
+    >>> # | s2222l33333 | drama  |
+    >>> # +-------------+--------+
+
+
+    >>> # To find all documents with both genres "comedy" and "drama":
+    >>> relation_from_id_to_all_values("document_id", "genre", "has_genre", ["comedy", "drama"])
+        psycopg2.sql.SQL("SELECT document_id \
+FROM has_genre \
+WHERE genre = 'comedy' OR genre = 'drama' \
+GROUP BY genre \
+HAVING COUNT(distinct document_id) >= 2")
+    """
+
     tableSQL: sql.SQL = sql.SQL(
         "SELECT {column_name} \
         FROM {relation} \
@@ -15,15 +62,18 @@ def column_relates_to_values(
         GROUP BY {column_name} \
         HAVING COUNT(distinct {value_column_name}) >= {num_actors}"
     ).format(
-        column_name=sql.Identifier(columnName),
-        value_column_name=sql.Identifier(valueColumnName),
+        column_name=sql.Identifier(idColumn),
+        value_column_name=sql.Identifier(valueColumn),
         relation=sql.Identifier(relation),
+        # OR since we are matching all rows containing any value.
+        # those ids that contain more than 1 value will have more than 1 row in the resulting table
+        # (before the HAVING clause)
         value_conditions=sql.SQL(" OR ").join(
             [
                 sql.SQL("{} = {}").format(
-                    sql.Identifier(valueColumnName), sql.Literal(value)
+                    sql.Identifier(valueColumn), sql.Literal(value)
                 )
-                for value in values
+                for value in set(values)
             ]
         ),
         num_actors=sql.Literal(len(values)),
@@ -32,58 +82,96 @@ def column_relates_to_values(
     return tableSQL
 
 
-def get_base_query(
+def execute_document_query(
+    cursor: cursor,
     query: Query,
-    replacements: dict,
     prefix: sql.SQL = sql.SQL("SELECT id, copyright_year, studio, title"),
     suffix: sql.SQL = sql.SQL(";"),
-) -> sql.SQL:
+):
+    """Create a SQL query from a ``Query`` object.
 
+    Parameters
+    ----------
+    cursor : :obj:`psycopg2.extensions.cursor`
+        The cursor upon which the query will be executed
+
+    query : :obj:`Query`
+        A ``Query`` object containing all relevant information for the SQL query
+
+    prefix : :obj:`psycopg2.sql.SQL`, default = SQL("SELECT id, copyright_year, studio, title")
+        Optional SQL to be inserted before the "FROM" clause
+
+    suffix : :obj:`psycopg2.sql.SQL`, default = SQL(";")
+        Optional SQL to be inserted after the "WHERE" clause(s)
+    """
+    # manual SQL composition since binding variables in `execute()`
+    # does not allow for a variable number of variables
     sqlLines: list[sql.SQL] = []
 
     sqlLines.append(prefix)
     sqlLines.append(sql.SQL("FROM documents"))
     sqlLines.append(sql.SQL("WHERE TRUE"))
 
-    if "title_query" in replacements and replacements["title_query"]:
+    # handle filtering by title
+    titleQuery = " ".join(query.keywords) if query.keywords else None
+    if titleQuery:
         sqlLines.append(
             sql.SQL(
-                "AND (%(title_query)s IS NULL OR to_tsvector(title) @@ to_tsquery(%(title_query)s))"
+                "AND ({title} IS NULL OR to_tsvector(title) @@ to_tsquery({title}))"
+            ).format(title=titleQuery)
+        )
+
+    # handle filtering by minimum year
+    if query.copyrightYearRange[0] is not None:
+        sqlLines.append(
+            sql.SQL("AND copyright_year >= {}").format(
+                sql.Literal(query.copyrightYearRange[0])
             )
         )
 
-    if "min_year" in replacements and replacements["min_year"]:
-        sqlLines.append(sql.SQL("AND copyright_year >= %(min_year)s"))
+    # handle filtering by maximum year
+    if query.copyrightYearRange[1] is not None:
+        sqlLines.append(
+            sql.SQL("AND copyright_year <= {}").format(
+                sql.Literal(query.copyrightYearRange[1])
+            )
+        )
 
-    if "max_year" in replacements and replacements["max_year"]:
-        sqlLines.append(sql.SQL("AND copyright_year <= %(max_year)s"))
+    # handle filtering by studio/copyright holder
+    if query.studio:
+        sqlLines.append(sql.SQL("AND studio = {}").format(sql.Literal(query.studio)))
 
-    if "studio" in replacements and replacements["studio"]:
-        sqlLines.append(sql.SQL("AND studio = %(studio)s"))
+    # handle filtering by document upload time
+    if query.queryTime:
+        sqlLines.append(
+            sql.SQL("AND uploaded_time <= {}").format(sql.Literal(query.queryTime))
+        )
 
-    if "query_time" in replacements and replacements["query_time"]:
-        sqlLines.append(sql.SQL("AND uploaded_time <= %(query_time)s"))
-
+    # handle filtering by actors (list of required actors)
     if query.actors:
         sqlLines.append(
             sql.SQL("AND id in ( {} )").format(
-                column_relates_to_values(
+                relation_from_id_to_all_values(
                     "document_id", "actor_name", "has_actor", query.actors
                 )
             )
         )
 
+    # handle filtering by tags (list of required tags)
     if query.tags:
         sqlLines.append(
             sql.SQL("AND id in ( {} )").format(
-                column_relates_to_values("document_id", "tag", "has_tag", query.tags)
+                relation_from_id_to_all_values(
+                    "document_id", "tag", "has_tag", query.tags
+                )
             )
         )
 
+    # handle filtering by genres (list of required genres)
     if query.genres:
         sqlLines.append(
             sql.SQL("AND id in ( {} )").format(
-                column_relates_to_values(
+                relation_from_id_to_all_values(
                     "document_id", "genre", "has_genre", query.genres
                 )
             )
@@ -91,9 +179,12 @@ def get_base_query(
 
     sqlLines.append(suffix)
 
+    # finally compose the query
     SQLQuery: sql.SQL = sql.SQL("\n").join(sqlLines)
+    # print(SQLQuery.as_string(cursor.connection))
 
-    return SQLQuery
+    # execute the query, with replacement variables already in-place
+    cursor.execute(SQLQuery)
 
 
 # TODO convert query params to a `query` object
@@ -126,32 +217,24 @@ def search_results(
         # TODO make this exception more specific
         raise Exception("No SQL connection found")
 
-    titleQuery = " ".join(query.keywords) if query.keywords else None
-
-    replacements: dict = {
-        "title_query": titleQuery,
-        "min_year": query.copyrightYearRange[0],
-        "max_year": query.copyrightYearRange[1],
-        "studio": query.studio,
-        "query_time": query.queryTime,
-        "num_results": resultsPerPage,
-        "offset": (page - 1) * resultsPerPage,
-    }
-
-    SQLQuery: sql.SQL = get_base_query(
-        query,
-        replacements,
-        suffix=sql.SQL("LIMIT %(num_results)s \n OFFSET %(offset)s;"),
-    ).as_string(conn)
-
-    print(SQLQuery)
-
     documents: list = []
     cur: cursor = None
     with conn.cursor() as cur:
         # gather only the attributes needed for the results page
 
-        cur.execute(SQLQuery, replacements)
+        execute_document_query(
+            cur,
+            query,
+            suffix=sql.Composed(
+                [
+                    sql.SQL("LIMIT "),
+                    sql.Literal(resultsPerPage),
+                    sql.SQL("\nOFFSET "),
+                    sql.Literal(resultsPerPage * (page - 1)),
+                    sql.SQL(";"),
+                ]
+            ),
+        )
 
         documents: list[Document] = [
             Document(
@@ -200,25 +283,13 @@ def get_num_results(conn: connection, query: Query):
     if not conn:
         raise Exception("No SQL connection found")
 
-    titleQuery = " ".join(query.keywords) if query.keywords else None
-
-    replacements: dict = {
-        "title_query": titleQuery,
-        "min_year": query.copyrightYearRange[0],
-        "max_year": query.copyrightYearRange[1],
-        "studio": query.studio,
-        "query_time": query.queryTime,
-    }
-
-    SQLQuery: sql.SQL = get_base_query(
-        query,
-        replacements,
-        prefix=sql.SQL("SELECT COUNT(*)"),
-    ).as_string(conn)
-
-    cur: cursor
+    cur: cursor = None
     with conn.cursor() as cur:
-        cur.execute(SQLQuery, replacements)
+        execute_document_query(
+            cur,
+            query,
+            prefix=sql.SQL("SELECT COUNT(*)"),
+        )
 
         count = cur.fetchone()[0]
 
