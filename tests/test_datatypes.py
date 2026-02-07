@@ -1,4 +1,3 @@
-
 from backend.datatypes import Document, Flag, Query
 
 
