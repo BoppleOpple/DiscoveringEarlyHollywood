@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-# Mock DB connection 
+# Mock DB connection
 try:
     _mock_connect = patch("psycopg2.connect", return_value=MagicMock())
     _mock_connect.start()
