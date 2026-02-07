@@ -2,7 +2,7 @@
 
 import psycopg2.sql as sql
 from psycopg2.extensions import connection, cursor
-from datatypes import Document, Query, Flag
+from backend.datatypes import Document, Query, Flag
 
 
 def relation_from_id_to_all_values(

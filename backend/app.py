@@ -19,8 +19,8 @@ from werkzeug.utils import secure_filename
 from pdf2image import convert_from_path
 from dotenv import load_dotenv
 
-import db_utils
-from datatypes import Document, Query
+import backend.db_utils
+from backend.datatypes import Document, Query
 
 load_dotenv()
 app = Flask(__name__, template_folder="templates")
