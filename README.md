@@ -131,6 +131,14 @@ npm start
 
 This will start the Electron application, which connects to the Flask backend.
 
+## Testing
+
+```bash
+pip install -r requirements-dev.txt
+pytest tests/ -v
+```
+
+
 ## Features & Functionality
 
 ### Flask Backend

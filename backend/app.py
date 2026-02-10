@@ -1,5 +1,3 @@
-"""A CLI script that hosts a Flask server for the Discovering Early Hollywood research tool."""
-
 import os
 import tempfile
 import math
@@ -21,8 +19,8 @@ from werkzeug.utils import secure_filename
 from pdf2image import convert_from_path
 from dotenv import load_dotenv
 
-import db_utils
-from datatypes import Document, Query
+from . import db_utils
+from .datatypes import Document, Query
 
 load_dotenv()
 app = Flask(__name__, template_folder="templates")
@@ -30,13 +28,16 @@ app = Flask(__name__, template_folder="templates")
 CORS(app)
 app.secret_key = os.environ["FLASK_SECRET"] or os.urandom(20)
 
-dbConnection = psycopg2.connect(
-    host=os.environ["SQL_HOST"],
-    port=os.environ["SQL_PORT"],
-    dbname=os.environ["SQL_DBNAME"],
-    user=os.environ["SQL_USER"],
-    password=os.environ["SQL_PASSWORD"],
-)
+if __name__ == "__main__":
+    dbConnection = psycopg2.connect(
+        host=os.environ["SQL_HOST"],
+        port=os.environ["SQL_PORT"],
+        dbname=os.environ["SQL_DBNAME"],
+        user=os.environ["SQL_USER"],
+        password=os.environ["SQL_PASSWORD"],
+    )
+else:
+    dbConnection = None
 
 pytesseract.pytesseract.tesseract_cmd = (
     r"C:\Program Files\Tesseract-OCR\tesseract.exe"  # Adjust this path as needed
