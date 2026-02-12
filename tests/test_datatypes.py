@@ -28,10 +28,35 @@ class TestQuery:
         q.setActors(["Charlie Chaplin", "Buster Keaton"])
         assert q.actors == ["Charlie Chaplin", "Buster Keaton"]
 
+    def test_add_actor(self):
+        q = Query(actors=["Walter Goggins"])
+        q.addActor("Brad Pitt")
+        assert q.actors == ["Walter Goggins", "Brad Pitt"]
+
+    def test_set_tags(self):
+        q = Query()
+        q.setTags(["New", "Old"])
+        assert q.tags == ["New", "Old"]
+
+    def test_add_tags(self):
+        q = Query(tags=["New"])
+        q.addTag("Old")
+        assert q.tags == ["New", "Old"]
+
     def test_set_genres(self):
         q = Query()
         q.setGenres(["comedy", "drama"])
         assert q.genres == ["comedy", "drama"]
+
+    def test_add_genre(self):
+        q = Query(genres=["Horror"])
+        q.addGenre("Thriller")
+        assert q.genres == ["Horror", "Thriller"]
+
+    def test_set_document_type(self):
+        q = Query()
+        q.setDocumentType("TestType")
+        assert q.documentType == "TestType"
 
     def test_set_studio(self):
         q = Query()
