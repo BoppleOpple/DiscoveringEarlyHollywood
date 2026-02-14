@@ -16,6 +16,12 @@
                 <a href="/history" style="text-decoration: none; color: white; font-size: 18px;">View History</a>
                 <a href="/upload" style="text-decoration: none; color: white; font-size: 18px; margin-left: 20px;">OCR Upload</a>
                 <a href="/upload_pdf" style="text-decoration: none; color: white; font-size: 18px; margin-left: 20px;">Upload PDF</a>
+                {% if not session.get('loggedin') %}
+                    <a href="/login" style="text-decoration: none; color: white; font-size: 18px; margin-left: 20px;">login</a>
+                    <a href="/register" style="text-decoration: none; color: white; font-size: 18px; margin-left: 20px;">register</a>
+                {% else %}
+                    <a href="/logout" style="text-decoration: none; color: white; font-size: 18px; margin-left: 20px;">logout</a>
+                {% endif %}
             </nav>
         </div>
     </header>
