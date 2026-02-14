@@ -190,7 +190,7 @@ def execute_document_query(
 
 # TODO convert query params to a `query` object
 def search_results(
-    conn: connection, query: Query, page: int, resultsPerPage: int = 50
+    conn: connection, query: Query, page: int = 1, resultsPerPage: int = 50
 ) -> list[Document]:
     """Return a page of search results.
 
@@ -198,7 +198,7 @@ def search_results(
     ----------
     conn : :obj:`psycopg2.extensions.connection`
         A ``psycopg2`` connection to perform queries with
-    page : int
+    page : int, default = 1
         The index of the page of results to return
     query : :obj:`Query`
         A ``Query`` object specifying the search parameters
