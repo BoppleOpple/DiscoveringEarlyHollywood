@@ -190,7 +190,7 @@ def execute_document_query(
 
 # TODO convert query params to a `query` object
 def search_results(
-    conn: connection, query: Query, page: int, resultsPerPage: int = 50
+    conn: connection, query: Query, page: int = 1, resultsPerPage: int = 50
 ) -> list[Document]:
     """Return a page of search results.
 
@@ -198,7 +198,7 @@ def search_results(
     ----------
     conn : :obj:`psycopg2.extensions.connection`
         A ``psycopg2`` connection to perform queries with
-    page : int
+    page : int, default = 1
         The index of the page of results to return
     query : :obj:`Query`
         A ``Query`` object specifying the search parameters
@@ -253,19 +253,19 @@ def search_results(
                 "SELECT actor_name \
                 FROM has_actor \
                 WHERE document_id=%s;",
-                [document.getId()],
+                [document.id],
             )
 
             actorQuery = cur.fetchall()
 
-            document.metadata.actors = [result[0] for result in actorQuery]
+            document.actors = [result[0] for result in actorQuery]
 
             cur.execute(
                 "SELECT page_number, content \
                 FROM transcripts \
                 WHERE document_id=%s \
                 ORDER BY page_number;",
-                [document.getId()],
+                [document.id],
             )
 
             document.transcripts = cur.fetchall()

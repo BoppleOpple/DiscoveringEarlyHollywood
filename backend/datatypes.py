@@ -203,11 +203,6 @@ class Document:
 
     metadata: Metadata
         A `Metadata` object containing all additional data associated with this document
-
-    Methods
-    -------
-    getId()
-        A helper for getting the `id` of this document
     """
 
     images: list[Any] = None
@@ -252,16 +247,85 @@ class Document:
         self.transcripts = transcripts
         self.flags = flags
 
-    def getId(self) -> str:
-        """
-        A helper for getting the `id` of this document
-
-        Returns
-        -------
-        id: Union[str, None]
-            The `id` of the document if available, otherwise None
-        """
+    @property
+    def id(self) -> str:
         return self.metadata.id if self.metadata else None
+
+    @id.setter
+    def id(self, value: str):
+        self.metadata.id = value
+
+    @property
+    def studio(self) -> str:
+        return self.metadata.studio if self.metadata else None
+
+    @studio.setter
+    def studio(self, value: str):
+        self.metadata.studio = value
+
+    @property
+    def title(self) -> str:
+        return self.metadata.title if self.metadata else None
+
+    @title.setter
+    def title(self, value: str):
+        self.metadata.title = value
+
+    @property
+    def copyrightYear(self) -> str:
+        return self.metadata.copyrightYear if self.metadata else None
+
+    @copyrightYear.setter
+    def copyrightYear(self, value: str):
+        self.metadata.copyrightYear = value
+
+    @property
+    def reelCount(self) -> str:
+        return self.metadata.reelCount if self.metadata else None
+
+    @reelCount.setter
+    def reelCount(self, value: str):
+        self.metadata.reelCount = value
+
+    @property
+    def uploadedTime(self) -> str:
+        return self.metadata.uploadedTime if self.metadata else None
+
+    @uploadedTime.setter
+    def uploadedTime(self, value: str):
+        self.metadata.uploadedTime = value
+
+    @property
+    def uploadedBy(self) -> str:
+        return self.metadata.uploadedBy if self.metadata else None
+
+    @uploadedBy.setter
+    def uploadedBy(self, value: str):
+        self.metadata.uploadedBy = value
+
+    @property
+    def actors(self) -> str:
+        return self.metadata.actors if self.metadata else None
+
+    @actors.setter
+    def actors(self, value: str):
+        self.metadata.actors = value
+
+    @property
+    def tags(self) -> str:
+        return self.metadata.tags if self.metadata else None
+
+    @tags.setter
+    def tags(self, value: str):
+        self.metadata.tags = value
+
+    @property
+    def genres(self) -> str:
+        return self.metadata.genres if self.metadata else None
+
+    @genres.setter
+    def genres(self, value: str):
+        self.metadata.genres = value
 
 
 class Query:
