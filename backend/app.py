@@ -13,12 +13,13 @@ from flask import (
 )
 import psycopg2
 import pytesseract
+import csv
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
-import csv
 from io import StringIO
-import db_utils
-from datatypes import Document, Query
+
+from . import db_utils
+from .datatypes import Document, Query
 
 load_dotenv()
 app = Flask(__name__)
@@ -29,13 +30,16 @@ app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024  # 50MB max file size
 # Ensure upload folder exists
 os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
-dbConnection = psycopg2.connect(
-    host=os.environ["SQL_HOST"],
-    port=os.environ["SQL_PORT"],
-    dbname=os.environ["SQL_DBNAME"],
-    user=os.environ["SQL_USER"],
-    password=os.environ["SQL_PASSWORD"],
-)
+if __name__ == "__main__":
+    dbConnection = psycopg2.connect(
+        host=os.environ["SQL_HOST"],
+        port=os.environ["SQL_PORT"],
+        dbname=os.environ["SQL_DBNAME"],
+        user=os.environ["SQL_USER"],
+        password=os.environ["SQL_PASSWORD"],
+    )
+else:
+    dbConnection = None
 
 pytesseract.pytesseract.tesseract_cmd = (
     r"C:\Program Files\Tesseract-OCR\tesseract.exe"  # Adjust this path as needed

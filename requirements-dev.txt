@@ -2,4 +2,6 @@ flake8
 black
 pre-commit
 numpydoc
+pytest
+pytest-cov
 -rrequirements.txt

@@ -4,7 +4,7 @@
 
 Willy N' Gang - Discovering Early Hollywood...
 
-This repository is a fork of a previous team's work, (Recovering Early Hollywood)[https://github.com/gabrielfitzpatrickcs/CrashTestDummies-RecoveringEarlyHollywood].
+This repository is a fork of a previous team's work, [Recovering Early Hollywood](https://github.com/gabrielfitzpatrickcs/CrashTestDummies-RecoveringEarlyHollywood). 
 
 ## Team Members
 
@@ -130,6 +130,14 @@ npm start
 ```
 
 This will start the Electron application, which connects to the Flask backend.
+
+## Testing
+
+```bash
+pip install -r requirements-dev.txt
+pytest tests/ -v
+```
+
 
 ## Features & Functionality
 
