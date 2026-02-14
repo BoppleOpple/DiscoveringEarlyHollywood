@@ -48,10 +48,10 @@ DOCUMENTS = [
     {
         "id": 1,
         "title": "Sunset Boulevard",
-        "description": "Copyright registration documents for the classic film noir about a screenwriter and a faded silent film star.",
+        "description": "Copyright registration documents for the clas",
         "year": "1950",
         "documentType": "Copyright Registration",
-        "fullDescription": "Sunset Boulevard is a classic American film noir that tells the story of Joe Gillis, a struggling screenwriter, who becomes entangled with Norma Desmond, a faded silent film star living in the past. The film is a dark and cynical examination of Hollywood's treatment of aging stars and the price of fame. Directed by Billy Wilder, the film received widespread critical acclaim and is considered one of the greatest films ever made. The narrative unfolds through flashback as Joe's dead body is discovered floating in Norma's swimming pool, creating a haunting and unforgettable cinematic experience.",
+        "fullDescription": "Sunset Boulevard is a classic American film noir ",
         "studio": "Paramount Pictures",
         "genre": "Film Noir / Drama",
         "director": "Billy Wilder",
@@ -67,7 +67,7 @@ DOCUMENTS = [
             {
                 "id": 1,
                 "user": "Dr. Sarah Mitchell",
-                "reason": "Document appears to have incorrect filing date. Should be cross-referenced with studio records.",
+                "reason": "Document appears to have incorrect filing date. Should be s.",
                 "date": "Nov 15, 2025",
             },
             {
@@ -87,10 +87,10 @@ DOCUMENTS = [
     {
         "id": 2,
         "title": "The Jazz Singer",
-        "description": "Historic copyright filing for the first feature-length motion picture with synchronized dialogue sequences.",
+        "description": "Historic copyright filing for the first feature-length.",
         "year": "1927",
         "documentType": "Copyright Registration",
-        "fullDescription": "The Jazz Singer revolutionized the film industry as the first feature-length motion picture with synchronized dialogue sequences, effectively marking the end of the silent film era. The film tells the story of Jakie Rabinowitz, a young man torn between his Jewish heritage and his dreams of becoming a jazz singer. When he defies his father, a cantor, to pursue a career in entertainment, he must reconcile his love for modern music with his family's traditional expectations. This groundbreaking film not only introduced sound to cinema but also explored themes of generational conflict, cultural identity, and the American dream.",
+        "fullDescription": "The Jazz Singer revolutionized the film industry as the ",
         "studio": "Warner Bros.",
         "genre": "Musical Drama",
         "director": "Alan Crosland",
@@ -101,10 +101,10 @@ DOCUMENTS = [
     {
         "id": 3,
         "title": "Metropolis",
-        "description": "Copyright documentation for Fritz Lang's influential German expressionist science-fiction film.",
+        "description": "Copyright documentation for Fritz Lang's influ.",
         "year": "1927",
         "documentType": "Copyright Registration",
-        "fullDescription": "Metropolis is a groundbreaking German expressionist science-fiction film set in a futuristic dystopian city where society is divided between the wealthy industrialists who live in luxury skyscrapers and the oppressed workers who toil in underground factories. The film follows Freder, the son of the city's mastermind, as he falls in love with Maria, a working-class prophet who preaches peace between the classes. With its stunning visual effects, elaborate sets, and powerful social commentary, Metropolis has influenced countless films and remains a masterpiece of early cinema.",
+        "fullDescription": "Metropolis is a groundbreaking German.",
         "studio": "UFA (Universum Film AG)",
         "genre": "Science Fiction / Drama",
         "director": "Fritz Lang",
@@ -120,13 +120,13 @@ DOCUMENTS = [
             {
                 "id": 4,
                 "user": "Prof. Heinrich Weber",
-                "reason": "Translation of German text may be inaccurate. Requires verification by native speaker.",
+                "reason": "Translation of German text may be inaccurate.",
                 "date": "Nov 14, 2025",
             },
             {
                 "id": 5,
                 "user": "Anna Foster",
-                "reason": "Document quality is poor - some text illegible. May need restoration or alternative source.",
+                "reason": "Document quality is poor - some text illegible. May need.",
                 "date": "Nov 8, 2025",
             },
         ],
@@ -134,10 +134,10 @@ DOCUMENTS = [
     {
         "id": 4,
         "title": "City Lights",
-        "description": "Charlie Chaplin's romantic comedy-drama about a tramp who falls in love with a blind flower girl.",
+        "description": "Charlie Chaplin's romantic comedy-drama about.",
         "year": "1931",
         "documentType": "Copyright Registration",
-        "fullDescription": "City Lights is a silent romantic comedy-drama that showcases Charlie Chaplin's genius as a filmmaker and performer. The story follows the Little Tramp as he falls in love with a blind flower girl and befriends a suicidal millionaire. Determined to help the girl regain her sight, the Tramp embarks on a series of misadventures to raise money for her operation. Despite being released after the advent of sound films, Chaplin insisted on making City Lights as a silent film with a synchronized musical score, demonstrating his commitment to the art form that made him famous. The film's blend of comedy and pathos, culminating in one of cinema's most moving endings, cement its place as one of the greatest films ever made.",
+        "fullDescription": "City Lights is a silent romantic comedy-.",
         "studio": "United Artists",
         "genre": "Romance / Comedy",
         "director": "Charlie Chaplin",
@@ -153,10 +153,10 @@ DOCUMENTS = [
     {
         "id": 5,
         "title": "King Kong",
-        "description": "Copyright records for the groundbreaking adventure film featuring revolutionary special effects.",
+        "description": "Copyright records for .",
         "year": "1933",
         "documentType": "Copyright Registration",
-        "fullDescription": "King Kong is a landmark adventure film that revolutionized special effects and set the standard for monster movies. The story follows filmmaker Carl Denham as he leads an expedition to the mysterious Skull Island, where they encounter the giant ape Kong. When Kong becomes infatuated with actress Ann Darrow, Denham captures him and brings him to New York City as a theatrical attraction. The film's climactic sequence atop the Empire State Building has become one of cinema's most iconic moments. Through groundbreaking stop-motion animation and innovative composite photography, King Kong brought to life a creature that captured audiences' imaginations and spawned countless imitators.",
+        "fullDescription": "King Kong is a landmark .",
         "studio": "RKO Radio Pictures",
         "genre": "Adventure / Horror",
         "director": "Merian C. Cooper, Ernest B. Schoedsack",
@@ -167,10 +167,10 @@ DOCUMENTS = [
     {
         "id": 6,
         "title": "Gone with the Wind",
-        "description": "Epic historical romance film set during the American Civil War and Reconstruction era.",
+        "description": "Epic historical romance film set dura.",
         "year": "1939",
         "documentType": "Copyright Registration",
-        "fullDescription": "Gone with the Wind is an epic historical romance that follows the life of Scarlett O'Hara, a strong-willed Southern belle, through the American Civil War and Reconstruction era. Set against the backdrop of the South's transformation, the film chronicles Scarlett's tumultuous relationship with roguish blockade runner Rhett Butler, her obsession with Ashley Wilkes, and her determination to save her family's plantation, Tara. With its sweeping cinematography, elaborate costumes, and memorable performances, Gone with the Wind became one of the highest-grossing films of all time and won eight Academy Awards. The film remains a cultural touchstone, though its romanticized portrayal of the antebellum South has generated significant controversy.",
+        "fullDescription": "Gone with the Wind is an .",
         "studio": "Metro-Goldwyn-Mayer",
         "genre": "Historical Romance / Drama",
         "director": "Victor Fleming",
@@ -186,7 +186,7 @@ DOCUMENTS = [
             {
                 "id": 6,
                 "user": "Michael Thompson",
-                "reason": "Multiple versions of this document exist in archive. Need to verify which is the original filing.",
+                "reason": "Multiple versions of this document exist in archive..",
                 "date": "Nov 13, 2025",
             }
         ],
@@ -206,7 +206,7 @@ VIEW_HISTORY = [
     {
         "id": 1,
         "title": "Sunset Boulevard",
-        "description": "Copyright registration documents for the classic film noir about a screenwriter and a faded silent film star.",
+        "description": "Copyright registration documents for .",
         "year": "1950",
         "documentType": "Copyright Registration",
         "viewedDate": "Nov 15, 2025",
@@ -214,7 +214,7 @@ VIEW_HISTORY = [
     {
         "id": 4,
         "title": "City Lights",
-        "description": "Charlie Chaplin's romantic comedy-drama about a tramp who falls in love with a blind flower girl.",
+        "description": "Charlie Chaplin's romantic comedy-drama .",
         "year": "1931",
         "documentType": "Copyright Registration",
         "viewedDate": "Nov 14, 2025",
@@ -222,7 +222,7 @@ VIEW_HISTORY = [
     {
         "id": 2,
         "title": "The Jazz Singer",
-        "description": "Historic copyright filing for the first feature-length motion picture with synchronized dialogue sequences.",
+        "description": "Historic copyright filing .",
         "year": "1927",
         "documentType": "Copyright Registration",
         "viewedDate": "Nov 12, 2025",
@@ -239,18 +239,18 @@ def index():
     page: int = request.args.get("page", 1, type=int)
 
     # Filter documents
-    #filtered_docs = db_utils.search_results(
+    # filtered_docs = db_utils.search_results(
     #    dbConnection,
     #    query,
-    #)
+    # )
 
-    if search:
-        filtered_docs = [
-            d
-            for d in filtered_docs
-            if search.lower() in d["title"].lower()
-            or search.lower() in d["description"].lower()
-        ]
+    # if search:
+    #    filtered_docs = [
+    #        d
+    #        for d in filtered_docs
+    #         if search.lower() in d["title"].lower()
+    #        or search.lower() in d["description"].lower()
+    #    ]
 
     query: Query = Query(
         actors=[],  # TODO
@@ -343,6 +343,7 @@ def print_kwargs(**kwargs):
 
 @app.route("/manager")
 def documents_manager():
+    search = request.args.get("search", "")
     query: Query = Query(
         actors=[],  # TODO
         tags=[],  # TODO
@@ -354,7 +355,6 @@ def documents_manager():
         durationRange=(None, None),  # TODO
     )
 
-    search = request.args.get("search", "")
     docs = db_utils.search_results(dbConnection, query)
     if search:
         docs = [
@@ -370,7 +370,7 @@ def documents_manager():
 @app.route("/login", methods=["POST"])
 def login():
     email = request.form.get("email")
-    password = request.form.get("password")
+    # password = request.form.get("password")
 
     # Mock authentication - in production, validate credentials properly
     session["user"] = email
@@ -381,8 +381,8 @@ def login():
 @app.route("/signup", methods=["POST"])
 def signup():
     email = request.form.get("email")
-    password = request.form.get("password")
-    full_name = request.form.get("full_name")
+    # password = request.form.get("password")
+    # full_name = request.form.get("full_name")
 
     # Mock signup - in production, create user in database
     session["user"] = email
@@ -516,11 +516,11 @@ def view_document(doc_id):
     return render_template("view_document.html", document=document)
 
 
-@app.route("/flag/<int:doc_id>", methods=["POST"])
+@app.route("/flag/<doc_id>", methods=["POST"])
 def flag_document(doc_id):
     # Mock flagging - in production, save to database
     flash("Document flagged for review", "success")
-    return redirect(url_for("document_detail", doc_id=doc_id))
+    return render_template(url_for("document_detail", doc_id=doc_id))
 
 
 if __name__ == "__main__":

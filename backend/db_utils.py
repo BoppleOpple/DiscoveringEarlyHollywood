@@ -1,7 +1,6 @@
 """A collection of helpers for sending and recieving data to/from the PostgreSQL database."""
 
 from pathlib import Path
-from re import search
 import psycopg2.sql as sql
 from psycopg2.extensions import connection, cursor
 from datatypes import Document, Query, Flag
@@ -238,7 +237,7 @@ def get_num_results(conn: connection, query: Query):
 
     return count
 
-   
+
 def get_flagged(conn: connection) -> list[Document]:
     """Return a page of flagged documents. (minimal working version)
 
@@ -275,7 +274,7 @@ def get_flagged(conn: connection) -> list[Document]:
         for row in cur.fetchall():
             documents.append(
                 Document(
-                    documentDir= Path,
+                    documentDir=Path,
                     id=row[0],
                     copyrightYear=row[1],
                     studio=row[2],
@@ -284,6 +283,7 @@ def get_flagged(conn: connection) -> list[Document]:
             )
 
     return documents
+
 
 def get_document(conn: connection, doc_id: str) -> dict:
     """Fetch *all* data pertaining to a document.

@@ -35,7 +35,7 @@
             <!-- Content - Right Side -->
             <div class="flex-1">
                 <div class="float-right border-[#E0E0E0]">
-                    <form action="{{ url_for('flag_document', doc_id=document.id) }}" method="POST" class="inline">
+                    <form action="{{ url_for('flag_document', doc_id=document.metadata.id) }}" method="POST" class="inline">
                         <button type="submit" class="bg-[#2C2C2C] hover:bg-[#8B0000] text-white py-2 px-4 rounded transition-colors">
                             Flag Document
                         </button>
@@ -49,9 +49,11 @@
                     <h3 class="text-[#2C2C2C] text-lg font-medium mb-2">
                         Description
                     </h3>
+                    {% for pages in document.doc.transcripts %}
                     <p class="text-[#666666] leading-relaxed">
-                        {{ document.fullDescription }}
+                        {{ pages }}
                     </p>
+                    {% endfor %}
                 </div>
 
                 <div class="grid grid-cols-2 gap-6">
@@ -62,27 +64,27 @@
                         <div class="space-y-2">
                             <div class="flex">
                                 <span class="text-[#666666] w-24">Year:</span>
-                                <span class="text-[#2C2C2C]">{{ document.year }}</span>
+                                <span class="text-[#2C2C2C]">{{ document.metadata.year }}</span>
                             </div>
                             <div class="flex">
                                 <span class="text-[#666666] w-24">Studio:</span>
-                                <span class="text-[#2C2C2C]">{{ document.studio }}</span>
+                                <span class="text-[#2C2C2C]">{{ document.metadata.studio }}</span>
                             </div>
                             <div class="flex">
                                 <span class="text-[#666666] w-24">Genre:</span>
-                                <span class="text-[#2C2C2C]">{{ document.genre }}</span>
+                                <span class="text-[#2C2C2C]">{{ document.metadata.genre }}</span>
                             </div>
                             <div class="flex">
                                 <span class="text-[#666666] w-24">Director:</span>
-                                <span class="text-[#2C2C2C]">{{ document.director }}</span>
+                                <span class="text-[#2C2C2C]">{{ document.metadata.director }}</span>
                             </div>
                             <div class="flex">
                                 <span class="text-[#666666] w-24">Runtime:</span>
-                                <span class="text-[#2C2C2C]">{{ document.runtime }}</span>
+                                <span class="text-[#2C2C2C]">{{ document.metadata.runtime }}</span>
                             </div>
                             <div class="flex">
                                 <span class="text-[#666666] w-24">Language:</span>
-                                <span class="text-[#2C2C2C]">{{ document.language }}</span>
+                                <span class="text-[#2C2C2C]">{{ document.metadata.language }}</span>
                             </div>
                         </div>
                     </div>
@@ -90,7 +92,7 @@
                     <div>
                         <h4 class="text-[#2C2C2C] font-medium mb-3">Cast</h4>
                         <div class="space-y-1">
-                            {% for actor in document.actors %}
+                            {% for actor in document.metadata.actors %}
                             <p class="text-[#2C2C2C]">{{ actor }}</p>
                             {% endfor %}
                         </div>
