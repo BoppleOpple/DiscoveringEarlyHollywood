@@ -1,0 +1,302 @@
+{% extends "base.html" %}
+
+{% block title %}Documents Manager - Recovering Early Hollywood{% endblock %}
+
+{% block content %}
+<div class="min-h-screen p-6 max-w-7xl mx-auto">
+    <div class="mb-6">
+        <a href="{{ url_for('index') }}" 
+           class="inline-block mb-4 border-2 border-[#8B0000] text-[#8B0000] hover:bg-[#8B0000] hover:text-white py-2 px-4 rounded transition-colors">
+            ← Back to Search
+        </a>
+        <div class="flex items-center justify-between">
+            <div>
+                <h2 class="text-[#2C2C2C] text-xl font-medium">Documents Manager</h2>
+                <p class="text-[#666666] mt-1">
+                    Manage copyright documents in the archive
+                </p>
+            </div>
+            <button onclick="openUploadModal()" 
+                    class="bg-[#2B6CB0] hover:bg-[#1E5A8E] text-white flex items-center gap-2 py-2 px-4 rounded transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                </svg>
+                Add Document(s)
+            </button>
+        </div>
+    </div>
+
+    <!-- Search Interface -->
+    <div class="bg-white border-2 border-[#E0E0E0] rounded-lg p-6 mb-6">
+        <form method="GET" action="{{ url_for('documents_manager') }}" class="flex items-center gap-4 mb-4">
+            <div class="flex-1 relative">
+                <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[#666666]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+                <input type="text" name="search" value="{{ search }}"
+                       placeholder="Search documents by title, year, or studio..."
+                       class="pl-10 w-full bg-white border-2 border-[#E0E0E0] focus:border-[#8B0000] focus:outline-none focus:ring-2 focus:ring-[#8B0000] py-2 px-4 rounded">
+            </div>
+            <button type="submit" class="bg-[#2C2C2C] hover:bg-[#8B0000] text-white py-2 px-4 rounded transition-colors">
+                Search
+            </button>
+        </form>
+        <p class="text-[#666666]">
+            {{ documents|length }} document{% if documents|length != 1 %}s{% endif %} found
+        </p>
+    </div>
+
+    <!-- Documents List -->
+    <form id="removeForm" action="{{ url_for('remove_documents') }}" method="POST">
+        <div class="bg-white border-2 border-[#E0E0E0] rounded-lg overflow-hidden">
+            <div class="p-4 bg-[#F5F5F0] border-b-2 border-[#E0E0E0] flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <input type="checkbox" id="selectAll" onclick="toggleSelectAll()" 
+                           class="w-4 h-4 border-2 border-[#2C2C2C] rounded cursor-pointer">
+                    <label for="selectAll" class="text-[#2C2C2C] cursor-pointer">
+                        <span id="selectionText">Select all</span>
+                    </label>
+                </div>
+                <button type="button" id="removeBtn" onclick="confirmRemove()" 
+                        class="hidden bg-[#8B0000] hover:bg-[#A52A2A] text-white flex items-center gap-2 py-2 px-4 rounded transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                    Remove Selected
+                </button>
+            </div>
+
+            <div class="divide-y-2 divide-[#E0E0E0]">
+                {% for doc in documents %}
+                <div class="p-4 flex items-center gap-4 hover:bg-[#FFF8F0] transition-colors doc-row">
+                    <input type="checkbox" name="selected_docs" value="{{ doc.id }}" 
+                           class="doc-checkbox w-4 h-4 border-2 border-[#2C2C2C] rounded cursor-pointer" 
+                           onchange="updateSelection()">
+                    <div class="flex-shrink-0">
+                        <div class="w-16 h-20 bg-[#F5F5F0] border border-[#CCCCCC] rounded flex items-center justify-center">
+                            <svg class="w-8 h-8 text-[#666666]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="text-[#800080] text-lg font-medium mb-1">{{ doc.title }}</h3>
+                        <div class="flex gap-3 text-[#666666]">
+                            <span>{{ doc.year }}</span>
+                            <span>•</span>
+                            <span>{{ doc.documentType }}</span>
+                            <span>•</span>
+                            <span>{{ doc.studio }}</span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Upload Modal -->
+<div id="uploadModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-[#F5F5F0] border-2 border-[#8B0000] rounded-lg p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <h2 class="text-[#2C2C2C] text-2xl font-medium mb-6">Add Document(s)</h2>
+        
+        <!-- Tab Navigation -->
+        <div class="flex gap-2 mb-6 border-b-2 border-[#E0E0E0]">
+            <button onclick="switchTab('zip')" id="zipTab" 
+                    class="tab-btn px-6 py-2 font-medium border-b-2 border-[#8B0000] text-[#8B0000]">
+                Upload ZIP
+            </button>
+            <button onclick="switchTab('individual')" id="individualTab" 
+                    class="tab-btn px-6 py-2 font-medium border-b-2 border-transparent text-[#666666] hover:text-[#8B0000]">
+                Individual Files
+            </button>
+        </div>
+
+        <form action="{{ url_for('upload_documents') }}" method="POST" enctype="multipart/form-data">
+            <!-- ZIP Upload Tab -->
+            <div id="zipContent" class="tab-content">
+                <input type="hidden" name="upload_type" value="zip">
+                <div>
+                    <label class="text-[#2C2C2C] mb-2 block font-medium">
+                        ZIP File (containing documents, metadata, and transcripts)
+                    </label>
+                    <div class="border-2 border-dashed border-[#2B6CB0] rounded-lg p-8 text-center bg-white hover:border-[#8B0000] transition-colors">
+                        <svg class="w-12 h-12 text-[#666666] mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                        </svg>
+                        <input type="file" name="zip_file" id="zipFile" accept=".zip" class="hidden" onchange="updateFileName('zipFile')">
+                        <label for="zipFile" class="cursor-pointer">
+                            <p class="text-[#2C2C2C] mb-1" id="zipFileName">
+                                Click to upload ZIP file
+                            </p>
+                            <p class="text-[#666666]">or drag and drop</p>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Individual Files Tab -->
+            <div id="individualContent" class="tab-content hidden space-y-4">
+                <input type="hidden" name="upload_type" value="individual">
+                
+                <div>
+                    <label for="documentFile" class="text-[#2C2C2C] mb-2 block font-medium">
+                        Document (PDF)
+                    </label>
+                    <div class="border-2 border-[#E0E0E0] rounded-lg p-4 bg-white">
+                        <input type="file" name="document_file" id="documentFile" accept=".pdf" 
+                               class="w-full border-2 border-[#E0E0E0] focus:border-[#8B0000] p-2 rounded" 
+                               onchange="updateFileName('documentFile')">
+                        <p id="documentFileName" class="text-[#666666] mt-2 hidden"></p>
+                    </div>
+                </div>
+
+                <div>
+                    <label for="metadataFile" class="text-[#2C2C2C] mb-2 block font-medium">
+                        Metadata (JSON or XML)
+                    </label>
+                    <div class="border-2 border-[#E0E0E0] rounded-lg p-4 bg-white">
+                        <input type="file" name="metadata_file" id="metadataFile" accept=".json,.xml" 
+                               class="w-full border-2 border-[#E0E0E0] focus:border-[#8B0000] p-2 rounded" 
+                               onchange="updateFileName('metadataFile')">
+                        <p id="metadataFileName" class="text-[#666666] mt-2 hidden"></p>
+                    </div>
+                </div>
+
+                <div>
+                    <label for="transcriptFile" class="text-[#2C2C2C] mb-2 block font-medium">
+                        Transcript (TXT)
+                    </label>
+                    <div class="border-2 border-[#E0E0E0] rounded-lg p-4 bg-white">
+                        <input type="file" name="transcript_file" id="transcriptFile" accept=".txt" 
+                               class="w-full border-2 border-[#E0E0E0] focus:border-[#8B0000] p-2 rounded" 
+                               onchange="updateFileName('transcriptFile')">
+                        <p id="transcriptFileName" class="text-[#666666] mt-2 hidden"></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-2 mt-6">
+                <button type="button" onclick="closeUploadModal()" 
+                        class="flex-1 border-2 border-[#2C2C2C] text-[#2C2C2C] hover:bg-[#2C2C2C] hover:text-white py-2 px-4 rounded transition-colors">
+                    Cancel
+                </button>
+                <button type="submit" 
+                        class="flex-1 bg-[#2B6CB0] hover:bg-[#1E5A8E] text-white py-2 px-4 rounded transition-colors">
+                    Upload Documents
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Remove Confirmation Modal -->
+<div id="confirmModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-[#F5F5F0] border-2 border-[#8B0000] rounded-lg p-8 max-w-md w-full mx-4">
+        <h3 class="text-[#2C2C2C] text-xl font-medium mb-4">Confirm Removal</h3>
+        <p class="text-[#666666] mb-6">
+            Are you sure you want to remove <span id="removeCount">0</span> document(s) from the database? 
+            This action cannot be undone.
+        </p>
+        <div class="flex gap-2">
+            <button onclick="closeConfirmModal()" 
+                    class="flex-1 border-2 border-[#2C2C2C] text-[#2C2C2C] hover:bg-[#2C2C2C] hover:text-white py-2 px-4 rounded transition-colors">
+                Cancel
+            </button>
+            <button onclick="submitRemove()" 
+                    class="flex-1 bg-[#8B0000] hover:bg-[#A52A2A] text-white py-2 px-4 rounded transition-colors">
+                Remove Documents
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openUploadModal() {
+        document.getElementById('uploadModal').classList.remove('hidden');
+    }
+
+    function closeUploadModal() {
+        document.getElementById('uploadModal').classList.add('hidden');
+    }
+
+    function switchTab(tab) {
+        // Update tabs
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.remove('border-[#8B0000]', 'text-[#8B0000]');
+            btn.classList.add('border-transparent', 'text-[#666666]');
+        });
+        
+        // Update content
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.add('hidden');
+        });
+
+        if (tab === 'zip') {
+            document.getElementById('zipTab').classList.add('border-[#8B0000]', 'text-[#8B0000]');
+            document.getElementById('zipTab').classList.remove('border-transparent', 'text-[#666666]');
+            document.getElementById('zipContent').classList.remove('hidden');
+        } else {
+            document.getElementById('individualTab').classList.add('border-[#8B0000]', 'text-[#8B0000]');
+            document.getElementById('individualTab').classList.remove('border-transparent', 'text-[#666666]');
+            document.getElementById('individualContent').classList.remove('hidden');
+        }
+    }
+
+    function updateFileName(inputId) {
+        const input = document.getElementById(inputId);
+        const fileNameElement = document.getElementById(inputId + 'Name');
+        if (input.files.length > 0) {
+            fileNameElement.textContent = 'Selected: ' + input.files[0].name;
+            fileNameElement.classList.remove('hidden');
+        }
+    }
+
+    function updateSelection() {
+        const checkboxes = document.querySelectorAll('.doc-checkbox:checked');
+        const removeBtn = document.getElementById('removeBtn');
+        const selectionText = document.getElementById('selectionText');
+        
+        if (checkboxes.length > 0) {
+            removeBtn.classList.remove('hidden');
+            removeBtn.classList.add('flex');
+            selectionText.textContent = checkboxes.length + ' selected';
+        } else {
+            removeBtn.classList.add('hidden');
+            removeBtn.classList.remove('flex');
+            selectionText.textContent = 'Select all';
+        }
+    }
+
+    function toggleSelectAll() {
+        const selectAll = document.getElementById('selectAll');
+        const checkboxes = document.querySelectorAll('.doc-checkbox');
+        checkboxes.forEach(cb => cb.checked = selectAll.checked);
+        updateSelection();
+    }
+
+    function confirmRemove() {
+        const checkboxes = document.querySelectorAll('.doc-checkbox:checked');
+        document.getElementById('removeCount').textContent = checkboxes.length;
+        document.getElementById('confirmModal').classList.remove('hidden');
+    }
+
+    function closeConfirmModal() {
+        document.getElementById('confirmModal').classList.add('hidden');
+    }
+
+    function submitRemove() {
+        document.getElementById('removeForm').submit();
+    }
+
+    // Close modals when clicking outside
+    document.getElementById('uploadModal').addEventListener('click', function(e) {
+        if (e.target === this) closeUploadModal();
+    });
+
+    document.getElementById('confirmModal').addEventListener('click', function(e) {
+        if (e.target === this) closeConfirmModal();
+    });
+</script>
+{% endblock %}

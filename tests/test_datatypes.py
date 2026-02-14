@@ -97,9 +97,9 @@ class TestFlag:
     def test_flag_creation(self):
         flag = Flag(
             reporterName="user1",
-            errorLoaction="page 3",
+            errorLocation="page 3",
             errorDescription="Missing text",
         )
         assert flag.reporterName == "user1"
-        assert flag.errorLoaction == "page 3"
+        assert flag.errorLocation == "page 3"
         assert flag.errorDescription == "Missing text"

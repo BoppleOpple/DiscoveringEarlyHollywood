@@ -1,11 +1,11 @@
 import os
-import tempfile
 import math
 from flask import (
     Flask,
     render_template,
     request,
     redirect,
+    send_file,
     url_for,
     session,
     jsonify,
@@ -13,20 +13,22 @@ from flask import (
 )
 import psycopg2
 import pytesseract
-from flask_cors import CORS
-from PIL import Image
+import csv
 from werkzeug.utils import secure_filename
-from pdf2image import convert_from_path
 from dotenv import load_dotenv
+from io import StringIO
 
 from . import db_utils
 from .datatypes import Document, Query
 
 load_dotenv()
-app = Flask(__name__, template_folder="templates")
-
-CORS(app)
+app = Flask(__name__)
 app.secret_key = os.environ["FLASK_SECRET"] or os.urandom(20)
+app.config["UPLOAD_FOLDER"] = "uploads"
+app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024  # 50MB max file size
+
+# Ensure upload folder exists
+os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
 if __name__ == "__main__":
     dbConnection = psycopg2.connect(
@@ -45,18 +47,297 @@ pytesseract.pytesseract.tesseract_cmd = (
 # Adjust this path as needed
 poppler_path = r"C:\Users\shtgu\Documents\CodingPackages\poppler-24.08.0\Library\bin"
 
-# TODO manage globals in a better way, will look into standard practice for this
 RESULTS_PER_PAGE = 20
-UPLOAD_FOLDER = "backend/static/img"
-EDITS_FOLDER = "backend/static/edits"
-ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "pdf"}
-app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
-app.config["EDITS_FOLDER"] = EDITS_FOLDER
+DOCUMENTS = [
+    {
+        "id": 1,
+        "title": "Sunset Boulevard",
+        "description": "Copyright registration documents for the clas",
+        "year": "1950",
+        "documentType": "Copyright Registration",
+        "fullDescription": "Sunset Boulevard is a classic American film noir ",
+        "studio": "Paramount Pictures",
+        "genre": "Film Noir / Drama",
+        "director": "Billy Wilder",
+        "actors": [
+            "Gloria Swanson",
+            "William Holden",
+            "Erich von Stroheim",
+            "Nancy Olson",
+        ],
+        "runtime": "110 minutes",
+        "language": "English",
+        "flags": [
+            {
+                "id": 1,
+                "user": "Dr. Sarah Mitchell",
+                "reason": "Document appears to have incorrect filing date. Should be s.",
+                "date": "Nov 15, 2025",
+            },
+            {
+                "id": 2,
+                "user": "James Rodriguez",
+                "reason": "Missing signature on page 3 of the copyright registration form.",
+                "date": "Nov 12, 2025",
+            },
+            {
+                "id": 3,
+                "user": "Emily Chen",
+                "reason": "Potential discrepancy in the listed production company name.",
+                "date": "Nov 10, 2025",
+            },
+        ],
+    },
+    {
+        "id": 2,
+        "title": "The Jazz Singer",
+        "description": "Historic copyright filing for the first feature-length.",
+        "year": "1927",
+        "documentType": "Copyright Registration",
+        "fullDescription": "The Jazz Singer revolutionized the film industry as the ",
+        "studio": "Warner Bros.",
+        "genre": "Musical Drama",
+        "director": "Alan Crosland",
+        "actors": ["Al Jolson", "May McAvoy", "Warner Oland", "Eugenie Besserer"],
+        "runtime": "88 minutes",
+        "language": "English",
+    },
+    {
+        "id": 3,
+        "title": "Metropolis",
+        "description": "Copyright documentation for Fritz Lang's influ.",
+        "year": "1927",
+        "documentType": "Copyright Registration",
+        "fullDescription": "Metropolis is a groundbreaking German.",
+        "studio": "UFA (Universum Film AG)",
+        "genre": "Science Fiction / Drama",
+        "director": "Fritz Lang",
+        "actors": [
+            "Brigitte Helm",
+            "Gustav Fröhlich",
+            "Alfred Abel",
+            "Rudolf Klein-Rogge",
+        ],
+        "runtime": "153 minutes",
+        "language": "Silent (German intertitles)",
+        "flags": [
+            {
+                "id": 4,
+                "user": "Prof. Heinrich Weber",
+                "reason": "Translation of German text may be inaccurate.",
+                "date": "Nov 14, 2025",
+            },
+            {
+                "id": 5,
+                "user": "Anna Foster",
+                "reason": "Document quality is poor - some text illegible. May need.",
+                "date": "Nov 8, 2025",
+            },
+        ],
+    },
+    {
+        "id": 4,
+        "title": "City Lights",
+        "description": "Charlie Chaplin's romantic comedy-drama about.",
+        "year": "1931",
+        "documentType": "Copyright Registration",
+        "fullDescription": "City Lights is a silent romantic comedy-.",
+        "studio": "United Artists",
+        "genre": "Romance / Comedy",
+        "director": "Charlie Chaplin",
+        "actors": [
+            "Charlie Chaplin",
+            "Virginia Cherrill",
+            "Florence Lee",
+            "Harry Myers",
+        ],
+        "runtime": "87 minutes",
+        "language": "Silent with music",
+    },
+    {
+        "id": 5,
+        "title": "King Kong",
+        "description": "Copyright records for .",
+        "year": "1933",
+        "documentType": "Copyright Registration",
+        "fullDescription": "King Kong is a landmark .",
+        "studio": "RKO Radio Pictures",
+        "genre": "Adventure / Horror",
+        "director": "Merian C. Cooper, Ernest B. Schoedsack",
+        "actors": ["Fay Wray", "Robert Armstrong", "Bruce Cabot"],
+        "runtime": "100 minutes",
+        "language": "English",
+    },
+    {
+        "id": 6,
+        "title": "Gone with the Wind",
+        "description": "Epic historical romance film set dura.",
+        "year": "1939",
+        "documentType": "Copyright Registration",
+        "fullDescription": "Gone with the Wind is an .",
+        "studio": "Metro-Goldwyn-Mayer",
+        "genre": "Historical Romance / Drama",
+        "director": "Victor Fleming",
+        "actors": [
+            "Vivien Leigh",
+            "Clark Gable",
+            "Olivia de Havilland",
+            "Leslie Howard",
+        ],
+        "runtime": "238 minutes",
+        "language": "English",
+        "flags": [
+            {
+                "id": 6,
+                "user": "Michael Thompson",
+                "reason": "Multiple versions of this document exist in archive..",
+                "date": "Nov 13, 2025",
+            }
+        ],
+    },
+]
+
+# Mock history data
+SEARCH_HISTORY = [
+    {"id": 1, "query": "Sunset Boulevard", "date": "Nov 15, 2025"},
+    {"id": 2, "query": "Charlie Chaplin", "date": "Nov 14, 2025"},
+    {"id": 3, "query": "1927 films", "date": "Nov 12, 2025"},
+    {"id": 4, "query": "film noir", "date": "Nov 10, 2025"},
+    {"id": 5, "query": "Gone with the Wind", "date": "Nov 8, 2025"},
+]
+
+VIEW_HISTORY = [
+    {
+        "id": 1,
+        "title": "Sunset Boulevard",
+        "description": "Copyright registration documents for .",
+        "year": "1950",
+        "documentType": "Copyright Registration",
+        "viewedDate": "Nov 15, 2025",
+    },
+    {
+        "id": 4,
+        "title": "City Lights",
+        "description": "Charlie Chaplin's romantic comedy-drama .",
+        "year": "1931",
+        "documentType": "Copyright Registration",
+        "viewedDate": "Nov 14, 2025",
+    },
+    {
+        "id": 2,
+        "title": "The Jazz Singer",
+        "description": "Historic copyright filing .",
+        "year": "1927",
+        "documentType": "Copyright Registration",
+        "viewedDate": "Nov 12, 2025",
+    },
+]
 
 
-def allowed_file(filename: str):
-    """Checks if a file is uploadable based on file extension."""
-    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+@app.route("/")
+def index():
+    search = request.args.get("search", "")
+    genre = request.args.get("genre", None)
+    year_min: int = request.args.get("year_min", 1915, type=int)
+    year_max: int = request.args.get("year_max", 1926, type=int)
+    page: int = request.args.get("page", 1, type=int)
+
+    # Filter documents
+    # filtered_docs = db_utils.search_results(
+    #    dbConnection,
+    #    query,
+    # )
+
+    # if search:
+    #    filtered_docs = [
+    #        d
+    #        for d in filtered_docs
+    #         if search.lower() in d["title"].lower()
+    #        or search.lower() in d["description"].lower()
+    #    ]
+
+    query: Query = Query(
+        actors=[],  # TODO
+        tags=[],  # TODO
+        genres=[genre] if genre else [],
+        keywords=list(
+            filter(lambda s: s != "", search.split(" ")) if search else []
+        ),  # TODO allow searching both titles and transcripts
+        documentType=None,  # TODO
+        studio=None,  # TODO
+        copyrightYearRange=(year_min, year_max),  # TODO allow a start & end value
+        durationRange=(None, None),  # TODO
+    )
+
+    num_results = db_utils.get_num_results(
+        dbConnection,
+        query,
+    )
+
+    results: list[Document] = db_utils.search_results(
+        dbConnection,
+        query,
+        page,
+    )
+
+    return render_template(
+        "index.html",
+        documents=results,
+        search=search,
+        genre=genre,
+        page=page,
+        num_results=num_results,
+        results_per_page=RESULTS_PER_PAGE,
+    )
+
+
+@app.route("/document/<doc_id>")
+def document_detail(doc_id):
+    document = db_utils.get_document(dbConnection, doc_id)
+    if not document:
+        flash("Document not found", "error")
+        return redirect(url_for("index"))
+    return render_template("document_detail.html", document=document)
+
+
+@app.route("/history")
+def view_history():
+    return render_template(
+        "view_history.html", history=VIEW_HISTORY, searches=SEARCH_HISTORY
+    )
+
+
+@app.route("/history/download")
+def download_history():
+    # Create CSV
+    output = StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["Title", "Year", "Document Type", "Description", "Viewed Date"])
+    for doc in VIEW_HISTORY:
+        writer.writerow(
+            [
+                doc["title"],
+                doc["year"],
+                doc["documentType"],
+                doc["description"],
+                doc["viewedDate"],
+            ]
+        )
+
+    # Create response
+    output.seek(0)
+    return send_file(
+        StringIO(output.getvalue()),
+        mimetype="text/csv",
+        as_attachment=True,
+        download_name="viewing-history.csv",
+    )
+
+
+@app.route("/flagged")
+def flagged_documents():
+    flagged = db_utils.get_flagged(dbConnection)
+    return render_template("flagged_documents.html", documents=flagged)
 
 
 def print_kwargs(**kwargs):
@@ -64,141 +345,95 @@ def print_kwargs(**kwargs):
     print(kwargs)
 
 
-@app.context_processor
-def utility_processor():
-    """A ``Flask.context_processor`` that provides helper functions to template."""
+@app.route("/manager")
+def documents_manager():
+    search = request.args.get("search", "")
+    query: Query = Query(
+        actors=[],  # TODO
+        tags=[],  # TODO
+        keywords=list(
+            filter(lambda s: s != "", search.split(" ")) if search else []
+        ),  # TODO allow searching both titles and transcripts
+        documentType=None,  # TODO
+        studio=None,  # TODO
+        durationRange=(None, None),  # TODO
+    )
 
-    def modify_args_on_page(page: str, args: dict):
-        """A helper that modifies a page's URL arguments to include different or new values.
-
-        Parameters
-        ----------
-        page : str
-            The Flask page to which arguments are appended
-        args : dict
-            A ``dict`` containing the URL arguments to modify or add
-
-        Examples
-        --------
-        >>> # executing on page ``http://localhost:3388/results?query=How+to+Perform+Electrolysis&page=1``
-        >>> modify_args_on_page("results", {"page": 2}})
-        "http://localhost:3388/results?query=How+to+Perform+Electrolysis&page=2"
-        """  # noqa E501
-        return url_for(page, **{**request.args, **args})
-
-    return dict(modify_args_on_page=modify_args_on_page)
-
-
-@app.route("/")
-def home():
-    """Register a new route for the ``home`` page of the app."""
-    # earliest_year = 1887
-    earliest_year = 1912
-    current_year = 1928
-    years = list(range(earliest_year, current_year + 1))
-    return render_template("home.html", years=years, documents=[])
-
-
-@app.route("/history")
-def history():
-    """Register a new route for the history page of the app."""
-    # viewed_docs_ids = session.get("viewed_documents", [])
-    viewed_documents = []  # Fetch from client-side if needed
-    return render_template("history.html", documents=viewed_documents)
-
-
-@app.route("/clear_history")
-def clear_history():
-    """Register a new route for clearing viewing history."""
-    session.pop("viewed_documents", None)
-    return redirect(url_for("history"))
-
-
-@app.route("/remove_from_history/<int:doc_id>")
-def remove_from_history(doc_id):
-    """Register a new route for removing specific documents from viewing history."""
-    if "viewed_documents" in session:
-        session["viewed_documents"] = [
-            id for id in session["viewed_documents"] if id != doc_id
+    docs = db_utils.search_results(dbConnection, query)
+    if search:
+        docs = [
+            d
+            for d in docs
+            if search.lower() in d["title"].lower()
+            or search.lower() in d.get("studio", "").lower()
+            or search in d["year"]
         ]
-        session.modified = True
-    return redirect(url_for("history"))
+    return render_template("documents_manager.html", documents=docs, search=search)
 
 
-@app.route("/upload", methods=["GET"])
-def upload_page():
-    """Register a new route for the ``upload`` page of the app."""
-    return render_template("upload.html")
+@app.route("/login", methods=["POST"])
+def login():
+    email = request.form.get("email")
+    # password = request.form.get("password")
+
+    # Mock authentication - in production, validate credentials properly
+    session["user"] = email
+    flash("Successfully logged in!", "success")
+    return redirect(url_for("index"))
 
 
-@app.route("/process_image", methods=["POST"])
-def process_image():
-    """Register a new route for the processing of uploaded files."""
-    uploaded_files = request.files.getlist("file")
+@app.route("/signup", methods=["POST"])
+def signup():
+    email = request.form.get("email")
+    # password = request.form.get("password")
+    # full_name = request.form.get("full_name")
 
-    if not uploaded_files or all(f.filename == "" for f in uploaded_files):
-        flash("No files selected")
-        return redirect(url_for("upload_page"))
+    # Mock signup - in production, create user in database
+    session["user"] = email
+    flash("Account created successfully!", "success")
+    return redirect(url_for("index"))
 
-    all_texts = []
-    image_filenames = []
 
-    for file in uploaded_files:
-        filename = secure_filename(file.filename)
-        if filename == "":
-            continue
+@app.route("/logout")
+def logout():
+    session.pop("user", None)
+    flash("Logged out successfully", "success")
+    return redirect(url_for("index"))
 
-        ext = os.path.splitext(filename)[1].lower()
 
-        if ext == ".pdf":
-            tmp_fd, tmp_path = tempfile.mkstemp(suffix=".pdf")
-            os.close(tmp_fd)  # Close the open file descriptor
-            file.save(tmp_path)  # Save uploaded PDF to that path
-            try:
-                images = convert_from_path(
-                    tmp_path, poppler_path=poppler_path
-                )  # Only needed if Poppler isn't in PATH
-                if len(images) > 1:
-                    images.pop()
+@app.route("/upload", methods=["POST"])
+def upload_documents():
+    upload_type = request.form.get("upload_type", "zip")
 
-                for i, image in enumerate(images):
-                    image_filename = f"{os.path.splitext(filename)[0]}_page_{i + 1}.jpg"
-                    image_path = os.path.join(
-                        app.config["UPLOAD_FOLDER"], image_filename
-                    )
-                    image.save(image_path)
-                    text = pytesseract.image_to_string(image)
-                    all_texts.append((image_filename, text))
-                    image_filenames.append(image_filename)
+    if upload_type == "zip":
+        zip_file = request.files.get("zip_file")
+        if zip_file:
+            filename = secure_filename(zip_file.filename)
+            zip_file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
+            flash(f'ZIP file "{filename}" uploaded successfully!', "success")
+    else:
+        document_file = request.files.get("document_file")
+        metadata_file = request.files.get("metadata_file")
+        transcript_file = request.files.get("transcript_file")
 
-            except Exception as e:
-                flash(f"Failed to process PDF: {str(e)}")
-                return redirect(url_for("upload_page"))
+        files_uploaded = []
+        if document_file:
+            filename = secure_filename(document_file.filename)
+            document_file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
+            files_uploaded.append(filename)
+        if metadata_file:
+            filename = secure_filename(metadata_file.filename)
+            metadata_file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
+            files_uploaded.append(filename)
+        if transcript_file:
+            filename = secure_filename(transcript_file.filename)
+            transcript_file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
+            files_uploaded.append(filename)
 
-            finally:
-                os.remove(tmp_path)  # Clean up temp PDF file
+        if files_uploaded:
+            flash(f'Files uploaded: {", ".join(files_uploaded)}', "success")
 
-        elif allowed_file(filename):
-            filepath = os.path.join(app.config["UPLOAD_FOLDER"], filename)
-            file.save(filepath)
-
-            try:
-                text = pytesseract.image_to_string(Image.open(filepath))
-                all_texts.append((filename, text))
-                image_filenames.append(filename)
-            except Exception as e:
-                flash(f"Failed to process image {filename}: {str(e)}")
-            finally:
-                os.remove(filepath)
-
-        else:
-            flash(f"Unsupported file type: {filename}")
-
-    if not all_texts:
-        flash("No valid files processed.")
-        return redirect(url_for("upload_page"))
-
-    return render_template("OCRresults.html", results=all_texts)
+    return redirect(url_for("documents_manager"))
 
 
 @app.route("/save_ocr_content", methods=["POST"])
@@ -264,6 +499,16 @@ def results():
     )
 
 
+@app.route("/remove", methods=["POST"])
+def remove_documents():
+    # Get selected document IDs from form
+    doc_ids = request.form.getlist("selected_docs")
+
+    # Mock removal - in production, remove from database
+    flash(f"Removed {len(doc_ids)} document(s) from database", "success")
+    return redirect(url_for("documents_manager"))
+
+
 @app.route("/view_document/<doc_id>")
 def view_document(doc_id):
     """Register a new route for the ``view_document`` page of the app."""
@@ -275,13 +520,12 @@ def view_document(doc_id):
     return render_template("view_document.html", document=document)
 
 
-@app.route("/upload_pdf", methods=["GET", "POST"])
-def upload_pdf():
-    """Register a new route for the ``upload_pdf`` page of the app."""
-    return render_template("upload_pdf.html")
+@app.route("/flag/<doc_id>", methods=["POST"])
+def flag_document(doc_id):
+    # Mock flagging - in production, save to database
+    flash("Document flagged for review", "success")
+    return render_template(url_for("document_detail", doc_id=doc_id))
 
 
 if __name__ == "__main__":
-    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-    os.makedirs(EDITS_FOLDER, exist_ok=True)
-    app.run(host="0.0.0.0", port=3388, debug=True)
+    app.run(debug=True, port=5000)

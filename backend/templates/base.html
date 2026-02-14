@@ -4,24 +4,184 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Recovering Early Hollywood{% endblock %}</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --dark-red: #8B0000;
+            --cream: #F5F5F0;
+            --purple: #800080;
+            --blue: #2B6CB0;
+            --gray-dark: #2C2C2C;
+            --gray-medium: #666666;
+            --gray-light: #E0E0E0;
+        }
+    </style>
 </head>
-<body>
-    <header>
-        <div class="header-container" style="background-color: #8B0000; color: white; padding: 10px;">
-            <a href="/" class="logo-link" style="text-decoration: none; color: white; font-size: 20px;">
-                Recovering Early Hollywood
-            </a>
-            <nav style="float: right;">
-                <a href="/history" style="text-decoration: none; color: white; font-size: 18px;">View History</a>
-                <a href="/upload" style="text-decoration: none; color: white; font-size: 18px; margin-left: 20px;">OCR Upload</a>
-                <a href="/upload_pdf" style="text-decoration: none; color: white; font-size: 18px; margin-left: 20px;">Upload PDF</a>
+<body class="min-h-screen bg-[#F5F5F0]">
+    <!-- Header -->
+    <header class="bg-[#8B0000] text-white px-6 py-4">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div>
+                <h1 class="text-white text-2xl font-medium">
+                    <a href="{{ url_for('index') }}" class="hover:opacity-80">Recovering Early Hollywood</a>
+                </h1>
+            </div>
+            <nav class="flex items-center gap-6">
+                <a href="{{ url_for('view_history') }}" class="text-white hover:opacity-80 transition-opacity">
+                    View History
+                </a>
+                <a href="{{ url_for('flagged_documents') }}" class="text-white hover:opacity-80 transition-opacity">
+                    Flagged Documents
+                </a>
+                <a href="{{ url_for('documents_manager') }}" class="text-white hover:opacity-80 transition-opacity">
+                    Documents Manager
+                </a>
+                {% if session.get('user') %}
+                    <a href="{{ url_for('logout') }}" class="text-white hover:opacity-80 transition-opacity">
+                        Logout
+                    </a>
+                {% else %}
+                    <button onclick="openAuthModal()" class="text-white hover:opacity-80 transition-opacity">
+                        Login
+                    </button>
+                {% endif %}
             </nav>
         </div>
     </header>
-    
-    <main>
-        {% block content %}{% endblock %}
-    </main>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="max-w-7xl mx-auto mt-4 px-6">
+                {% for category, message in messages %}
+                    <div class="p-4 mb-4 rounded-lg {% if category == 'error' %}bg-red-100 text-red-800{% else %}bg-green-100 text-green-800{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Main Content -->
+    {% block content %}{% endblock %}
+
+    <!-- Auth Modal -->
+    <div id="authModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-[#F5F5F0] border-2 border-[#8B0000] rounded-lg p-8 max-w-md w-full mx-4">
+            <div class="text-center mb-6">
+                <h2 class="text-2xl font-medium text-[#2C2C2C] mb-2" id="authTitle">Welcome Back</h2>
+                <p class="text-[#666666]" id="authSubtitle">Access thousands of copyright documents</p>
+            </div>
+
+            <!-- Login Form -->
+            <form id="loginForm" action="{{ url_for('login') }}" method="POST" class="space-y-4">
+                <div>
+                    <label for="login-email" class="block text-[#2C2C2C] mb-2">Email</label>
+                    <input type="email" id="login-email" name="email" required
+                           class="w-full px-4 py-2 bg-white border-2 border-[#2B6CB0] focus:border-[#8B0000] focus:outline-none focus:ring-2 focus:ring-[#8B0000] rounded-full">
+                </div>
+                <div>
+                    <label for="login-password" class="block text-[#2C2C2C] mb-2">Password</label>
+                    <input type="password" id="login-password" name="password" required
+                           class="w-full px-4 py-2 bg-white border-2 border-[#2B6CB0] focus:border-[#8B0000] focus:outline-none focus:ring-2 focus:ring-[#8B0000] rounded-full">
+                </div>
+                <div class="flex justify-end">
+                    <button type="button" class="text-[#2B6CB0] hover:text-[#8B0000] transition-colors text-sm">
+                        Forgot password?
+                    </button>
+                </div>
+                <button type="submit" class="w-full bg-[#2C2C2C] hover:bg-[#8B0000] text-white py-2 px-4 rounded transition-colors">
+                    Sign In
+                </button>
+            </form>
+
+            <!-- Signup Form -->
+            <form id="signupForm" action="{{ url_for('signup') }}" method="POST" class="space-y-4 hidden">
+                <div>
+                    <label for="signup-name" class="block text-[#2C2C2C] mb-2">Full Name</label>
+                    <input type="text" id="signup-name" name="full_name" required
+                           class="w-full px-4 py-2 bg-white border-2 border-[#2B6CB0] focus:border-[#8B0000] focus:outline-none focus:ring-2 focus:ring-[#8B0000] rounded-full">
+                </div>
+                <div>
+                    <label for="signup-email" class="block text-[#2C2C2C] mb-2">Email</label>
+                    <input type="email" id="signup-email" name="email" required
+                           class="w-full px-4 py-2 bg-white border-2 border-[#2B6CB0] focus:border-[#8B0000] focus:outline-none focus:ring-2 focus:ring-[#8B0000] rounded-full">
+                </div>
+                <div>
+                    <label for="signup-password" class="block text-[#2C2C2C] mb-2">Password</label>
+                    <input type="password" id="signup-password" name="password" required
+                           class="w-full px-4 py-2 bg-white border-2 border-[#2B6CB0] focus:border-[#8B0000] focus:outline-none focus:ring-2 focus:ring-[#8B0000] rounded-full">
+                </div>
+                <div>
+                    <label for="signup-confirm" class="block text-[#2C2C2C] mb-2">Confirm Password</label>
+                    <input type="password" id="signup-confirm" name="confirm_password" required
+                           class="w-full px-4 py-2 bg-white border-2 border-[#2B6CB0] focus:border-[#8B0000] focus:outline-none focus:ring-2 focus:ring-[#8B0000] rounded-full">
+                </div>
+                <button type="submit" class="w-full bg-[#2C2C2C] hover:bg-[#8B0000] text-white py-2 px-4 rounded transition-colors">
+                    Create Account
+                </button>
+            </form>
+
+            <div class="mt-6 pt-6 border-t-2 border-[#CCCCCC]">
+                <p class="text-center text-[#666666]">
+                    <span id="toggleText">Don't have an account?</span>
+                    <button onclick="toggleAuthForm()" class="ml-2 text-[#2B6CB0] hover:text-[#8B0000] transition-colors" id="toggleBtn">
+                        Sign up
+                    </button>
+                </p>
+            </div>
+
+            <button onclick="closeAuthModal()" class="mt-4 w-full text-[#666666] hover:text-[#2C2C2C] transition-colors">
+                Close
+            </button>
+        </div>
+    </div>
+
+    <script>
+        function openAuthModal() {
+            document.getElementById('authModal').classList.remove('hidden');
+        }
+
+        function closeAuthModal() {
+            document.getElementById('authModal').classList.add('hidden');
+        }
+
+        function toggleAuthForm() {
+            const loginForm = document.getElementById('loginForm');
+            const signupForm = document.getElementById('signupForm');
+            const authTitle = document.getElementById('authTitle');
+            const authSubtitle = document.getElementById('authSubtitle');
+            const toggleText = document.getElementById('toggleText');
+            const toggleBtn = document.getElementById('toggleBtn');
+
+            if (loginForm.classList.contains('hidden')) {
+                // Show login
+                loginForm.classList.remove('hidden');
+                signupForm.classList.add('hidden');
+                authTitle.textContent = 'Welcome Back';
+                authSubtitle.textContent = 'Access thousands of copyright documents';
+                toggleText.textContent = "Don't have an account?";
+                toggleBtn.textContent = 'Sign up';
+            } else {
+                // Show signup
+                loginForm.classList.add('hidden');
+                signupForm.classList.remove('hidden');
+                authTitle.textContent = 'Join Us';
+                authSubtitle.textContent = 'Create an account to explore Early Hollywood';
+                toggleText.textContent = 'Already have an account?';
+                toggleBtn.textContent = 'Sign in';
+            }
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('authModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeAuthModal();
+            }
+        });
+    </script>
+
+    {% block scripts %}{% endblock %}
 </body>
 </html>
+
