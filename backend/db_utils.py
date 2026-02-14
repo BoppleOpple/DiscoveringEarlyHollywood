@@ -253,19 +253,19 @@ def search_results(
                 "SELECT actor_name \
                 FROM has_actor \
                 WHERE document_id=%s;",
-                [document.getId()],
+                [document.id],
             )
 
             actorQuery = cur.fetchall()
 
-            document.metadata.actors = [result[0] for result in actorQuery]
+            document.actors = [result[0] for result in actorQuery]
 
             cur.execute(
                 "SELECT page_number, content \
                 FROM transcripts \
                 WHERE document_id=%s \
                 ORDER BY page_number;",
-                [document.getId()],
+                [document.id],
             )
 
             document.transcripts = cur.fetchall()
