@@ -75,11 +75,10 @@ http://localhost:5000
 ## Configuration
 
 ### Secret Key
-The application uses a secret key for session management. **Important:** Change the secret key in `app.py` for production use:
+The application uses a secret key for session management. **Important:** Change the secret key in `.env` for production use:
 
-```python
-app.secret_key = 'your-secret-key-here-change-in-production'
-```
+```env
+FLASK_SECRET=<your-secret-key>
 
 ### Upload Settings
 - Upload folder: `uploads/`
