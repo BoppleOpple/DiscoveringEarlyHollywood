@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>{{document.metadata.id}}: <i>{{ document.metadata.title }}</i></h1>
-<p><strong>Year:</strong> <a href="{{ url_for('results', year=document.year) }}">{{ document.metadata.copyrightYear }}</a></p>
-<p><strong>Type:</strong> {{ document.metadata.documentType }}</p>
-<p><strong>Actors:</strong> {{ ", ".join(document.metadata.actors) }}</p>
+<h1>{{document.id}}: <i>{{ document.title }}</i></h1>
+<p><strong>Year:</strong> <a href="{{ url_for('results', year=document.year) }}">{{ document.copyrightYear }}</a></p>
+<p><strong>Type:</strong> {{ document.documentType }}</p>
+<p><strong>Actors:</strong> {{ ", ".join(document.actors) }}</p>
 <div><strong>Content:</strong> 
     <table>
         <thead>
