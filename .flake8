@@ -13,5 +13,6 @@ exclude =
 	.venv
 ignore =
 	D401
+	W503
 max-line-length = 100
 docstring-convention = numpy

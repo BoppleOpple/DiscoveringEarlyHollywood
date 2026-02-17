@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}Flagged Documents - Recovering Early Hollywood{% endblock %}
+
+{% block content %}
+<div class="min-h-screen p-6 max-w-7xl mx-auto">
+    <div class="mb-6">
+        <a href="{{ url_for('index') }}" 
+           class="inline-block mb-4 border-2 border-[#8B0000] text-[#8B0000] hover:bg-[#8B0000] hover:text-white py-2 px-4 rounded transition-colors">
+            ← Back to Search
+        </a>
+        <h2 class="text-[#2C2C2C] text-xl font-medium">Flagged Documents</h2>
+        <p class="text-[#666666] mt-1">
+            {{ documents|length }} documents flagged for review
+        </p>
+    </div>
+
+    <div class="space-y-4">
+        {% for doc in documents %}
+        <div class="bg-white border-2 border-[#E0E0E0] rounded-lg overflow-hidden">
+            <div class="p-4">
+                <div class="flex gap-4">
+                    <div class="flex-shrink-0">
+                        <div class="w-24 h-32 bg-[#F5F5F0] border border-[#CCCCCC] rounded flex items-center justify-center">
+                            <svg class="w-12 h-12 text-[#666666]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                      d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex items-start justify-between">
+                            <a href="{{ url_for('document_detail', doc_id=doc.id) }}" 
+                               class="text-left flex-1 group">
+                                <h3 class="text-[#800080] text-lg font-medium mb-2 group-hover:underline">
+                                    {{ doc.title }}
+                                </h3>
+                                <p class="text-[#666666] mb-3">{{ doc.description }}</p>
+                                <div class="flex gap-4">
+                                    <span class="text-[#2B6CB0]">{{ doc.year }}</span>
+                                    <span class="text-[#666666]">•</span>
+                                    <span class="text-[#666666]">{{ doc.documentType }}</span>
+                                </div>
+                            </a>
+                            <button onclick="toggleFlags({ doc_id })" 
+                                    class="ml-4 flex items-center gap-2 px-4 py-2 bg-[#8B0000] text-white rounded hover:bg-[#A52A2A] transition-colors">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"/>
+                                </svg>
+                                <span>{{ doc.flags|length }} {% if doc.flags|length == 1 %}Flag{% else %}Flags{% endif %}</span>
+                                <svg class="w-4 h-4 chevron-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Flag Comments Dropdown -->
+            <div id="flags-{{ doc.id }}" class="hidden border-t-2 border-[#E0E0E0] bg-[#FFF8F0] p-4">
+                <h4 class="text-[#2C2C2C] font-medium mb-3">
+                    Review Comments
+                </h4>
+                <div class="space-y-3">
+                    {% for flag in doc.flags %}
+                    <div class="bg-white border border-[#E0E0E0] rounded-lg p-3">
+                        <div class="flex items-start justify-between mb-2">
+                            <div class="flex items-center gap-2">
+                                <div class="w-8 h-8 bg-[#8B0000] rounded-full flex items-center justify-center text-white text-sm">
+                                    {% set initials = flag.user.split(' ') %}
+                                    {{ initials[0][0] }}{% if initials|length > 1 %}{{ initials[1][0] }}{% endif %}
+                                </div>
+                                <div>
+                                    <p class="text-[#2C2C2C] font-medium">{{ flag.user }}</p>
+                                    <p class="text-[#999999] text-sm">{{ flag.date }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-[#666666] ml-10">
+                            {{ flag.reason }}
+                        </p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+    function toggleFlags(docId) {
+        const flagsDiv = document.getElementById(`flags-${docId}`);
+        flagsDiv.classList.toggle('hidden');
+    }
+</script>
+{% endblock %}

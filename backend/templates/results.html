@@ -5,11 +5,11 @@
     <ul>
     {% for result in results %}
         <li>
-            <strong>{{ result.metadata.id }}: <i>{{ result.metadata.title }}</i></strong> ({{ result.metadata.copyrightYear }})
+            <strong>{{ result.id }}: <i>{{ result.title }}</i></strong> ({{ result.copyrightYear }})
             <br>
-            <em>Type:</em> {{ result.metadata.documentType }} | <em>Actors:</em> {{ ", ".join(result.metadata.actors) }}
+            <em>Type:</em> {{ result.documentType }} | <em>Actors:</em> {{ ", ".join(result.actors) }}
             <br>
-            <a href="{{ url_for('view_document', doc_id=result.metadata.id) }}">View Document</a>
+            <a href="{{ url_for('view_document', doc_id=result.id) }}">View Document</a>
         </li>
     {% endfor %}
     </ul>
@@ -30,3 +30,4 @@
     <a href="{{ url_for('home') }}">Back to Home</a>
 {% endif %}
 {% endblock %}
+
