@@ -14,11 +14,14 @@ from flask import (
 import psycopg2
 import pytesseract
 from werkzeug.utils import secure_filename
+from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
 import csv
 from io import StringIO
 import db_utils
 from datatypes import Document, Query
+import db_auth
+import re
 
 load_dotenv()
 app = Flask(__name__)
@@ -369,31 +372,103 @@ def documents_manager():
 
 @app.route("/login", methods=["POST"])
 def login():
-    email = request.form.get("email")
-    password = request.form.get("password")
+    email = request.form.get("email", "").strip()
+    password = request.form.get("password", "")
 
-    # Mock authentication - in production, validate credentials properly
-    session["user"] = email
-    flash("Successfully logged in!", "success")
+    if not email or not password:
+        flash("Email and password are required.", "error")
+        return redirect(url_for("index"))
+
+    user = db_auth.get_user_by_email(dbConnection, email)
+
+    if user is None or not check_password_hash(user["encoded_password"], password):
+        flash("Invalid email or password.", "error")
+        return redirect(url_for("index"))
+
+    session["user"] = user["email"]
+    session["user_name"] = user["name"]
+
+    flash(f"Welcome back, {session['user_name']}!", "success")
+    
     return redirect(url_for("index"))
 
 
 @app.route("/signup", methods=["POST"])
 def signup():
-    email = request.form.get("email")
-    password = request.form.get("password")
-    full_name = request.form.get("full_name")
+    username = request.form.get("full_name", "").strip()
+    email = request.form.get("email", "").strip()
+    password = request.form.get("password", "")
+    confirm_password = request.form.get("confirm_password", "")
+    
+    if not email or not password or not username:
+        flash("Email and password and username are required.", "error")
+        return redirect(url_for("index"))
 
-    # Mock signup - in production, create user in database
+    #Username vaildation
+
+    if username and not username.replace("_", "").isalnum():
+        flash("Username must contain only letters, numbers, and underscores!", "error")
+        return redirect(url_for("index"))
+
+    if username and len(username) > 20:
+        flash("Username must be 20 characters or less!", "error")
+        return redirect(url_for("index"))
+
+    if db_auth.user_exists(dbConnection, username):
+        flash("An account with that username already exists.", "error")
+        return redirect(url_for("index"))
+    
+    #Email vaildation
+
+    if db_auth.email_exists(dbConnection, email):
+        flash("An account with that email already exists.", "error")
+        return redirect(url_for("index"))
+
+    #Password vaildation 
+
+    if password != confirm_password:
+        flash("Passwords do not match.", "error")
+        return redirect(url_for("index"))
+
+    if len(password) < 8:
+        flash("Password must be at least 8 characters.", "error")
+        return redirect(url_for("index"))
+    
+    if password and not any(c.isupper() for c in password):
+        flash("Password must contain at least one uppercase letter!", "error")
+        return redirect(url_for("index"))
+
+    if password and not any(c.islower() for c in password):
+        flash("Password must contain at least one lowercase letter!", "error")
+        return redirect(url_for("index"))
+
+    if password and not any(c.isdigit() for c in password):
+        flash("Password must contain at least one number!", "error")
+        return redirect(url_for("index"))
+    
+    if password and not re.search(r'[!@#$%^&*()_\+\-=\[\]{}|;:,.<>?]', password):
+        flash("Password must contain at least one special character (!@#$%^&*()_+-=[]{}|;:,.<>?)", "error")
+        return redirect(url_for("index"))
+    
+
+    password_hash = generate_password_hash(password)
+    success = db_auth.create_user(dbConnection, username, email, password_hash)
+
+    if not success:
+        flash("Could not create account. Please try again.", "error")
+        return redirect(url_for("index"))
+
     session["user"] = email
-    flash("Account created successfully!", "success")
+    session["user_name"] = username
+
+    flash(f"Account created! Welcome, {session['user_name']}.", "success")
     return redirect(url_for("index"))
 
 
 @app.route("/logout")
 def logout():
-    session.pop("user", None)
-    flash("Logged out successfully", "success")
+    session.clear()
+    flash("You have been logged out.", "success")
     return redirect(url_for("index"))
 
 

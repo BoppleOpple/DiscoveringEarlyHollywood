@@ -14,7 +14,7 @@ CREATE TABLE tags (
 
 CREATE TABLE users (
     name varchar(20) PRIMARY KEY,
-    encoded_password char(20)
+    encoded_password char(255)
 );
 
 CREATE TABLE documents (
