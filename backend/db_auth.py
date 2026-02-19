@@ -125,7 +125,7 @@ def user_exists(conn: connection, username: str) -> bool:
 #     except Exception as e:
 #         conn.rollback()
 #         raise e
-    
+
 # def get_user_by_email(conn: connection, email: str) -> dict | None:
 #     """Get a user record by email address.
 #
@@ -134,7 +134,7 @@ def user_exists(conn: connection, username: str) -> bool:
 #     conn : :obj:`psycopg2.extensions.connection`
 #         A ``psycopg2`` connection to perform queries with
 #     email : str
-#         The email address to look up; 
+#         The email address to look up;
 #     Returns
 #     -------
 #     user : dict or None

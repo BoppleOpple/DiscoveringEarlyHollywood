@@ -373,6 +373,7 @@ def documents_manager():
         ]
     return render_template("documents_manager.html", documents=docs, search=search)
 
+
 @app.route("/login", methods=["POST"])
 def login():
     username = request.form.get("full_name", "").strip()
@@ -400,9 +401,9 @@ def login():
 
 @app.route("/signup", methods=["POST"])
 def signup():
-    username = request.form.get("full_name", "").strip()     
-    password = request.form.get("password", "")            
-    confirm_password = request.form.get("confirm_password", "") 
+    username = request.form.get("full_name", "").strip()
+    password = request.form.get("password", "")
+    confirm_password = request.form.get("confirm_password", "")
 
     errors = []
 
@@ -430,11 +431,15 @@ def signup():
             errors.append("Password must contain at least one lowercase letter.")
         if not any(c.isdigit() for c in password):
             errors.append("Password must contain at least one number.")
-        if not re.search(r'[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]', password):
-            errors.append("Password must contain at least one special character (!@#$%^&*()_+-=[]{}|;:,.<>?).")
+        if not re.search(r"[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]", password):
+            errors.append(
+                "Password must contain at least one special character (!@#$%^&*()_+-=[]{}|;:,.<>?)."
+            )
 
     if errors:
-        return render_template("index.html", errors=errors, open_modal=True, open_signup=True)
+        return render_template(
+            "index.html", errors=errors, open_modal=True, open_signup=True
+        )
 
     password_hash = generate_password_hash(password)
     success = db_auth.create_user(dbConnection, username, password_hash)
@@ -443,11 +448,12 @@ def signup():
         flash("Could not create account. Please try again.", "error")
         return redirect(url_for("index"))
 
-    session["user"] = username               
+    session["user"] = username
     session["user_name"] = username
 
     flash(f"Account created! Welcome, {username}.", "success")
     return redirect(url_for("index"))
+
 
 @app.route("/logout")
 def logout():
