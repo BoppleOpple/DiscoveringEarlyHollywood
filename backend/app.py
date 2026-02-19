@@ -14,9 +14,13 @@ from flask import (
 import psycopg2
 import pytesseract
 import csv
+import re
+import PIL
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
-from io import StringIO
+from io import StringIO, BytesIO
+from pathlib import Path
+import pdf2image.pdf2image
 
 from . import db_utils
 from .datatypes import Document, Query
@@ -38,14 +42,17 @@ if __name__ == "__main__":
         user=os.environ["SQL_USER"],
         password=os.environ["SQL_PASSWORD"],
     )
+    DOCUMENT_DIR: Path = Path(os.environ["DOCUMENT_DIR"])
 else:
     dbConnection = None
+    DOCUMENT_DIR = None
 
 pytesseract.pytesseract.tesseract_cmd = (
     r"C:\Program Files\Tesseract-OCR\tesseract.exe"  # Adjust this path as needed
 )
 # Adjust this path as needed
 poppler_path = r"C:\Users\shtgu\Documents\CodingPackages\poppler-24.08.0\Library\bin"
+
 
 RESULTS_PER_PAGE = 20
 DOCUMENTS = [
@@ -234,6 +241,10 @@ VIEW_HISTORY = [
 ]
 
 
+def valid_id(doc_id: str) -> bool:
+    return re.fullmatch(r"\w\d{4}\w\d{5}", doc_id) is not None
+
+
 @app.route("/")
 def index():
     search = request.args.get("search", "")
@@ -305,6 +316,47 @@ def view_history():
     return render_template(
         "view_history.html", history=VIEW_HISTORY, searches=SEARCH_HISTORY
     )
+
+
+@app.route("/thumbnail/<doc_id>.jpg", methods=["GET"])
+def fetch_thumbnail(doc_id):
+    width: int = request.args.get("w", 300, type=int)
+    height: int = request.args.get("h", 400, type=int)
+    page: int = request.args.get("page", 2, type=int)
+
+    if not valid_id(doc_id):
+        raise Exception("Not a valid doc_id")
+        return "Document not found", 404
+
+    pdf_path: Path = DOCUMENT_DIR / doc_id / f"{doc_id}.pdf"
+
+    # get pdf info for page count and size
+    info = pdf2image.pdfinfo_from_path(pdf_path)
+
+    print(info)
+
+    # clamp requested page
+    page = max(1, min(page, info["Pages"]))
+
+    print(page)
+
+    images: list[PIL.Image.Image] = pdf2image.convert_from_path(
+        size=(width, height), pdf_path=pdf_path, first_page=page, last_page=page
+    )
+
+    if images:
+        image_buffer: BytesIO = BytesIO()
+
+        images[0].save(image_buffer, format="jpeg")
+
+        image_buffer.seek(0)
+        # Create response
+        return send_file(
+            image_buffer,
+            mimetype="image/jpg",
+            as_attachment=False,
+            download_name=f"{doc_id}.jpg",
+        )
 
 
 @app.route("/history/download")
