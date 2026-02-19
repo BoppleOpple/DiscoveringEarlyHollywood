@@ -43,9 +43,13 @@ if __name__ == "__main__":
         password=os.environ["SQL_PASSWORD"],
     )
     DOCUMENT_DIR: Path = Path(os.environ["DOCUMENT_DIR"])
+    POPPLER_PATH: Path = (
+        Path(os.environ["POPPLER_PATH"]) if os.environ["POPPLER_PATH"] else None
+    )
 else:
     dbConnection = None
     DOCUMENT_DIR = None
+    POPPLER_PATH: Path = None
 
 pytesseract.pytesseract.tesseract_cmd = (
     r"C:\Program Files\Tesseract-OCR\tesseract.exe"  # Adjust this path as needed
@@ -333,7 +337,7 @@ def thumbnail(doc_id):
             raise Exception("Not a valid document path")
 
         # get pdf info for page count and size
-        info: dict = pdf2image.pdfinfo_from_path(pdf_path)
+        info: dict = pdf2image.pdfinfo_from_path(pdf_path, poppler_path=POPPLER_PATH)
 
         page_size_split: list[str] = str(info["Page size"]).split(" ")
         page_size: tuple[float, float] = (
@@ -345,7 +349,11 @@ def thumbnail(doc_id):
         page = max(1, min(page, info["Pages"]))
 
         image: PIL.Image.Image = pdf2image.convert_from_path(
-            pdf_path=pdf_path, first_page=page, last_page=page, size=page_size
+            pdf_path=pdf_path,
+            first_page=page,
+            last_page=page,
+            size=page_size,
+            poppler_path=POPPLER_PATH,
         )[0]
 
         image_buffer: BytesIO = BytesIO()
