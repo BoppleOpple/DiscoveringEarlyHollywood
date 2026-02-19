@@ -372,98 +372,79 @@ def documents_manager():
 
 @app.route("/login", methods=["POST"])
 def login():
-    email = request.form.get("email", "").strip()
+    username = request.form.get("full_name", "").strip()
     password = request.form.get("password", "")
 
-    if not email or not password:
-        flash("Email and password are required.", "error")
-        return redirect(url_for("index"))
+    errors = []
 
-    user = db_auth.get_user_by_email(dbConnection, email)
+    if not username or not password:
+        errors.append("Full name and password are required.")
 
-    if user is None or not check_password_hash(user["encoded_password"], password):
-        flash("Invalid email or password.", "error")
-        return redirect(url_for("index"))
+    if not errors:
+        password_hash = db_auth.get_user_password_hash(dbConnection, username)
+        if password_hash is None or not check_password_hash(password_hash, password):
+            errors.append("Invalid name or password.")
 
-    session["user"] = user["email"]
-    session["user_name"] = user["name"]
+    if errors:
+        return render_template("index.html", errors=errors, open_modal=True)
 
-    flash(f"Welcome back, {session['user_name']}!", "success")
-    
+    session["user"] = username
+    session["user_name"] = username
+
+    flash(f"Welcome back, {username}!", "success")
     return redirect(url_for("index"))
 
 
 @app.route("/signup", methods=["POST"])
 def signup():
-    username = request.form.get("full_name", "").strip()
-    email = request.form.get("email", "").strip()
-    password = request.form.get("password", "")
-    confirm_password = request.form.get("confirm_password", "")
-    
-    if not email or not password or not username:
-        flash("Email and password and username are required.", "error")
-        return redirect(url_for("index"))
+    username = request.form.get("full_name", "").strip()     
+    password = request.form.get("password", "")            
+    confirm_password = request.form.get("confirm_password", "") 
 
-    #Username vaildation
+    errors = []
 
-    if username and not username.replace("_", "").isalnum():
-        flash("Username must contain only letters, numbers, and underscores!", "error")
-        return redirect(url_for("index"))
+    # Username validation
+    if not username:
+        errors.append("Username is required.")
+    elif not username.replace("_", "").isalnum():
+        errors.append("Username must contain only letters, numbers, and underscores.")
+    elif len(username) > 20:
+        errors.append("Username must be 20 characters or less.")
+    elif db_auth.user_exists(dbConnection, username):
+        errors.append("An account with that username already exists.")
 
-    if username and len(username) > 20:
-        flash("Username must be 20 characters or less!", "error")
-        return redirect(url_for("index"))
+    # Password validation
+    if not password:
+        errors.append("Password is required.")
+    else:
+        if password != confirm_password:
+            errors.append("Passwords do not match.")
+        if len(password) < 8:
+            errors.append("Password must be at least 8 characters.")
+        if not any(c.isupper() for c in password):
+            errors.append("Password must contain at least one uppercase letter.")
+        if not any(c.islower() for c in password):
+            errors.append("Password must contain at least one lowercase letter.")
+        if not any(c.isdigit() for c in password):
+            errors.append("Password must contain at least one number.")
+        if not re.search(r'[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]', password):
+            errors.append("Password must contain at least one special character (!@#$%^&*()_+-=[]{}|;:,.<>?).")
 
-    if db_auth.user_exists(dbConnection, username):
-        flash("An account with that username already exists.", "error")
-        return redirect(url_for("index"))
-    
-    #Email vaildation
-
-    if db_auth.email_exists(dbConnection, email):
-        flash("An account with that email already exists.", "error")
-        return redirect(url_for("index"))
-
-    #Password vaildation 
-
-    if password != confirm_password:
-        flash("Passwords do not match.", "error")
-        return redirect(url_for("index"))
-
-    if len(password) < 8:
-        flash("Password must be at least 8 characters.", "error")
-        return redirect(url_for("index"))
-    
-    if password and not any(c.isupper() for c in password):
-        flash("Password must contain at least one uppercase letter!", "error")
-        return redirect(url_for("index"))
-
-    if password and not any(c.islower() for c in password):
-        flash("Password must contain at least one lowercase letter!", "error")
-        return redirect(url_for("index"))
-
-    if password and not any(c.isdigit() for c in password):
-        flash("Password must contain at least one number!", "error")
-        return redirect(url_for("index"))
-    
-    if password and not re.search(r'[!@#$%^&*()_\+\-=\[\]{}|;:,.<>?]', password):
-        flash("Password must contain at least one special character (!@#$%^&*()_+-=[]{}|;:,.<>?)", "error")
-        return redirect(url_for("index"))
-    
+    if errors:
+        return render_template("index.html", errors=errors, open_modal=True, open_signup=True)
 
     password_hash = generate_password_hash(password)
-    success = db_auth.create_user(dbConnection, username, email, password_hash)
+    success = db_auth.create_user(dbConnection, username, password_hash)
 
     if not success:
         flash("Could not create account. Please try again.", "error")
         return redirect(url_for("index"))
 
-    session["user"] = email
+    session["user"] = username               
     session["user_name"] = username
 
-    flash(f"Account created! Welcome, {session['user_name']}.", "success")
+    flash(f"Account created! Welcome, {username}.", "success")
     return redirect(url_for("index"))
-
 
 @app.route("/logout")
 def logout():
