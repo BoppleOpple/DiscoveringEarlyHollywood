@@ -319,10 +319,10 @@ def view_history():
 
 
 @app.route("/thumbnail/<doc_id>.jpg", methods=["GET"])
-def fetch_thumbnail(doc_id):
+def thumbnail(doc_id):
     width: int = request.args.get("w", 300, type=int)
     height: int = request.args.get("h", 400, type=int)
-    page: int = request.args.get("page", 2, type=int)
+    page: int = request.args.get("page", 1, type=int)
 
     if not valid_id(doc_id):
         raise Exception("Not a valid doc_id")
@@ -333,13 +333,10 @@ def fetch_thumbnail(doc_id):
     # get pdf info for page count and size
     info = pdf2image.pdfinfo_from_path(pdf_path)
 
-    print(info)
-
     # clamp requested page
     page = max(1, min(page, info["Pages"]))
 
-    print(page)
-
+    # TODO: fix image size handling
     images: list[PIL.Image.Image] = pdf2image.convert_from_path(
         size=(width, height), pdf_path=pdf_path, first_page=page, last_page=page
     )
