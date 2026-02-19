@@ -16,8 +16,8 @@
         <div class="flex gap-8">
             <!-- PDF Image - Top Left -->
             <div class="flex-shrink-0">
-                <div class="w-64 h-80 bg-[#F5F5F0] border-2 border-[#CCCCCC] rounded-lg flex items-center justify-center overflow-hidden">
-                    <img class="text-[#666666] mx-auto mb-4 grow" src="{{ url_for('thumbnail', doc_id=document.id) }}">
+                <div class="w-64 min-h-32 bg-[#F5F5F0] border-2 border-[#CCCCCC] rounded-lg flex items-center justify-center overflow-hidden">
+                    <img class="grow" src="{{ url_for('thumbnail', doc_id=document.id) }}">
                     <!-- <div class="text-center">
                         <svg class="w-24 h-24 text-[#666666] mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" 
@@ -50,9 +50,9 @@
                     <h3 class="text-[#2C2C2C] text-lg font-medium mb-2">
                         Description
                     </h3>
-                    {% for pages in document.transcripts %}
+                    {% for page, text in document.transcripts %}
                     <p class="text-[#666666] leading-relaxed">
-                        {{ pages }}
+                        {{ text }}
                     </p>
                     {% endfor %}
                 </div>

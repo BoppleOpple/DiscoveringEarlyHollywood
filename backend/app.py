@@ -320,8 +320,7 @@ def view_history():
 
 @app.route("/thumbnail/<doc_id>.jpg", methods=["GET"])
 def thumbnail(doc_id):
-    width: int = request.args.get("w", 300, type=int)
-    height: int = request.args.get("h", 400, type=int)
+    scale: float = request.args.get("scale", 1, type=float)
     page: int = request.args.get("page", 1, type=int)
 
     if not valid_id(doc_id):
@@ -331,29 +330,32 @@ def thumbnail(doc_id):
     pdf_path: Path = DOCUMENT_DIR / doc_id / f"{doc_id}.pdf"
 
     # get pdf info for page count and size
-    info = pdf2image.pdfinfo_from_path(pdf_path)
+    info: dict = pdf2image.pdfinfo_from_path(pdf_path)
+
+    page_size_split: list[str] = str(info["Page size"]).split(" ")
+    page_size: tuple[float, float] = (
+        float(page_size_split[0]) * scale,
+        float(page_size_split[2]) * scale,
+    )
 
     # clamp requested page
     page = max(1, min(page, info["Pages"]))
 
-    # TODO: fix image size handling
-    images: list[PIL.Image.Image] = pdf2image.convert_from_path(
-        size=(width, height), pdf_path=pdf_path, first_page=page, last_page=page
+    image: PIL.Image.Image = pdf2image.convert_from_path(
+        pdf_path=pdf_path, first_page=page, last_page=page, size=page_size
+    )[0]
+
+    image_buffer: BytesIO = BytesIO()
+    image.save(image_buffer, format="jpeg")
+
+    # Create response
+    image_buffer.seek(0)
+    return send_file(
+        image_buffer,
+        mimetype="image/jpg",
+        as_attachment=False,
+        download_name=f"{doc_id}_page_{page}.jpg",
     )
-
-    if images:
-        image_buffer: BytesIO = BytesIO()
-
-        images[0].save(image_buffer, format="jpeg")
-
-        image_buffer.seek(0)
-        # Create response
-        return send_file(
-            image_buffer,
-            mimetype="image/jpg",
-            as_attachment=False,
-            download_name=f"{doc_id}.jpg",
-        )
 
 
 @app.route("/history/download")
