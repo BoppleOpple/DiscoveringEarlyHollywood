@@ -226,7 +226,7 @@ class Document:
         tags: list[str] = [],
         genres: list[str] = [],
         transcripts: list[str] = [],
-        flags: list[Flag] = [],
+        flags: Union[list[Flag], None] = None,
     ):
         self.metadata = Metadata(
             id,
@@ -244,8 +244,8 @@ class Document:
         # TODO load images automatically
         self.images = None
 
-        self.transcripts = transcripts if transcripts else []
-        self.flags = flags if flags else []
+        self.transcripts = transcripts
+        self.flags = flags
 
     @property
     def id(self) -> str:
