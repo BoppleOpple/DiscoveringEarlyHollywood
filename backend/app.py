@@ -44,7 +44,7 @@ if __name__ == "__main__":
     )
     DOCUMENT_DIR: Path = Path(os.environ["DOCUMENT_DIR"])
     POPPLER_PATH: str = (
-        os.environ["POPPLER_PATH"] if os.environ["POPPLER_PATH"] else None
+        os.environ["POPPLER_PATH"] if "POPPLER_PATH" in os.environ else None
     )
 else:
     dbConnection = None
