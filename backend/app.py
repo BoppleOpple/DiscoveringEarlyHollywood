@@ -13,15 +13,18 @@ from flask import (
 )
 import psycopg2
 import csv
+import re
+import PIL
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
-from io import StringIO
+from io import StringIO, BytesIO
+from pathlib import Path
+import pdf2image.pdf2image
 
 from . import db_utils
 from . import db_auth
 from .datatypes import Document, Query
-import re
 
 load_dotenv()
 app = Flask(__name__)
@@ -40,8 +43,14 @@ if __name__ == "__main__":
         user=os.environ["SQL_USER"],
         password=os.environ["SQL_PASSWORD"],
     )
+    DOCUMENT_DIR: Path = Path(os.environ["DOCUMENT_DIR"])
+    POPPLER_PATH: str = (
+        os.environ["POPPLER_PATH"] if "POPPLER_PATH" in os.environ else None
+    )
 else:
     dbConnection = None
+    DOCUMENT_DIR = None
+    POPPLER_PATH = None
 
 RESULTS_PER_PAGE = 20
 DOCUMENTS = [
@@ -230,6 +239,10 @@ VIEW_HISTORY = [
 ]
 
 
+def valid_id(doc_id: str) -> bool:
+    return re.fullmatch(r"\w\d{4}\w\d{5}", doc_id) is not None
+
+
 @app.route("/")
 def index():
     search = request.args.get("search", "")
@@ -301,6 +314,56 @@ def view_history():
     return render_template(
         "view_history.html", history=VIEW_HISTORY, searches=SEARCH_HISTORY
     )
+
+
+@app.route("/thumbnail/<doc_id>.jpg", methods=["GET"])
+def thumbnail(doc_id):
+    scale: float = request.args.get("scale", 1, type=float)
+    page: int = request.args.get("page", 1, type=int)
+
+    try:
+        if not valid_id(doc_id):
+            raise Exception("Not a valid doc_id")
+
+        pdf_path: Path = DOCUMENT_DIR / doc_id / f"{doc_id}.pdf"
+
+        if not pdf_path.exists():
+            raise Exception("Not a valid document path")
+
+        # get pdf info for page count and size
+        info: dict = pdf2image.pdfinfo_from_path(pdf_path, poppler_path=POPPLER_PATH)
+
+        page_size_split: list[str] = str(info["Page size"]).split(" ")
+        page_size: tuple[float, float] = (
+            float(page_size_split[0]) * scale,
+            float(page_size_split[2]) * scale,
+        )
+
+        # clamp requested page
+        page = max(1, min(page, info["Pages"]))
+
+        image: PIL.Image.Image = pdf2image.convert_from_path(
+            pdf_path=pdf_path,
+            first_page=page,
+            last_page=page,
+            size=page_size,
+            poppler_path=POPPLER_PATH,
+        )[0]
+
+        image_buffer: BytesIO = BytesIO()
+        image.save(image_buffer, format="jpeg")
+
+        # Create response
+        image_buffer.seek(0)
+        return send_file(
+            image_buffer,
+            mimetype="image/jpg",
+            as_attachment=False,
+            download_name=f"{doc_id}_page_{page}.jpg",
+        )
+    except Exception as e:
+        print(e)
+        return "Document not found", 404
 
 
 @app.route("/history/download")
