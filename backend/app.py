@@ -12,7 +12,6 @@ from flask import (
     flash,
 )
 import psycopg2
-import pytesseract
 import csv
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -43,12 +42,6 @@ if __name__ == "__main__":
     )
 else:
     dbConnection = None
-
-pytesseract.pytesseract.tesseract_cmd = (
-    r"C:\Program Files\Tesseract-OCR\tesseract.exe"  # Adjust this path as needed
-)
-# Adjust this path as needed
-poppler_path = r"C:\Users\shtgu\Documents\CodingPackages\poppler-24.08.0\Library\bin"
 
 RESULTS_PER_PAGE = 20
 DOCUMENTS = [
