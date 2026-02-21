@@ -43,13 +43,8 @@ pip install flask flask-cors pytesseract pillow firebase-admin werkzeug pdf2imag
 
 - **Flask** (For backend API development)
 - **Flask-CORS** (To enable cross-origin requests from Electron)
-- **Pytesseract** (To perform OCR on uploaded images)
-- **Pillow** (To handle image file processing)
-- **Firebase-Admin** (For Firestore database interactions)
 - **Werkzeug** (For secure file handling)
-- **pdf2image** (To convert PDF pages to images for OCR processing)
-
-Additionally, install Tesseract OCR on your system and ensure its path is correctly set in `app.py`.
+- **pdf2image** (For PDF rendering)
 
 #### Poppler Requirement (For PDF Support)
 
@@ -97,39 +92,20 @@ cd CrashTestDummies-RecoveringEarlyHollywood
 
 ### 2. Set Up the Backend
 
-Navigate to the backend folder and install the required dependencies:
+Navigate install the required dependencies:
 
 ```
-cd backend
 pip install -r requirements.txt
 ```
-
-Ensure your Firebase credentials JSON file is correctly placed and configured in `app.py`.
 
 ### 3. Start the Python Backend
 
 ```
-python app.py
+python -m backend.app
 ```
 
-The backend will start running on `http://127.0.0.1:5000`.
+The site will start running on `http://127.0.0.1:5000`.
 
-### 4. Set Up the Electron App
-
-Navigate to the Electron folder and install dependencies:
-
-```
-cd electron
-npm install
-```
-
-### 5. Run the Application
-
-```
-npm start
-```
-
-This will start the Electron application, which connects to the Flask backend.
 
 ## Testing
 
@@ -163,6 +139,7 @@ git checkout -b feature-name
 3. Make your changes and commit
 
 ```
+git add .
 git commit -m "Added new feature"
 ```
 
@@ -176,36 +153,8 @@ git push origin feature-name
 
 ## License
 
-This project is under the MIT License. See `LICENSE.md` for details.
-
-## Contact
-
-For any inquiries, reach out to:
-
-- Gabriel Fitzpatrick - [GitHub](https://github.com/gabrielfitzpatrickcs/CrashTestDummies-RecoveringEarlyHollywood)
-- Aspyn Call
-- Chimezie Ugbuaja
-- Jimmy Ocaya
-- Michael Wilkinson
-- Samuel Backer (Client Lead)
+This project is under the MIT License. See `LICENSE.txt` for details.
 
 ## Notes
 
-- Images used for OCR must be placed within `./backend/static/img` folder of the project directory for OCR display. [Needs to be modified to firebase storage]
-- Ensure that `pytesseract.pytesseract.tesseract_cmd` in `app.py` points to the correct installation path of Tesseract on your system.
-- Before running the app ensure you set the environment variable for the Firebase Admin JSON
-
-- Windows (Command Prompt)
-```
-set FIREBASE_CREDENTIALS=C:\absolute\path\to\firebase_credentials.json
-```
-
-- Windows (Powershell)
-```
-$env:FIREBASE_CREDENTIALS="C:\absolute\path\to\firebase_credentials.json"
-```
-
-- Mac/Linux
-```
-export FIREBASE_CREDENTIALS="/absolute/path/to/firebase_credentials.json"
-```
+- Ensure that `.env` contains correct paths and authentication information
