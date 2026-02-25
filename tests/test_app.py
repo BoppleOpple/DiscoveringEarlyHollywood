@@ -1,4 +1,3 @@
-from pathlib import Path
 from unittest.mock import patch, MagicMock
 
 def test_download_document_serves_pdf_when_exists(client, tmp_path, monkeypatch):
