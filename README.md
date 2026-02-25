@@ -44,6 +44,7 @@ pip install flask flask-cors pytesseract pillow firebase-admin werkzeug pdf2imag
 - **Flask** (For backend API development)
 - **Flask-CORS** (To enable cross-origin requests from Electron)
 - **Werkzeug** (For secure file handling)
+- **pdf2image** (For PDF rendering)
 
 #### Poppler Requirement (For PDF Support)
 

@@ -1,5 +1,6 @@
 flask
 flask-cors
 werkzeug
+pdf2image
 python-dotenv
 psycopg2
