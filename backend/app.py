@@ -366,6 +366,49 @@ def thumbnail(doc_id):
         return "Document not found", 404
 
 
+@app.route("/document/<doc_id>/download", methods=["GET"])
+def download_document(doc_id):
+    """Download the document as a PDF if available, otherwise as a text transcript."""
+    try:
+        if not valid_id(doc_id):
+            raise Exception("Not a valid doc_id")
+
+        # First, try to serve the original PDF from the document store (image-based docs)
+        if DOCUMENT_DIR is not None:
+            pdf_path: Path = DOCUMENT_DIR / doc_id / f"{doc_id}.pdf"
+            if pdf_path.exists():
+                return send_file(
+                    pdf_path,
+                    mimetype="application/pdf",
+                    as_attachment=True,
+                    download_name=f"{doc_id}.pdf",
+                )
+
+        # Fallback: build a text file from transcript pages stored in the database
+        document = db_utils.get_document(dbConnection, doc_id)
+        if not document or not document.transcripts:
+            raise Exception("No transcript content found for document")
+
+        output = StringIO()
+        for page, text in document.transcripts:
+            output.write(f"--- Page {page} ---\n")
+            output.write(text or "")
+            output.write("\n\n")
+
+        output.seek(0)
+
+        return send_file(
+            StringIO(output.getvalue()),
+            mimetype="text/plain",
+            as_attachment=True,
+            download_name=f"{doc_id}.txt",
+        )
+    except Exception as e:
+        print(e)
+        flash("Unable to download document.", "error")
+        return redirect(url_for("document_detail", doc_id=doc_id))
+
+
 @app.route("/history/download")
 def download_history():
     # Create CSV
