@@ -117,9 +117,9 @@ def execute_document_query(
     titleQuery = " ".join(query.keywords) if query.keywords else None
     if titleQuery:
         sqlLines.append(
-            sql.SQL(
-                "AND ({title} IS NULL OR to_tsvector(title) @@ to_tsquery({title}))"
-            ).format(title=titleQuery)
+            sql.SQL("AND to_tsvector(title) @@ to_tsquery({title})").format(
+                title=sql.Literal(titleQuery)
+            )
         )
 
     # handle filtering by minimum year
