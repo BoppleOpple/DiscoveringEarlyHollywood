@@ -1,5 +1,6 @@
 from unittest.mock import patch, MagicMock
 
+
 def test_download_document_serves_pdf_when_exists(client, tmp_path, monkeypatch):
     from backend import app as backend_app
 
@@ -17,6 +18,7 @@ def test_download_document_serves_pdf_when_exists(client, tmp_path, monkeypatch)
     assert resp.headers["Content-Type"].startswith("application/pdf")
     assert f"{doc_id}.pdf" in resp.headers["Content-Disposition"]
 
+
 def test_download_document_falls_back_to_txt_when_no_pdf(client, monkeypatch):
     # Ensure DOCUMENT_DIR is None or has no PDF, and mock DB document
     monkeypatch.setattr("backend.app.DOCUMENT_DIR", None, raising=False)
@@ -31,6 +33,7 @@ def test_download_document_falls_back_to_txt_when_no_pdf(client, monkeypatch):
     assert "s0000l12345.txt" in resp.headers["Content-Disposition"]
     body = resp.data.decode("utf-8")
     assert "Page 1 text" in body and "Page 2 text" in body
+
 
 def test_download_document_invalid_or_missing_transcripts_redirects(client):
     # invalid ID
