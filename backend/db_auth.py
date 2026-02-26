@@ -4,7 +4,9 @@ import psycopg2.sql as sql
 from psycopg2.extensions import connection, cursor
 
 
-def create_user(conn: connection, username: str, password_hash: str) -> bool:
+def create_user(
+    conn: connection, username: str, email: str, password_hash: str
+) -> bool:
     """Create a new user in the database.
 
     Parameters
@@ -13,6 +15,7 @@ def create_user(conn: connection, username: str, password_hash: str) -> bool:
         A ``psycopg2`` connection to perform queries with
     username : str
         The username for the new user
+
     password_hash : str
         The hashed password for the new user
 
@@ -26,8 +29,8 @@ def create_user(conn: connection, username: str, password_hash: str) -> bool:
         cur: cursor
         with conn.cursor() as cur:
             cur.execute(
-                "INSERT INTO users (name, encoded_password) VALUES (%s, %s);",
-                [username, password_hash],
+                "INSERT INTO users (name, email, encoded_password) VALUES (%s,%s, %s);",
+                [username, email, password_hash],
             )
         conn.commit()
         return True
@@ -88,43 +91,29 @@ def user_exists(conn: connection, username: str) -> bool:
         return cur.fetchone() is not None
 
 
+def email_exists(conn: connection, email: str) -> bool:
+    """Check if an email address is already registered.
+
+    Parameters
+    ----------
+    conn : :obj:`psycopg2.extensions.connection`
+        A ``psycopg2`` connection to perform queries with
+    email : str
+        The email address to check; matched case-insensitively
+
+    Returns
+    -------
+    exists : bool
+        ``True`` if the email is already registered, ``False`` otherwise
+    """
+    cur: cursor
+    with conn.cursor() as cur:
+        cur.execute("SELECT 1 FROM users WHERE email = %s;", [email])
+        return cur.fetchone() is not None
+
+
 # If we decide to use  email for stuff
 
-# def create_user(conn: connection, username: str, email: str, password_hash: str) -> bool:
-#     """Create a new user in the database.
-
-#     Parameters
-#     ----------
-#     conn : :obj:`psycopg2.extensions.connection`
-#         A ``psycopg2`` connection to perform queries with
-#     username : str
-#         The username for the new user
-
-#     password_hash : str
-#         The hashed password for the new user
-
-#     Returns
-#     -------
-#     success : bool
-#         ``True`` if the user was created successfully, ``False`` if a
-#         user with that username already exists
-#     """
-#     try:
-#         cur: cursor
-#         with conn.cursor() as cur:
-#             cur.execute(
-#                 "INSERT INTO users (name, encoded_password) VALUES (%s, %s);",
-#                 [username, password_hash],
-#             )
-#         conn.commit()
-#         return True
-#     except sql.IntegrityError:
-#         # User already exists
-#         conn.rollback()
-#         return False
-#     except Exception as e:
-#         conn.rollback()
-#         raise e
 
 # def get_user_by_email(conn: connection, email: str) -> dict | None:
 #     """Get a user record by email address.
@@ -154,26 +143,6 @@ def user_exists(conn: connection, username: str) -> bool:
 #                 "email": result[1]
 #             }
 #         return None
-
-# def email_exists(conn: connection, email: str) -> bool:
-#     """Check if an email address is already registered.
-
-#     Parameters
-#     ----------
-#     conn : :obj:`psycopg2.extensions.connection`
-#         A ``psycopg2`` connection to perform queries with
-#     email : str
-#         The email address to check; matched case-insensitively
-
-#     Returns
-#     -------
-#     exists : bool
-#         ``True`` if the email is already registered, ``False`` otherwise
-#     """
-#     cur: cursor
-#     with conn.cursor() as cur:
-#         cur.execute("SELECT 1 FROM users WHERE email = %s;", [email.lower()])
-#         return cur.fetchone() is not None
 
 
 if __name__ == "__main__":

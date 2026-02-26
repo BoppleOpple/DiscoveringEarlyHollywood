@@ -449,7 +449,6 @@ def login():
         return render_template("index.html", errors=errors, open_modal=True)
 
     session["user"] = username
-    session["user_name"] = username
 
     flash(f"Welcome back, {username}!", "success")
     return redirect(url_for("index"))
@@ -458,6 +457,7 @@ def login():
 @app.route("/signup", methods=["POST"])
 def signup():
     username = request.form.get("full_name", "").strip()
+    email = request.form.get("email", "").strip()
     password = request.form.get("password", "")
     confirm_password = request.form.get("confirm_password", "")
 
@@ -472,6 +472,12 @@ def signup():
         errors.append("Username must be 20 characters or less.")
     elif db_auth.user_exists(dbConnection, username):
         errors.append("An account with that username already exists.")
+
+    # Email validation
+    if not email:
+        errors.append("Email is required.")
+    elif db_auth.email_exists(dbConnection, email):
+        errors.append("Email already registered.")
 
     # Password validation
     if not password:
@@ -498,14 +504,13 @@ def signup():
         )
 
     password_hash = generate_password_hash(password)
-    success = db_auth.create_user(dbConnection, username, password_hash)
+    success_signup = db_auth.create_user(dbConnection, username, email, password_hash)
 
-    if not success:
+    if not success_signup:
         flash("Could not create account. Please try again.", "error")
         return redirect(url_for("index"))
 
     session["user"] = username
-    session["user_name"] = username
 
     flash(f"Account created! Welcome, {username}.", "success")
     return redirect(url_for("index"))
