@@ -4,7 +4,9 @@ import psycopg2.sql as sql
 from psycopg2.extensions import connection, cursor
 
 
-def create_user(conn: connection, username: str, email: str, password_hash: str) -> bool:
+def create_user(
+    conn: connection, username: str, email: str, password_hash: str
+) -> bool:
     """Create a new user in the database.
 
     Parameters
@@ -39,6 +41,7 @@ def create_user(conn: connection, username: str, email: str, password_hash: str)
     except Exception as e:
         conn.rollback()
         raise e
+
 
 def get_user_password_hash(conn: connection, username: str) -> str | None:
     """Get the password hash for a user.
@@ -87,6 +90,7 @@ def user_exists(conn: connection, username: str) -> bool:
         cur.execute("SELECT 1 FROM users WHERE name = %s;", [username])
         return cur.fetchone() is not None
 
+
 def email_exists(conn: connection, email: str) -> bool:
     """Check if an email address is already registered.
 
@@ -109,7 +113,6 @@ def email_exists(conn: connection, email: str) -> bool:
 
 
 # If we decide to use  email for stuff
-
 
 
 # def get_user_by_email(conn: connection, email: str) -> dict | None:
@@ -140,8 +143,6 @@ def email_exists(conn: connection, email: str) -> bool:
 #                 "email": result[1]
 #             }
 #         return None
-
-
 
 
 if __name__ == "__main__":
