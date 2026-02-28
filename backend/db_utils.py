@@ -123,7 +123,7 @@ def execute_document_query(
     titleQuery = " ".join(query.keywords) if query.keywords else None
     if titleQuery:
         sqlLines.append(
-            sql.SQL("AND text_vector @@ to_tsquery({title})").format(
+            sql.SQL("AND text_vector @@ websearch_to_tsquery({title})").format(
                 title=sql.Literal(titleQuery)
             )
         )
@@ -191,7 +191,10 @@ def execute_document_query(
 
         sqlLines.append(
             sql.SQL(
-                "ORDER BY ts_rank_cd(text_search_view.text_vector, to_tsquery({title})) DESC"
+                "ORDER BY ts_rank_cd( \
+                    text_search_view.text_vector, \
+                    websearch_to_tsquery({title}) \
+                ) DESC"
             ).format(title=sql.Literal(titleQuery))
         )
 
