@@ -309,6 +309,28 @@ def document_detail(doc_id):
     return render_template("document_detail.html", document=document)
 
 
+@app.route("/download/<doc_id>.pdf")
+def download_pdf(doc_id):
+    try:
+        if not valid_id(doc_id):
+            raise Exception("Not a valid doc_id")
+
+        pdf_path: Path = DOCUMENT_DIR / doc_id / f"{doc_id}.pdf"
+
+        if not pdf_path.exists():
+            raise Exception("Not a valid document path")
+
+        return send_file(
+            pdf_path,
+            mimetype="application/pdf",
+            as_attachment=False,
+            download_name=f"{doc_id}.pdf",
+        )
+    except Exception as e:
+        print(e)
+        return "Document not found", 404
+
+
 @app.route("/history")
 def view_history():
     return render_template(
