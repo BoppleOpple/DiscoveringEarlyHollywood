@@ -1,4 +1,5 @@
 import os
+import math
 from flask import (
     Flask,
     render_template,
@@ -264,15 +265,15 @@ def utility_processor():
         """  # noqa E501
         return url_for(page, **{**request.args, **args})
 
-    return dict(modify_args_on_page=modify_args_on_page)
+    return dict(modify_args_on_page=modify_args_on_page, ceil=math.ceil)
 
 
 @app.route("/")
 def index():
     search = request.args.get("search", "")
     genre = request.args.get("genre", None)
-    year_min: int = request.args.get("year_min", 1915, type=int)
-    year_max: int = request.args.get("year_max", 1926, type=int)
+    year_min: int = request.args.get("year_min", 1912, type=int)
+    year_max: int = request.args.get("year_max", 1928, type=int)
     page: int = request.args.get("page", 1, type=int)
 
     # Filter documents
@@ -316,6 +317,8 @@ def index():
         documents=results,
         search=search,
         genre=genre,
+        year_min=year_min,
+        year_max=year_max,
         page=page,
         num_results=num_results,
         results_per_page=RESULTS_PER_PAGE,
