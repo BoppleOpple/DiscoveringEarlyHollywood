@@ -88,6 +88,7 @@ def execute_document_query(
     query: Query,
     prefix: sql.SQL = sql.SQL("SELECT id, copyright_year, studio, title"),
     suffix: sql.SQL = sql.SQL(";"),
+    rankPages: bool = False,
 ):
     """Create a SQL query from a ``Query`` object.
 
@@ -104,22 +105,27 @@ def execute_document_query(
 
     suffix : :obj:`psycopg2.sql.SQL`, default = SQL(";")
         Optional SQL to be inserted after the "WHERE" clause(s)
+
+    rankPages : bool, default = False
+        Whether results should be ordered by relevance
     """
     # manual SQL composition since binding variables in `execute()`
     # does not allow for a variable number of variables
     sqlLines: list[sql.SQL] = []
 
     sqlLines.append(prefix)
-    sqlLines.append(sql.SQL("FROM documents"))
+    sqlLines.append(
+        sql.SQL("FROM documents INNER JOIN text_search_view ON id = document_id")
+    )
     sqlLines.append(sql.SQL("WHERE TRUE"))
 
     # handle filtering by title
     titleQuery = " ".join(query.keywords) if query.keywords else None
     if titleQuery:
         sqlLines.append(
-            sql.SQL(
-                "AND ({title} IS NULL OR to_tsvector(title) @@ to_tsquery({title}))"
-            ).format(title=titleQuery)
+            sql.SQL("AND text_vector @@ websearch_to_tsquery({title})").format(
+                title=sql.Literal(titleQuery)
+            )
         )
 
     # handle filtering by minimum year
@@ -176,6 +182,20 @@ def execute_document_query(
                     "document_id", "genre", "has_genre", query.genres
                 )
             )
+        )
+
+    if rankPages and titleQuery:
+        # sqlLines.append(
+        #     sql.SQL("GROUP BY id")
+        # )
+
+        sqlLines.append(
+            sql.SQL(
+                "ORDER BY ts_rank_cd( \
+                    text_search_view.text_vector, \
+                    websearch_to_tsquery({title}) \
+                ) DESC"
+            ).format(title=sql.Literal(titleQuery))
         )
 
     sqlLines.append(suffix)
@@ -235,6 +255,7 @@ def search_results(
                     sql.SQL(";"),
                 ]
             ),
+            rankPages=True,
         )
 
         documents: list[Document] = [
@@ -307,6 +328,61 @@ def get_num_results(conn: connection, query: Query):
     conn.commit()
 
     return count
+
+
+def get_headlines(
+    conn: connection, documents: list[Document], query: Query, max_length: int = 400
+) -> dict[str, str]:
+    """Create a SQL query from a ``Query`` object.
+
+    Parameters
+    ----------
+    conn : :obj:`psycopg2.extensions.connection`
+        A ``psycopg2`` connection to perform queries with
+
+    documents : list[Document]
+        The documents to search
+
+    query : :obj:`Query`
+        A ``Query`` object containing all relevant information for the SQL query
+
+    max_length : int
+        The maximum length of the snippet
+
+    Returns
+    -------
+    headline : str
+        the portion of the document relevant to
+    """
+
+    titleQuery = " ".join(query.keywords) if query.keywords else None
+
+    if titleQuery:
+        with conn.cursor() as cur:
+            # most of the work is handled by `ts_headline`:
+            # https://www.postgresql.org/docs/current/textsearch-controls.html
+            cur.execute(
+                "SELECT document_id, ts_headline( \
+                    content, \
+                    websearch_to_tsquery(%s), \
+                    'MaxFragments=3, MaxWords=40, MinWords=20, FragmentDelimiter=...<br><br>...' \
+                ) \
+                FROM text_content_view \
+                WHERE document_id IN %s;",
+                (titleQuery, tuple(doc.id for doc in documents)),
+            )
+
+            return dict(cur.fetchall())
+    else:
+        return dict(
+            (
+                (
+                    doc.id,
+                    f"{doc.content[:max_length]}{"..." if len(doc.content) > max_length else ""}",
+                )
+                for doc in documents
+            )
+        )
 
 
 def get_flagged(conn: connection) -> list[Document]:

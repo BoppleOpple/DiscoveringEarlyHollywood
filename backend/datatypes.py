@@ -327,6 +327,10 @@ class Document:
     def genres(self, value: str):
         self.metadata.genres = value
 
+    @property
+    def content(self):
+        return "\n".join(tup[1] for tup in self.transcripts)
+
 
 class Query:
     """

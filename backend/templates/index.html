@@ -27,13 +27,13 @@
                     Year Range
                 </label>
                 <div class="px-2 py-4">
-                    <input type="range" name="year_min" min="1915" max="1926" value="1915" 
+                    <input type="range" name="year_min" min="1912" max="1928" value="{{ year_min }}" 
                            class="w-full accent-[#8B0000]" onchange="this.nextElementSibling.textContent=this.value">
-                    <span class="text-[#666666]">1915</span>
+                    <span class="text-[#666666]">{{ year_min }}</span>
                     <span class="text-[#666666] float-right">to</span>
-                    <input type="range" name="year_max" min="1915" max="1926" value="1926" 
+                    <input type="range" name="year_max" min="1912" max="1928" value="{{ year_max }}" 
                            class="w-full accent-[#8B0000] mt-2" onchange="this.nextElementSibling.textContent=this.value">
-                    <span class="text-[#666666]">1926</span>
+                    <span class="text-[#666666]">{{ year_max }}</span>
                 </div>
             </div>
 
@@ -71,6 +71,7 @@
 
         <div class="space-y-4">
             {% for doc in documents %}
+            {% set snippet = headlines[doc.id] %}
             <a href="{{ url_for('document_detail', doc_id=doc.id) }}" 
                class="block w-full bg-white border-2 border-[#E0E0E0] rounded-lg p-4 hover:border-[#8B0000] transition-colors">
                 <div class="flex gap-4">
@@ -86,7 +87,7 @@
                     <div class="flex-1">
                         <h3 class="text-[#800080] text-lg font-medium mb-2">{{ doc.title }}</h3>
                         {% if doc.transcripts %}
-                        <p class="text-[#666666] mb-3">{{ doc.transcripts[0][1] }}</p>
+                        <p class="text-[#666666] mb-3">...{{ snippet|safe }}...</p>
                         {% else %}
                         <p class="text-[#666666] mb-3">No transcript available.</p>
                         {% endif %}
@@ -99,6 +100,28 @@
                 </div>
             </a>
             {% endfor %}
+        </div>
+
+        <div class="flex items-center mt-6 justify-center">
+            <div class="min-w-100">
+                {% if page > 1 %}
+                <a class="w-full bg-[#2C2C2C] hover:bg-[#8B0000] text-white py-2 px-4 rounded transition-colors" href="{{ modify_args_on_page('index', {'page': page-1}) }}">
+                    Previous
+                </a>
+                {% endif %}
+            </div>
+            
+            <p class="ml-6 mr-6">
+                Page {{page}} of {{ceil(num_results / results_per_page)}}
+            </p>
+
+            <div class="min-w-100">
+                {% if page < num_results / results_per_page %}
+                <a class="w-full bg-[#2C2C2C] hover:bg-[#8B0000] text-white py-2 px-4 rounded transition-colors" href="{{ modify_args_on_page('index', {'page': page+1}) }}">
+                    Next
+                </a>
+                {% endif %}
+            </div>
         </div>
     </main>
 </div>

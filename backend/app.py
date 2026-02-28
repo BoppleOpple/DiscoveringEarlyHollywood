@@ -243,12 +243,37 @@ def valid_id(doc_id: str) -> bool:
     return re.fullmatch(r"\w\d{4}\w\d{5}", doc_id) is not None
 
 
+@app.context_processor
+def utility_processor():
+    """A ``Flask.context_processor`` that provides helper functions to template."""
+
+    def modify_args_on_page(page: str, args: dict):
+        """A helper that modifies a page's URL arguments to include different or new values.
+
+        Parameters
+        ----------
+        page : str
+            The Flask page to which arguments are appended
+        args : dict
+            A ``dict`` containing the URL arguments to modify or add
+
+        Examples
+        --------
+        >>> # executing on page ``http://localhost:3388/results?query=How+to+Perform+Electrolysis&page=1``
+        >>> modify_args_on_page("results", {"page": 2}})
+        "http://localhost:3388/results?query=How+to+Perform+Electrolysis&page=2"
+        """  # noqa E501
+        return url_for(page, **{**request.args, **args})
+
+    return dict(modify_args_on_page=modify_args_on_page, ceil=math.ceil)
+
+
 @app.route("/")
 def index():
     search = request.args.get("search", "")
     genre = request.args.get("genre", None)
-    year_min: int = request.args.get("year_min", 1915, type=int)
-    year_max: int = request.args.get("year_max", 1926, type=int)
+    year_min: int = request.args.get("year_min", 1912, type=int)
+    year_max: int = request.args.get("year_max", 1928, type=int)
     page: int = request.args.get("page", 1, type=int)
 
     # Filter documents
@@ -284,16 +309,19 @@ def index():
     )
 
     results: list[Document] = db_utils.search_results(
-        dbConnection,
-        query,
-        page,
+        dbConnection, query, page, resultsPerPage=RESULTS_PER_PAGE
     )
+
+    headlines: dict[str, str] = db_utils.get_headlines(dbConnection, results, query)
 
     return render_template(
         "index.html",
         documents=results,
+        headlines=headlines,
         search=search,
         genre=genre,
+        year_min=year_min,
+        year_max=year_max,
         page=page,
         num_results=num_results,
         results_per_page=RESULTS_PER_PAGE,
@@ -569,51 +597,6 @@ def save_ocr_content():
         return jsonify({"message": "OCR content saved successfully!"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-
-@app.route("/results", methods=["GET", "POST"])
-def results():
-    """Register a new route for the ``results`` page of the app."""
-
-    textQuery: str = request.args.get("query", "")
-
-    yearString: str = request.args.get("year", "")
-    year: int = int(yearString) if yearString.isnumeric() else None
-
-    page = request.args.get("page", 1, type=int)
-
-    print_kwargs(**request.args)
-
-    query: Query = Query(
-        actors=[],  # TODO
-        tags=[],  # TODO
-        genres=[],  # TODO
-        keywords=list(
-            filter(lambda s: s != "", textQuery.split(" "))
-        ),  # TODO allow searching both titles and transcripts
-        documentType=None,  # TODO
-        studio=None,  # TODO
-        copyrightYearRange=(year, year),  # TODO allow a start & end value
-        durationRange=(None, None),  # TODO
-    )
-
-    num_results = db_utils.get_num_results(
-        dbConnection,
-        query,
-    )
-
-    results: list[Document] = db_utils.search_results(
-        dbConnection,
-        query,
-        page,
-    )
-
-    return render_template(
-        "results.html",
-        results=results,
-        page=page,
-        num_pages=math.ceil(num_results / RESULTS_PER_PAGE),
-    )
 
 
 @app.route("/remove", methods=["POST"])

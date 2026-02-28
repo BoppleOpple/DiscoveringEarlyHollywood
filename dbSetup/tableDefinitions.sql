@@ -32,6 +32,7 @@ CREATE TABLE transcripts (
     document_id varchar(15),
     page_number integer,
     content text,
+    text_index_col tsvector GENERATED ALWAYS AS (to_tsvector('english', content)) STORED,
     CONSTRAINT fk_document_id FOREIGN KEY (document_id) REFERENCES documents(id),
     PRIMARY KEY (document_id, page_number)
 );
@@ -108,3 +109,21 @@ CREATE TABLE has_tag (
 CREATE INDEX idx_studio ON documents(studio);
 CREATE INDEX idx_copyright_year ON documents(studio);
 CREATE INDEX idx_title ON documents(title);
+
+-- macro for complete transcript text
+CREATE VIEW text_content_view AS (
+    SELECT document_id, STRING_AGG(content, ' ') AS content
+    FROM transcripts
+    GROUP BY document_id
+);
+
+-- index for text searching
+CREATE MATERIALIZED VIEW text_search_view AS (
+    SELECT
+        documents.id AS document_id,
+        setweight(to_tsvector(coalesce(title,'')), 'A') ||
+        setweight(to_tsvector(coalesce(text_content_view.content,'')), 'B') AS text_vector
+    FROM documents, text_content_view
+    WHERE documents.id = text_content_view.document_id
+    GROUP BY id
+) WITH NO DATA;
