@@ -243,6 +243,31 @@ def valid_id(doc_id: str) -> bool:
     return re.fullmatch(r"\w\d{4}\w\d{5}", doc_id) is not None
 
 
+@app.context_processor
+def utility_processor():
+    """A ``Flask.context_processor`` that provides helper functions to template."""
+
+    def modify_args_on_page(page: str, args: dict):
+        """A helper that modifies a page's URL arguments to include different or new values.
+
+        Parameters
+        ----------
+        page : str
+            The Flask page to which arguments are appended
+        args : dict
+            A ``dict`` containing the URL arguments to modify or add
+
+        Examples
+        --------
+        >>> # executing on page ``http://localhost:3388/results?query=How+to+Perform+Electrolysis&page=1``
+        >>> modify_args_on_page("results", {"page": 2}})
+        "http://localhost:3388/results?query=How+to+Perform+Electrolysis&page=2"
+        """  # noqa E501
+        return url_for(page, **{**request.args, **args})
+
+    return dict(modify_args_on_page=modify_args_on_page)
+
+
 @app.route("/")
 def index():
     search = request.args.get("search", "")
@@ -284,9 +309,7 @@ def index():
     )
 
     results: list[Document] = db_utils.search_results(
-        dbConnection,
-        query,
-        page,
+        dbConnection, query, page, resultsPerPage=RESULTS_PER_PAGE
     )
 
     return render_template(
