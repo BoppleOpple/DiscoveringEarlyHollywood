@@ -110,11 +110,20 @@ CREATE INDEX idx_studio ON documents(studio);
 CREATE INDEX idx_copyright_year ON documents(studio);
 CREATE INDEX idx_title ON documents(title);
 
+-- macro for complete transcript text
+CREATE VIEW text_content_view AS (
+    SELECT document_id, STRING_AGG(content, ' ') AS content
+    FROM transcripts
+    GROUP BY document_id
+);
+
+-- index for text searching
 CREATE MATERIALIZED VIEW text_search_view AS (
     SELECT
         documents.id AS document_id,
-        setweight(to_tsvector(coalesce(title,'')), 'A') || setweight(to_tsvector(coalesce(STRING_AGG(content, ' '),'')), 'B') AS text_vector
-    FROM documents, transcripts
-    WHERE documents.id = transcripts.document_id
+        setweight(to_tsvector(coalesce(title,'')), 'A') ||
+        setweight(to_tsvector(coalesce(text_content_view.content,'')), 'B') AS text_vector
+    FROM documents, text_content_view
+    WHERE documents.id = text_content_view.document_id
     GROUP BY id
 ) WITH NO DATA;

@@ -202,7 +202,7 @@ def execute_document_query(
 
     # finally compose the query
     SQLQuery: sql.SQL = sql.SQL("\n").join(sqlLines)
-    print(SQLQuery.as_string(cursor.connection))
+    # print(SQLQuery.as_string(cursor.connection))
 
     # execute the query, with replacement variables already in-place
     cursor.execute(SQLQuery)
@@ -328,6 +328,61 @@ def get_num_results(conn: connection, query: Query):
     conn.commit()
 
     return count
+
+
+def get_headlines(
+    conn: connection, documents: list[Document], query: Query, max_length: int = 400
+) -> dict[str, str]:
+    """Create a SQL query from a ``Query`` object.
+
+    Parameters
+    ----------
+    conn : :obj:`psycopg2.extensions.connection`
+        A ``psycopg2`` connection to perform queries with
+
+    documents : list[Document]
+        The documents to search
+
+    query : :obj:`Query`
+        A ``Query`` object containing all relevant information for the SQL query
+
+    max_length : int
+        The maximum length of the snippet
+
+    Returns
+    -------
+    headline : str
+        the portion of the document relevant to
+    """
+
+    titleQuery = " ".join(query.keywords) if query.keywords else None
+
+    if titleQuery:
+        with conn.cursor() as cur:
+            # most of the work is handled by `ts_headline`:
+            # https://www.postgresql.org/docs/current/textsearch-controls.html
+            cur.execute(
+                "SELECT document_id, ts_headline( \
+                    content, \
+                    websearch_to_tsquery(%s), \
+                    'MaxFragments=3, MaxWords=40, MinWords=20, FragmentDelimiter=...<br><br>...' \
+                ) \
+                FROM text_content_view \
+                WHERE document_id IN %s;",
+                (titleQuery, tuple(doc.id for doc in documents)),
+            )
+
+            return dict(cur.fetchall())
+    else:
+        return dict(
+            (
+                (
+                    doc.id,
+                    f"{doc.content[:max_length]}{"..." if len(doc.content) > max_length else ""}",
+                )
+                for doc in documents
+            )
+        )
 
 
 def get_flagged(conn: connection) -> list[Document]:

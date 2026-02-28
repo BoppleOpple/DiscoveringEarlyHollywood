@@ -312,9 +312,12 @@ def index():
         dbConnection, query, page, resultsPerPage=RESULTS_PER_PAGE
     )
 
+    headlines: dict[str, str] = db_utils.get_headlines(dbConnection, results, query)
+
     return render_template(
         "index.html",
         documents=results,
+        headlines=headlines,
         search=search,
         genre=genre,
         year_min=year_min,

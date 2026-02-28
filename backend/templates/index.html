@@ -71,6 +71,7 @@
 
         <div class="space-y-4">
             {% for doc in documents %}
+            {% set snippet = headlines[doc.id] %}
             <a href="{{ url_for('document_detail', doc_id=doc.id) }}" 
                class="block w-full bg-white border-2 border-[#E0E0E0] rounded-lg p-4 hover:border-[#8B0000] transition-colors">
                 <div class="flex gap-4">
@@ -86,7 +87,7 @@
                     <div class="flex-1">
                         <h3 class="text-[#800080] text-lg font-medium mb-2">{{ doc.title }}</h3>
                         {% if doc.transcripts %}
-                        <p class="text-[#666666] mb-3">{{ doc.transcripts[0][1] }}</p>
+                        <p class="text-[#666666] mb-3">...{{ snippet|safe }}...</p>
                         {% else %}
                         <p class="text-[#666666] mb-3">No transcript available.</p>
                         {% endif %}
