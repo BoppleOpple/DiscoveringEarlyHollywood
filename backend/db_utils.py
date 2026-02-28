@@ -110,14 +110,16 @@ def execute_document_query(
     sqlLines: list[sql.SQL] = []
 
     sqlLines.append(prefix)
-    sqlLines.append(sql.SQL("FROM documents"))
+    sqlLines.append(
+        sql.SQL("FROM documents INNER JOIN text_search_view ON id = document_id")
+    )
     sqlLines.append(sql.SQL("WHERE TRUE"))
 
     # handle filtering by title
     titleQuery = " ".join(query.keywords) if query.keywords else None
     if titleQuery:
         sqlLines.append(
-            sql.SQL("AND to_tsvector(title) @@ to_tsquery({title})").format(
+            sql.SQL("AND text_vector @@ to_tsquery({title})").format(
                 title=sql.Literal(titleQuery)
             )
         )
@@ -182,7 +184,7 @@ def execute_document_query(
 
     # finally compose the query
     SQLQuery: sql.SQL = sql.SQL("\n").join(sqlLines)
-    # print(SQLQuery.as_string(cursor.connection))
+    print(SQLQuery.as_string(cursor.connection))
 
     # execute the query, with replacement variables already in-place
     cursor.execute(SQLQuery)
