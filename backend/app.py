@@ -1,5 +1,4 @@
 import os
-import math
 from flask import (
     Flask,
     render_template,
@@ -592,51 +591,6 @@ def save_ocr_content():
         return jsonify({"message": "OCR content saved successfully!"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-
-@app.route("/results", methods=["GET", "POST"])
-def results():
-    """Register a new route for the ``results`` page of the app."""
-
-    textQuery: str = request.args.get("query", "")
-
-    yearString: str = request.args.get("year", "")
-    year: int = int(yearString) if yearString.isnumeric() else None
-
-    page = request.args.get("page", 1, type=int)
-
-    print_kwargs(**request.args)
-
-    query: Query = Query(
-        actors=[],  # TODO
-        tags=[],  # TODO
-        genres=[],  # TODO
-        keywords=list(
-            filter(lambda s: s != "", textQuery.split(" "))
-        ),  # TODO allow searching both titles and transcripts
-        documentType=None,  # TODO
-        studio=None,  # TODO
-        copyrightYearRange=(year, year),  # TODO allow a start & end value
-        durationRange=(None, None),  # TODO
-    )
-
-    num_results = db_utils.get_num_results(
-        dbConnection,
-        query,
-    )
-
-    results: list[Document] = db_utils.search_results(
-        dbConnection,
-        query,
-        page,
-    )
-
-    return render_template(
-        "results.html",
-        results=results,
-        page=page,
-        num_pages=math.ceil(num_results / RESULTS_PER_PAGE),
-    )
 
 
 @app.route("/remove", methods=["POST"])
