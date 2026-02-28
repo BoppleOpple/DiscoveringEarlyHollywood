@@ -111,7 +111,9 @@ CREATE INDEX idx_copyright_year ON documents(studio);
 CREATE INDEX idx_title ON documents(title);
 
 CREATE MATERIALIZED VIEW text_search_view AS (
-    SELECT documents.id AS document_id, to_tsvector('english', coalesce(title, '') || ' ' || coalesce(STRING_AGG(content, ' '), '')) AS text_vector
+    SELECT
+        documents.id AS document_id,
+        setweight(to_tsvector(coalesce(title,'')), 'A') || setweight(to_tsvector(coalesce(STRING_AGG(content, ' '),'')), 'B') AS text_vector
     FROM documents, transcripts
     WHERE documents.id = transcripts.document_id
     GROUP BY id

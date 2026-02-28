@@ -88,6 +88,7 @@ def execute_document_query(
     query: Query,
     prefix: sql.SQL = sql.SQL("SELECT id, copyright_year, studio, title"),
     suffix: sql.SQL = sql.SQL(";"),
+    rankPages: bool = False,
 ):
     """Create a SQL query from a ``Query`` object.
 
@@ -104,6 +105,9 @@ def execute_document_query(
 
     suffix : :obj:`psycopg2.sql.SQL`, default = SQL(";")
         Optional SQL to be inserted after the "WHERE" clause(s)
+
+    rankPages : bool, default = False
+        Whether results should be ordered by relevance
     """
     # manual SQL composition since binding variables in `execute()`
     # does not allow for a variable number of variables
@@ -180,6 +184,17 @@ def execute_document_query(
             )
         )
 
+    if rankPages and titleQuery:
+        # sqlLines.append(
+        #     sql.SQL("GROUP BY id")
+        # )
+
+        sqlLines.append(
+            sql.SQL(
+                "ORDER BY ts_rank_cd(text_search_view.text_vector, to_tsquery({title})) DESC"
+            ).format(title=sql.Literal(titleQuery))
+        )
+
     sqlLines.append(suffix)
 
     # finally compose the query
@@ -237,6 +252,7 @@ def search_results(
                     sql.SQL(";"),
                 ]
             ),
+            rankPages=True,
         )
 
         documents: list[Document] = [
