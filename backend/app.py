@@ -10,6 +10,7 @@ from flask import (
     session,
     jsonify,
     flash,
+    g,
 )
 import psycopg2
 import csv
@@ -43,13 +44,12 @@ def create_app(**kwargs) -> Flask:
     # Ensure upload folder exists
     os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
-    dbConnection = psycopg2.connect(
-        host=app.config["SQL_HOST"],
-        port=app.config["SQL_PORT"],
-        dbname=app.config["SQL_DBNAME"],
-        user=app.config["SQL_USER"],
-        password=app.config["SQL_PASSWORD"],
-    )
+    @app.teardown_appcontext
+    def teardown_db_connection(exception):
+        db_connection: psycopg2.extensions.connection = g.pop("db_connection", None)
+
+        if db_connection:
+            db_connection.close()
 
     # Mock history data
     SEARCH_HISTORY = [
@@ -95,20 +95,6 @@ def create_app(**kwargs) -> Flask:
         year_max: int = request.args.get("year_max", 1926, type=int)
         page: int = request.args.get("page", 1, type=int)
 
-        # Filter documents
-        # filtered_docs = db_utils.search_results(
-        #    dbConnection,
-        #    query,
-        # )
-
-        # if search:
-        #    filtered_docs = [
-        #        d
-        #        for d in filtered_docs
-        #         if search.lower() in d["title"].lower()
-        #        or search.lower() in d["description"].lower()
-        #    ]
-
         query: Query = Query(
             actors=[],  # TODO
             tags=[],  # TODO
@@ -123,12 +109,12 @@ def create_app(**kwargs) -> Flask:
         )
 
         num_results = db_utils.get_num_results(
-            dbConnection,
+            db_utils.get_db_connection(),
             query,
         )
 
         results: list[Document] = db_utils.search_results(
-            dbConnection,
+            db_utils.get_db_connection(),
             query,
             page,
         )
@@ -145,7 +131,7 @@ def create_app(**kwargs) -> Flask:
 
     @app.route("/document/<doc_id>")
     def document_detail(doc_id):
-        document = db_utils.get_document(dbConnection, doc_id)
+        document = db_utils.get_document(db_utils.get_db_connection(), doc_id)
         if not document:
             flash("Document not found", "error")
             return redirect(url_for("index"))
@@ -238,7 +224,7 @@ def create_app(**kwargs) -> Flask:
 
     @app.route("/flagged")
     def flagged_documents():
-        flagged = db_utils.get_flagged(dbConnection)
+        flagged = db_utils.get_flagged(db_utils.get_db_connection())
         return render_template("flagged_documents.html", documents=flagged)
 
     def print_kwargs(**kwargs):
@@ -259,7 +245,7 @@ def create_app(**kwargs) -> Flask:
             durationRange=(None, None),  # TODO
         )
 
-        docs = db_utils.search_results(dbConnection, query)
+        docs = db_utils.search_results(db_utils.get_db_connection(), query)
         if search:
             docs = [
                 d
@@ -281,7 +267,9 @@ def create_app(**kwargs) -> Flask:
             errors.append("Full name and password are required.")
 
         if not errors:
-            password_hash = db_auth.get_user_password_hash(dbConnection, username)
+            password_hash = db_auth.get_user_password_hash(
+                db_utils.get_db_connection(), username
+            )
             if password_hash is None or not check_password_hash(
                 password_hash, password
             ):
@@ -313,7 +301,7 @@ def create_app(**kwargs) -> Flask:
             )
         elif len(username) > 20:
             errors.append("Username must be 20 characters or less.")
-        elif db_auth.user_exists(dbConnection, username):
+        elif db_auth.user_exists(db_utils.get_db_connection(), username):
             errors.append("An account with that username already exists.")
 
         # Password validation
@@ -341,7 +329,9 @@ def create_app(**kwargs) -> Flask:
             )
 
         password_hash = generate_password_hash(password)
-        success = db_auth.create_user(dbConnection, username, password_hash)
+        success = db_auth.create_user(
+            db_utils.get_db_connection(), username, password_hash
+        )
 
         if not success:
             flash("Could not create account. Please try again.", "error")
@@ -439,12 +429,12 @@ def create_app(**kwargs) -> Flask:
         )
 
         num_results = db_utils.get_num_results(
-            dbConnection,
+            db_utils.get_db_connection(),
             query,
         )
 
         results: list[Document] = db_utils.search_results(
-            dbConnection,
+            db_utils.get_db_connection(),
             query,
             page,
         )
@@ -468,7 +458,7 @@ def create_app(**kwargs) -> Flask:
     @app.route("/view_document/<doc_id>")
     def view_document(doc_id):
         """Register a new route for the ``view_document`` page of the app."""
-        document: Document = db_utils.get_document(dbConnection, doc_id)
+        document: Document = db_utils.get_document(db_utils.get_db_connection(), doc_id)
 
         if not document:
             return "Document not found", 404
