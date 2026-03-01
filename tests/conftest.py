@@ -72,17 +72,15 @@ def app():
     from backend.app import create_app
 
     app: Flask = create_app(
-        FLASK_SECRET=os.environ["FLASK_SECRET"],
+        FLASK_SECRET="test-secret-key-for-pytest",
         UPLOAD_FOLDER="uploads",
-        SQL_HOST=os.environ["SQL_HOST"],
-        SQL_PORT=os.environ["SQL_PORT"],
-        SQL_DBNAME=os.environ["SQL_DBNAME"],
-        SQL_USER=os.environ["SQL_USER"],
-        SQL_PASSWORD=os.environ["SQL_PASSWORD"],
-        DOCUMENT_DIR=os.environ["DOCUMENT_DIR"],
-        POPPLER_PATH=(
-            os.environ["POPPLER_PATH"] if "POPPLER_PATH" in os.environ else None
-        ),
+        SQL_HOST="0.0.0.0",
+        SQL_PORT="1234",
+        SQL_DBNAME="testdb",
+        SQL_USER="DB_User",
+        SQL_PASSWORD="Password_Foo_Bar",
+        DOCUMENT_DIR="document_dir",
+        POPPLER_PATH=("./poppler/bin"),
         RESULTS_PER_PAGE=20,
     )
 
