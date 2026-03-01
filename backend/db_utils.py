@@ -88,6 +88,7 @@ def execute_document_query(
     query: Query,
     prefix: sql.SQL = sql.SQL("SELECT id, copyright_year, studio, title"),
     suffix: sql.SQL = sql.SQL(";"),
+    testing: bool = False,
 ):
     """Create a SQL query from a ``Query`` object.
 
@@ -186,6 +187,10 @@ def execute_document_query(
 
     # execute the query, with replacement variables already in-place
     cursor.execute(SQLQuery)
+
+    # returning the query only if it's provided a testing argument
+    if testing:
+        return SQLQuery
 
 
 # TODO convert query params to a `query` object

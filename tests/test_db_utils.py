@@ -2,7 +2,9 @@
 
 import psycopg2.sql as sql
 
-from backend.db_utils import relation_from_id_to_all_values
+from backend.db_utils import relation_from_id_to_all_values, execute_document_query
+from backend.datatypes import Query
+from unittest.mock import MagicMock
 
 
 class TestRelationFromIdToAllValues:
@@ -34,3 +36,19 @@ class TestRelationFromIdToAllValues:
             values=["comedy", "comedy", "drama"],
         )
         assert result is not None
+
+
+class TestExecuteDocumentQuery:
+    def test_validInputs_executesValidQuery(self):
+        # Arrange
+        inputQuery = Query()
+        inputQuery.setStudio("Universal")
+        mockCursor = MagicMock()
+
+        # Act
+        Result: sql.SQL = execute_document_query(
+            mockCursor, query=inputQuery, testing=True
+        )
+
+        # Assert
+        assert "SELECT id, copyright_year, studio, title" in str(Result)
