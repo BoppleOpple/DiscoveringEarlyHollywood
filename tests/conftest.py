@@ -1,16 +1,58 @@
 import os
 from flask import Flask
-from unittest.mock import MagicMock, patch
+from unittest.mock import Mock, MagicMock, patch
 
 from dotenv import load_dotenv
 import pytest
 
+
 # Mock DB connection
-try:
-    _mock_connect = patch("psycopg2.connect", return_value=MagicMock())
-    _mock_connect.start()
-except ModuleNotFoundError:
-    pass
+@pytest.fixture()
+def mock_psycopg2():
+    # mock `cursor` object
+    mock_cursor = MagicMock()
+    mock_cursor.fetchone = Mock(return_value=None)
+    mock_cursor.fetchall = Mock(return_value=[])
+
+    # mock `connection` object
+    mock_connection = MagicMock()
+
+    mock_cursor_generator = MagicMock()
+    mock_cursor_generator.__enter__ = Mock(return_value=mock_cursor)
+    mock_connection.cursor = Mock(return_value=mock_cursor_generator)
+
+    # mock `connect` function
+    mock_connect = patch("psycopg2.connect", return_value=mock_connection).start()
+
+    return {
+        "connect": mock_connect,
+        "connection": mock_connection,
+        "cursor": mock_cursor,
+    }
+
+
+@pytest.fixture()
+def mock_db_utils():
+    # mock `cursor` object
+    mock_cursor = MagicMock()
+    mock_cursor.fetchone = Mock(return_value=None)
+    mock_cursor.fetchall = Mock(return_value=[])
+
+    # mock `connection` object
+    mock_connection = MagicMock()
+
+    mock_cursor_generator = MagicMock()
+    mock_cursor_generator.__enter__ = Mock(return_value=mock_cursor)
+    mock_connection.cursor = Mock(return_value=mock_cursor_generator)
+
+    # mock `connect` function
+    mock_connect = patch("psycopg2.connect", return_value=mock_connection).start()
+
+    return {
+        "connect": mock_connect,
+        "connection": mock_connection,
+        "cursor": mock_cursor,
+    }
 
 
 @pytest.fixture(autouse=True)
