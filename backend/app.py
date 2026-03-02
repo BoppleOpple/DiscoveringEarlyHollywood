@@ -518,7 +518,6 @@ def signup():
 def logout():
     session.clear()
     flash("You have been logged out.", "success")
-    flash("test.", "error")
     return redirect(url_for("index"))
 
 
