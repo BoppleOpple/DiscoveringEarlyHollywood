@@ -507,7 +507,7 @@ def signup():
 
     if not success_signup:
         return jsonify({"errors": ["Could not create account. Please try again."]}), 400
-    
+
     session["user"] = username
 
     flash(f"Account created! Welcome, {username}.", "success")
@@ -518,6 +518,7 @@ def signup():
 def logout():
     session.clear()
     flash("You have been logged out.", "success")
+    flash("test.", "error")
     return redirect(url_for("index"))
 
 

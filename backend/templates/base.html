@@ -49,16 +49,14 @@
         </div>
     </header>
 
-    <!-- Flash Messages (success only) -->
+    <!-- Flash Messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             <div class="max-w-7xl mx-auto mt-4 px-6">
                 {% for category, message in messages %}
-                    {% if category != 'error' %}
-                        <div class="p-4 mb-4 rounded-lg bg-green-100 text-green-800">
-                            {{ message }}
-                        </div>
-                    {% endif %}
+                    <div class="p-4 mb-4 rounded-lg {% if category == 'error' %}bg-red-100 text-red-800{% else %}bg-green-100 text-green-800{% endif %}">
+                        {{ message }}
+                    </div>
                 {% endfor %}
             </div>
         {% endif %}
