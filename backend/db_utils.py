@@ -354,6 +354,8 @@ def get_headlines(
     headline : str
         the portion of the document relevant to
     """
+    if not documents:
+        return dict()
 
     titleQuery = " ".join(query.keywords) if query.keywords else None
 
