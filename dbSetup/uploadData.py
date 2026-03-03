@@ -271,6 +271,8 @@ def loadData(args: argparse.Namespace, cursor: psycopg2.extensions.cursor):
                 transcriptData,
             )
 
+    cursor.execute("REFRESH MATERIALIZED VIEW text_search_view;")
+
 
 def main(argv=None):
     """Upload data to the database specified in ``.env``."""

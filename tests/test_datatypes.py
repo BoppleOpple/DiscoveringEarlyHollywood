@@ -228,6 +228,17 @@ class TestDocument:
         assert doc.metadata.genres == ["comedy", "commentary"]
         assert doc.genres == ["comedy", "commentary"]
 
+    def test_content(self):
+        doc = Document(
+            None,
+            transcripts=[(0, "page 1"), (1, "page 2")],
+        )
+
+        print(
+            "content should concatenate the text of the transcript, seperated by newlines"
+        )
+        assert doc.content == "page 1\npage 2"
+
 
 class TestFlag:
     def test_flag_creation(self):
