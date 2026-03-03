@@ -26,6 +26,7 @@ from . import db_utils
 from . import db_auth
 from .datatypes import Document, Query
 
+
 load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.environ["FLASK_SECRET"] or os.urandom(20)
@@ -446,12 +447,12 @@ def login():
             errors.append("Invalid name or password.")
 
     if errors:
-        return render_template("index.html", errors=errors, open_modal=True)
+        return jsonify({"errors": errors}), 400
 
     session["user"] = username
 
     flash(f"Welcome back, {username}!", "success")
-    return redirect(url_for("index"))
+    return jsonify({"success": True})
 
 
 @app.route("/signup", methods=["POST"])
@@ -499,21 +500,18 @@ def signup():
             )
 
     if errors:
-        return render_template(
-            "index.html", errors=errors, open_modal=True, open_signup=True
-        )
+        return jsonify({"errors": errors}), 400
 
     password_hash = generate_password_hash(password)
     success_signup = db_auth.create_user(dbConnection, username, email, password_hash)
 
     if not success_signup:
-        flash("Could not create account. Please try again.", "error")
-        return redirect(url_for("index"))
+        return jsonify({"errors": ["Could not create account. Please try again."]}), 400
 
     session["user"] = username
 
     flash(f"Account created! Welcome, {username}.", "success")
-    return redirect(url_for("index"))
+    return jsonify({"success": True})
 
 
 @app.route("/logout")
@@ -646,7 +644,7 @@ def view_document(doc_id):
 def flag_document(doc_id):
     # Mock flagging - in production, save to database
     flash("Document flagged for review", "success")
-    return render_template(url_for("document_detail", doc_id=doc_id))
+    return redirect(url_for("document_detail", doc_id=doc_id))
 
 
 if __name__ == "__main__":
