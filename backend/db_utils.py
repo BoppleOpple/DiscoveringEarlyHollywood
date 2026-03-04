@@ -380,7 +380,19 @@ def get_headlines(
             (
                 (
                     doc.id,
-                    f"{doc.content[:max_length]}{"..." if len(doc.content) > max_length else ""}",
+                    (
+                        (
+                            doc.transcripts[0][1][:max_length]
+                            + (
+                                "..."
+                                if doc.transcripts
+                                and len(doc.transcripts[0][1]) > max_length
+                                else ""
+                            )
+                        )
+                        if doc.transcripts
+                        else ""
+                    ),
                 )
                 for doc in documents
             )
@@ -432,6 +444,249 @@ def get_flagged(conn: connection) -> list[Document]:
             )
 
     return documents
+
+
+def _csv(values: list[str] | None) -> str | None:
+    if not values:
+        return None
+    return ",".join(v.strip() for v in values if v and v.strip()) or None
+
+
+def _search_label(
+    search_text: str | None,
+    start_year: int | None,
+    end_year: int | None,
+    studio: str | None,
+    genres: str | None,
+) -> str:
+    """Build label for a logged search from database row."""
+    if search_text and search_text.strip():
+        return search_text.strip()
+
+    parts: list[str] = []
+    if start_year is not None or end_year is not None:
+        parts.append(f"Years: {start_year or '?'}-{end_year or '?'}")
+    if studio:
+        parts.append(f"Studio: {studio}")
+    if genres:
+        parts.append(f"Genres: {genres}")
+
+    return ", ".join(parts) if parts else "All documents"
+
+
+def log_search(
+    conn: connection,
+    *,
+    user_name: str,
+    start_year: int | None,
+    end_year: int | None,
+    studio: str | None,
+    actors: list[str] | None,
+    genres: list[str] | None,
+    tags: list[str] | None,
+    search_text: str | None,
+) -> int:
+    """Insert one row into ``search_history`` and return its ``id``."""
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            INSERT INTO search_history
+                (user_name, "time", start_year, end_year, studio, actors, genres, tags, search_text)
+            VALUES
+                (%s, NOW(), %s, %s, %s, %s, %s, %s, %s)
+            RETURNING id;
+            """,
+            [
+                user_name,
+                start_year,
+                end_year,
+                studio,
+                _csv(actors),
+                _csv(genres),
+                _csv(tags),
+                search_text.strip() if search_text and search_text.strip() else None,
+            ],
+        )
+        search_id: int = cur.fetchone()[0]
+    conn.commit()
+    return search_id
+
+
+def log_view(
+    conn: connection,
+    *,
+    user_name: str,
+    document_id: str,
+    search_id: int | None = None,
+):
+    """Insert one row into ``view_history``."""
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            INSERT INTO view_history
+                (user_name, document_id, viewed_at, search_id)
+            VALUES
+                (%s, %s, NOW(), %s);
+            """,
+            [user_name, document_id, search_id],
+        )
+    conn.commit()
+
+
+def get_search_history(conn: connection, user_name: str, limit: int = 50) -> list[dict]:
+    """Return search history rows formatted for ``view_history.html``."""
+    if not conn:
+        raise Exception("No SQL connection found")
+
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT id, "time", search_text, start_year, end_year, studio, genres
+            FROM search_history
+            WHERE user_name=%s
+            ORDER BY "time" DESC
+            LIMIT %s;
+            """,
+            [user_name, limit],
+        )
+
+        rows = cur.fetchall()
+
+    conn.commit()
+
+    return [
+        {
+            "id": row[0],
+            "query": _search_label(
+                search_text=row[2],
+                start_year=row[3],
+                end_year=row[4],
+                studio=row[5],
+                genres=row[6],
+            ),
+            "date": row[1].strftime("%b %d, %Y %I:%M %p"),
+            "search_text": row[2],
+            "start_year": row[3],
+            "end_year": row[4],
+            "studio": row[5],
+            "genres": row[6],
+        }
+        for row in rows
+    ]
+
+
+def get_search_history_entry(
+    conn: connection, user_name: str, search_id: int
+) -> dict | None:
+    """Fetch one saved search for a user by id."""
+    if not conn:
+        raise Exception("No SQL connection found")
+
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT id, "time", search_text, start_year, end_year, studio, actors, genres, tags
+            FROM search_history
+            WHERE id=%s AND user_name=%s;
+            """,
+            [search_id, user_name],
+        )
+        row = cur.fetchone()
+
+    conn.commit()
+
+    if not row:
+        return None
+
+    return {
+        "id": row[0],
+        "time": row[1],
+        "search_text": row[2],
+        "start_year": row[3],
+        "end_year": row[4],
+        "studio": row[5],
+        "actors": row[6],
+        "genres": row[7],
+        "tags": row[8],
+    }
+
+
+def get_view_history(conn: connection, user_name: str, limit: int = 200) -> list[dict]:
+    """Return viewed documents with optional search attribution."""
+    if not conn:
+        raise Exception("No SQL connection found")
+
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT
+                vh.document_id,
+                d.title,
+                d.copyright_year,
+                d.studio,
+                vh.viewed_at,
+                vh.search_id,
+                sh.search_text
+            FROM view_history vh
+            JOIN documents d
+              ON d.id = vh.document_id
+            LEFT JOIN search_history sh
+              ON sh.id = vh.search_id
+            WHERE vh.user_name = %s
+            ORDER BY vh.viewed_at DESC
+            LIMIT %s;
+            """,
+            [user_name, limit],
+        )
+
+        rows = cur.fetchall()
+
+    conn.commit()
+
+    history: list[dict] = []
+    for row in rows:
+        search_text = row[6]
+        studio = row[3]
+        description = (
+            f'From search: "{search_text}"'
+            if search_text and search_text.strip()
+            else (f"Studio: {studio}" if studio else "No additional details")
+        )
+
+        history.append(
+            {
+                "id": row[0],
+                "title": row[1],
+                "year": row[2],
+                "description": description,
+                "documentType": "Document",
+                "viewedDate": row[4].strftime("%b %d, %Y %I:%M %p"),
+                "viewedAt": row[4],
+                "searchText": search_text,
+            }
+        )
+
+    return history
+
+
+def get_viewed_document_ids(conn: connection, user_name: str) -> set[str]:
+    """Return distinct document ids viewed by a user."""
+    if not conn:
+        raise Exception("No SQL connection found")
+
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT DISTINCT document_id
+            FROM view_history
+            WHERE user_name=%s;
+            """,
+            [user_name],
+        )
+        rows = cur.fetchall()
+
+    conn.commit()
+    return {row[0] for row in rows}
 
 
 def get_document(conn: connection, doc_id: str) -> dict:

@@ -72,7 +72,8 @@
         <div class="space-y-4">
             {% for doc in documents %}
             {% set snippet = headlines[doc.id] %}
-            <a href="{{ url_for('document_detail', doc_id=doc.id) }}" 
+            {% set detail_url = url_for('document_detail', doc_id=doc.id, search_id=current_search_id, return_to=current_results_path) if current_search_id else url_for('document_detail', doc_id=doc.id, return_to=current_results_path) %}
+            <a href="{{ detail_url }}" 
                class="block w-full bg-white border-2 border-[#E0E0E0] rounded-lg p-4 hover:border-[#8B0000] transition-colors">
                 <div class="flex gap-4">
                     <div class="flex-shrink-0">
@@ -85,7 +86,12 @@
                         </div>
                     </div>
                     <div class="flex-1">
+                        {# Viewed documents are purple; unseen documents are blue. #}
+                        {% if doc.id in viewed_doc_ids %}
                         <h3 class="text-[#800080] text-lg font-medium mb-2">{{ doc.title }}</h3>
+                        {% else %}
+                        <h3 class="text-[#2B6CB0] text-lg font-medium mb-2">{{ doc.title }}</h3>
+                        {% endif %}
                         {% if doc.transcripts %}
                         <p class="text-[#666666] mb-3">...{{ snippet|safe }}...</p>
                         {% else %}

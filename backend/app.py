@@ -54,194 +54,22 @@ else:
     POPPLER_PATH = None
 
 RESULTS_PER_PAGE = 20
-DOCUMENTS = [
-    {
-        "id": 1,
-        "title": "Sunset Boulevard",
-        "description": "Copyright registration documents for the clas",
-        "year": "1950",
-        "documentType": "Copyright Registration",
-        "fullDescription": "Sunset Boulevard is a classic American film noir ",
-        "studio": "Paramount Pictures",
-        "genre": "Film Noir / Drama",
-        "director": "Billy Wilder",
-        "actors": [
-            "Gloria Swanson",
-            "William Holden",
-            "Erich von Stroheim",
-            "Nancy Olson",
-        ],
-        "runtime": "110 minutes",
-        "language": "English",
-        "flags": [
-            {
-                "id": 1,
-                "user": "Dr. Sarah Mitchell",
-                "reason": "Document appears to have incorrect filing date. Should be s.",
-                "date": "Nov 15, 2025",
-            },
-            {
-                "id": 2,
-                "user": "James Rodriguez",
-                "reason": "Missing signature on page 3 of the copyright registration form.",
-                "date": "Nov 12, 2025",
-            },
-            {
-                "id": 3,
-                "user": "Emily Chen",
-                "reason": "Potential discrepancy in the listed production company name.",
-                "date": "Nov 10, 2025",
-            },
-        ],
-    },
-    {
-        "id": 2,
-        "title": "The Jazz Singer",
-        "description": "Historic copyright filing for the first feature-length.",
-        "year": "1927",
-        "documentType": "Copyright Registration",
-        "fullDescription": "The Jazz Singer revolutionized the film industry as the ",
-        "studio": "Warner Bros.",
-        "genre": "Musical Drama",
-        "director": "Alan Crosland",
-        "actors": ["Al Jolson", "May McAvoy", "Warner Oland", "Eugenie Besserer"],
-        "runtime": "88 minutes",
-        "language": "English",
-    },
-    {
-        "id": 3,
-        "title": "Metropolis",
-        "description": "Copyright documentation for Fritz Lang's influ.",
-        "year": "1927",
-        "documentType": "Copyright Registration",
-        "fullDescription": "Metropolis is a groundbreaking German.",
-        "studio": "UFA (Universum Film AG)",
-        "genre": "Science Fiction / Drama",
-        "director": "Fritz Lang",
-        "actors": [
-            "Brigitte Helm",
-            "Gustav Fröhlich",
-            "Alfred Abel",
-            "Rudolf Klein-Rogge",
-        ],
-        "runtime": "153 minutes",
-        "language": "Silent (German intertitles)",
-        "flags": [
-            {
-                "id": 4,
-                "user": "Prof. Heinrich Weber",
-                "reason": "Translation of German text may be inaccurate.",
-                "date": "Nov 14, 2025",
-            },
-            {
-                "id": 5,
-                "user": "Anna Foster",
-                "reason": "Document quality is poor - some text illegible. May need.",
-                "date": "Nov 8, 2025",
-            },
-        ],
-    },
-    {
-        "id": 4,
-        "title": "City Lights",
-        "description": "Charlie Chaplin's romantic comedy-drama about.",
-        "year": "1931",
-        "documentType": "Copyright Registration",
-        "fullDescription": "City Lights is a silent romantic comedy-.",
-        "studio": "United Artists",
-        "genre": "Romance / Comedy",
-        "director": "Charlie Chaplin",
-        "actors": [
-            "Charlie Chaplin",
-            "Virginia Cherrill",
-            "Florence Lee",
-            "Harry Myers",
-        ],
-        "runtime": "87 minutes",
-        "language": "Silent with music",
-    },
-    {
-        "id": 5,
-        "title": "King Kong",
-        "description": "Copyright records for .",
-        "year": "1933",
-        "documentType": "Copyright Registration",
-        "fullDescription": "King Kong is a landmark .",
-        "studio": "RKO Radio Pictures",
-        "genre": "Adventure / Horror",
-        "director": "Merian C. Cooper, Ernest B. Schoedsack",
-        "actors": ["Fay Wray", "Robert Armstrong", "Bruce Cabot"],
-        "runtime": "100 minutes",
-        "language": "English",
-    },
-    {
-        "id": 6,
-        "title": "Gone with the Wind",
-        "description": "Epic historical romance film set dura.",
-        "year": "1939",
-        "documentType": "Copyright Registration",
-        "fullDescription": "Gone with the Wind is an .",
-        "studio": "Metro-Goldwyn-Mayer",
-        "genre": "Historical Romance / Drama",
-        "director": "Victor Fleming",
-        "actors": [
-            "Vivien Leigh",
-            "Clark Gable",
-            "Olivia de Havilland",
-            "Leslie Howard",
-        ],
-        "runtime": "238 minutes",
-        "language": "English",
-        "flags": [
-            {
-                "id": 6,
-                "user": "Michael Thompson",
-                "reason": "Multiple versions of this document exist in archive..",
-                "date": "Nov 13, 2025",
-            }
-        ],
-    },
-]
-
-# Mock history data
-SEARCH_HISTORY = [
-    {"id": 1, "query": "Sunset Boulevard", "date": "Nov 15, 2025"},
-    {"id": 2, "query": "Charlie Chaplin", "date": "Nov 14, 2025"},
-    {"id": 3, "query": "1927 films", "date": "Nov 12, 2025"},
-    {"id": 4, "query": "film noir", "date": "Nov 10, 2025"},
-    {"id": 5, "query": "Gone with the Wind", "date": "Nov 8, 2025"},
-]
-
-VIEW_HISTORY = [
-    {
-        "id": 1,
-        "title": "Sunset Boulevard",
-        "description": "Copyright registration documents for .",
-        "year": "1950",
-        "documentType": "Copyright Registration",
-        "viewedDate": "Nov 15, 2025",
-    },
-    {
-        "id": 4,
-        "title": "City Lights",
-        "description": "Charlie Chaplin's romantic comedy-drama .",
-        "year": "1931",
-        "documentType": "Copyright Registration",
-        "viewedDate": "Nov 14, 2025",
-    },
-    {
-        "id": 2,
-        "title": "The Jazz Singer",
-        "description": "Historic copyright filing .",
-        "year": "1927",
-        "documentType": "Copyright Registration",
-        "viewedDate": "Nov 12, 2025",
-    },
-]
 
 
 def valid_id(doc_id: str) -> bool:
     return re.fullmatch(r"\w\d{4}\w\d{5}", doc_id) is not None
+
+
+def _search_signature_from_args() -> str:
+    """Stable signature of active filters, excluding page number."""
+    keys: list[str] = sorted(
+        k for k in request.args.keys() if k not in {"page", "replay_search_id"}
+    )
+    return "&".join(
+        f"{key}={(request.args.get(key) or '').strip()}"
+        for key in keys
+        if (request.args.get(key) or "").strip() != ""
+    )
 
 
 @app.context_processor
@@ -314,6 +142,45 @@ def index():
     )
 
     headlines: dict[str, str] = db_utils.get_headlines(dbConnection, results, query)
+    current_search_id: int | None = None
+    viewed_doc_ids: set[str] = set()
+
+    user_name = session.get("user")
+    # If the user is signed in, append to their search history
+    if user_name:
+        viewed_doc_ids = db_utils.get_viewed_document_ids(dbConnection, user_name)
+        replay_search_id: int | None = request.args.get("replay_search_id", type=int)
+        replay_entry = (
+            db_utils.get_search_history_entry(dbConnection, user_name, replay_search_id)
+            if replay_search_id is not None
+            else None
+        )
+
+        # load from previous search if it is a repeat
+        if replay_entry:
+            current_search_id = replay_entry["id"]
+            session["last_search_signature"] = _search_signature_from_args()
+            session["last_search_id"] = current_search_id
+        else:
+            # Only log when explicit filters are present; avoid logging blank "/" loads.
+            signature: str = _search_signature_from_args()
+            if signature:
+                if signature == session.get("last_search_signature"):
+                    current_search_id = session.get("last_search_id")
+                else:
+                    current_search_id = db_utils.log_search(
+                        dbConnection,
+                        user_name=user_name,
+                        start_year=year_min if "year_min" in request.args else None,
+                        end_year=year_max if "year_max" in request.args else None,
+                        studio=None,  # TODO wire studio filter when available
+                        actors=[],
+                        genres=[genre] if genre else [],
+                        tags=[],
+                        search_text=search,
+                    )
+                    session["last_search_signature"] = signature
+                    session["last_search_id"] = current_search_id
 
     return render_template(
         "index.html",
@@ -326,6 +193,9 @@ def index():
         page=page,
         num_results=num_results,
         results_per_page=RESULTS_PER_PAGE,
+        viewed_doc_ids=viewed_doc_ids,
+        current_search_id=current_search_id,
+        current_results_path=request.full_path.rstrip("?"),
     )
 
 
@@ -335,7 +205,32 @@ def document_detail(doc_id):
     if not document:
         flash("Document not found", "error")
         return redirect(url_for("index"))
-    return render_template("document_detail.html", document=document)
+
+    # if the user is logged in, add the document to the user's viewing history
+    user_name = session.get("user")
+    if user_name:
+        request_search_id: int | None = request.args.get("search_id", type=int)
+        valid_search_id: int | None = None
+        if request_search_id is not None:
+            search_entry = db_utils.get_search_history_entry(
+                dbConnection, user_name, request_search_id
+            )
+            valid_search_id = search_entry["id"] if search_entry else None
+
+        db_utils.log_view(
+            dbConnection,
+            user_name=user_name,
+            document_id=doc_id,
+            search_id=valid_search_id,
+        )
+
+    back_url = url_for("index")
+    return_to = request.args.get("return_to", "")
+    # prevents links which would redirect to outside the website
+    if return_to.startswith("/") and not return_to.startswith("//"):
+        back_url = return_to
+
+    return render_template("document_detail.html", document=document, back_url=back_url)
 
 
 @app.route("/download/<doc_id>.pdf")
@@ -362,9 +257,43 @@ def download_pdf(doc_id):
 
 @app.route("/history")
 def view_history():
-    return render_template(
-        "view_history.html", history=VIEW_HISTORY, searches=SEARCH_HISTORY
-    )
+    user_name = session.get("user")
+    if not user_name:
+        flash("Log in to view your history.", "error")
+        return redirect(url_for("index"))
+
+    searches = db_utils.get_search_history(dbConnection, user_name)
+    history = db_utils.get_view_history(dbConnection, user_name)
+
+    return render_template("view_history.html", history=history, searches=searches)
+
+
+@app.route("/history/replay/<int:search_id>")
+def replay_search(search_id):
+    user_name = session.get("user")
+    if not user_name:
+        flash("Log in to replay a saved search.", "error")
+        return redirect(url_for("index"))
+
+    search_entry = db_utils.get_search_history_entry(dbConnection, user_name, search_id)
+    if not search_entry:
+        flash("Saved search not found.", "error")
+        return redirect(url_for("view_history"))
+
+    query_args: dict[str, str | int] = {"replay_search_id": search_id}
+
+    if search_entry["search_text"]:
+        query_args["search"] = search_entry["search_text"]
+    if search_entry["start_year"] is not None:
+        query_args["year_min"] = search_entry["start_year"]
+    if search_entry["end_year"] is not None:
+        query_args["year_max"] = search_entry["end_year"]
+    if search_entry["genres"]:
+        first_genre = search_entry["genres"].split(",")[0].strip()
+        if first_genre:
+            query_args["genre"] = first_genre
+
+    return redirect(url_for("index", **query_args))
 
 
 @app.route("/thumbnail/<doc_id>.jpg", methods=["GET"])
@@ -419,11 +348,20 @@ def thumbnail(doc_id):
 
 @app.route("/history/download")
 def download_history():
+    user_name = session.get("user")
+    if not user_name:
+        flash("Log in to download your history.", "error")
+        return redirect(url_for("index"))
+
+    history = db_utils.get_view_history(dbConnection, user_name)
+
     # Create CSV
     output = StringIO()
     writer = csv.writer(output)
-    writer.writerow(["Title", "Year", "Document Type", "Description", "Viewed Date"])
-    for doc in VIEW_HISTORY:
+    writer.writerow(
+        ["Title", "Year", "Document Type", "Description", "Viewed Date", "Search Text"]
+    )
+    for doc in history:
         writer.writerow(
             [
                 doc["title"],
@@ -431,13 +369,17 @@ def download_history():
                 doc["documentType"],
                 doc["description"],
                 doc["viewedDate"],
+                doc["searchText"] or "",
             ]
         )
 
     # Create response
-    output.seek(0)
+    csv_bytes = output.getvalue().encode("utf-8")
+    buffer = BytesIO(csv_bytes)
+    buffer.seek(0)
+
     return send_file(
-        StringIO(output.getvalue()),
+        buffer,
         mimetype="text/csv",
         as_attachment=True,
         download_name="viewing-history.csv",
