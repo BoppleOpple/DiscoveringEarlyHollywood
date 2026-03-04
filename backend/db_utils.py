@@ -461,6 +461,7 @@ def _search_label(
     studio: str | None,
     genres: str | None,
 ) -> str:
+    """Build label for a logged search from database row."""
     if search_text and search_text.strip():
         return search_text.strip()
 
