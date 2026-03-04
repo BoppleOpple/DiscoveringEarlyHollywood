@@ -453,8 +453,6 @@ def _csv(values: list[str] | None) -> str | None:
 
 
 def _search_label(
-    """Build label for a logged search from database row"""
-
     search_text: str | None,
     start_year: int | None,
     end_year: int | None,
