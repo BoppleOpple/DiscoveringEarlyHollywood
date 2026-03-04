@@ -38,21 +38,23 @@
             <tr class="text-[#666666] leading-relaxed border-t-2 border-[#E0E0E0]">
                 <td class="pt-2 pb-2">
                     <div class="flex-shrink-0">
-                        <div class="w-64 min-h-32 bg-[#F5F5F0] border-2 border-[#CCCCCC] rounded-lg flex items-center justify-center overflow-hidden">
-                            <img class="grow" src="{{ url_for('thumbnail', doc_id=document.id, page=page+1) }}" alt="Thumbnail could not be loaded">
-                            <!-- <div class="text-center">
-                                <svg class="w-24 h-24 text-[#666666] mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" 
-                                    d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
-                                </svg>
-                                <p class="text-[#666666]">
-                                    Copyright Document
-                                </p>
-                                <p class="text-[#666666] mt-1">
-                                    {{ document.copyrightYear }}
-                                </p>
-                            </div> -->
-                        </div>
+                        <a href="{{ url_for('download_pdf', doc_id=document.id) }}">
+                            <div class="w-64 min-h-32 bg-[#F5F5F0] border-2 border-[#CCCCCC] rounded-lg flex items-center justify-center overflow-hidden">
+                                <img class="grow" src="{{ url_for('thumbnail', doc_id=document.id, page=page+1) }}" alt="Thumbnail could not be loaded">
+                                <!-- <div class="text-center">
+                                    <svg class="w-24 h-24 text-[#666666] mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" 
+                                        d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                                    </svg>
+                                    <p class="text-[#666666]">
+                                        Copyright Document
+                                    </p>
+                                    <p class="text-[#666666] mt-1">
+                                        {{ document.copyrightYear }}
+                                    </p>
+                                </div> -->
+                            </div>
+                        </a>
                     </div>
                 </td>
                 <td class="pt-2 pb-2">{{ text }}</td>
