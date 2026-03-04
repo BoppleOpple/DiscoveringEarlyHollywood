@@ -146,6 +146,7 @@ def index():
     viewed_doc_ids: set[str] = set()
 
     user_name = session.get("user")
+    # If the user is signed in, append to their search history
     if user_name:
         viewed_doc_ids = db_utils.get_viewed_document_ids(dbConnection, user_name)
         replay_search_id: int | None = request.args.get("replay_search_id", type=int)
@@ -155,6 +156,7 @@ def index():
             else None
         )
 
+        # load from previous search if it is a repeat
         if replay_entry:
             current_search_id = replay_entry["id"]
             session["last_search_signature"] = _search_signature_from_args()
@@ -204,6 +206,7 @@ def document_detail(doc_id):
         flash("Document not found", "error")
         return redirect(url_for("index"))
 
+    # if the user is logged in, add the document to the user's viewing history
     user_name = session.get("user")
     if user_name:
         request_search_id: int | None = request.args.get("search_id", type=int)
@@ -223,6 +226,7 @@ def document_detail(doc_id):
 
     back_url = url_for("index")
     return_to = request.args.get("return_to", "")
+    # prevents links which would redirect to outside the website
     if return_to.startswith("/") and not return_to.startswith("//"):
         back_url = return_to
 
