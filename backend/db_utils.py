@@ -453,6 +453,7 @@ def _csv(values: list[str] | None) -> str | None:
 
 
 def _search_label(
+"""Build a human-readable label for a saved search. Preferably search_text"""
     search_text: str | None,
     start_year: int | None,
     end_year: int | None,
