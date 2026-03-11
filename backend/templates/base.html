@@ -27,17 +27,17 @@
                 </h1>
             </div>
             <nav class="flex items-center gap-6">
-                <a href="{{ url_for('view_history') }}" class="text-white hover:opacity-80 transition-opacity">
+                <a href="{{ url_for('history.view_history') }}" class="text-white hover:opacity-80 transition-opacity">
                     View History
                 </a>
                 <a href="{{ url_for('flagged_documents') }}" class="text-white hover:opacity-80 transition-opacity">
                     Flagged Documents
                 </a>
-                <a href="{{ url_for('documents_manager') }}" class="text-white hover:opacity-80 transition-opacity">
+                <a href="{{ url_for('manager.documents_manager') }}" class="text-white hover:opacity-80 transition-opacity">
                     Documents Manager
                 </a>
                 {% if session.get('user') %}
-                    <a href="{{ url_for('logout') }}" class="text-white hover:opacity-80 transition-opacity">
+                    <a href="{{ url_for('account.logout') }}" class="text-white hover:opacity-80 transition-opacity">
                         Logout
                     </a>
                 {% else %}
@@ -79,7 +79,7 @@
             </div>
 
             <!-- Login Form -->
-            <form id="loginForm" action="{{ url_for('login') }}" method="POST" class="space-y-4">
+            <form id="loginForm" action="{{ url_for('account.login') }}" method="POST" class="space-y-4">
                 <div>
                     <label for="login-name" class="block text-[#2C2C2C] mb-2">Full Name</label>
                     <input type="text" id="login-name" name="full_name" required
@@ -101,7 +101,7 @@
             </form>
 
             <!-- Signup Form -->
-            <form id="signupForm" action="{{ url_for('signup') }}" method="POST" class="space-y-4 hidden">
+            <form id="signupForm" action="{{ url_for('account.signup') }}" method="POST" class="space-y-4 hidden">
                 <div>
                     <label for="signup-name" class="block text-[#2C2C2C] mb-2">Full Name</label>
                     <input type="text" id="signup-name" name="full_name" required
@@ -210,7 +210,7 @@
             clearErrors();
 
             // Talks with Backend 
-            const response = await fetch('/login', {
+            const response = await fetch('/account/login', {
                 method: 'POST',
                 body: new FormData(this)
             });
@@ -233,7 +233,7 @@
             clearErrors();
 
             // Talks with Backend 
-            const response = await fetch('/signup', {
+            const response = await fetch('/account/signup', {
                 method: 'POST',
                 body: new FormData(this)
             });

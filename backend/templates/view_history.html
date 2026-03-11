@@ -10,7 +10,7 @@
         
         <div class="space-y-3">
             {% for search in searches %}
-            <a href="{{ url_for('replay_search', search_id=search.id) }}"
+            <a href="{{ url_for('history.replay_search', search_id=search.id) }}"
                class="block w-full text-left p-3 bg-white border-2 border-[#E0E0E0] rounded hover:border-[#8B0000] transition-colors group">
                 <div class="flex items-start gap-2">
                     <svg class="w-4 h-4 text-[#2B6CB0] mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -51,7 +51,7 @@
                     </svg>
                     Home
                 </a>
-                <a href="{{ url_for('download_history') }}" 
+                <a href="{{ url_for('history.download_history') }}" 
                    class="inline-flex items-center bg-[#2C2C2C] hover:bg-[#8B0000] text-white py-2 px-4 rounded transition-colors">
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
@@ -64,12 +64,12 @@
         <div class="space-y-4">
             {% for doc in history %}
             <div class="relative">
-                <a href="{{ url_for('document_detail', doc_id=doc.id) }}" 
+                <a href="{{ url_for('document.document_detail', doc_id=doc.id) }}" 
                    class="block w-full bg-white border-2 border-[#E0E0E0] rounded-lg p-4 hover:border-[#8B0000] transition-colors">
                     <div class="flex gap-4">
                         <div class="flex-shrink-0">
                             <div class="w-24 h-32 bg-[#F5F5F0] border border-[#CCCCCC] rounded flex items-center justify-center">
-                                <img class="grow" src="{{ url_for('thumbnail', doc_id=doc.id, scale=0.2) }}" alt="Thumbnail could not be loaded">
+                                <img class="grow" src="{{ url_for('document.thumbnail', doc_id=doc.id, scale=0.2) }}" alt="Thumbnail could not be loaded">
                                 <!-- <svg class="w-12 h-12 text-[#666666]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
                                           d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>

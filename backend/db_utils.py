@@ -1,9 +1,31 @@
 """A collection of helpers for sending and recieving data to/from the PostgreSQL database."""
 
 from pathlib import Path
+import psycopg2
 import psycopg2.sql as sql
 from psycopg2.extensions import connection, cursor
+from flask import current_app, g
 from .datatypes import Document, Query, Flag
+
+
+def get_db_connection() -> psycopg2.extensions.connection:
+    """Creates a new ``psycopg2.extensions.connection`` or returns the current one
+
+    Returns
+    -------
+    db_connection : :obj:`psycopg2.extensions.connection`
+        The active ``psycopg2`` connection
+    """
+    if "db_connection" not in g:
+        g.db_connection = psycopg2.connect(
+            host=current_app.config["SQL_HOST"],
+            port=current_app.config["SQL_PORT"],
+            dbname=current_app.config["SQL_DBNAME"],
+            user=current_app.config["SQL_USER"],
+            password=current_app.config["SQL_PASSWORD"],
+        )
+
+    return g.db_connection
 
 
 def relation_from_id_to_all_values(
