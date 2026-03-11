@@ -34,6 +34,18 @@ def valid_id(doc_id: str) -> bool:
     return re.fullmatch(r"\w\d{4}\w\d{5}", doc_id) is not None
 
 
+def _search_signature_from_args() -> str:
+    """Stable signature of active filters, excluding page number."""
+    keys: list[str] = sorted(
+        k for k in request.args.keys() if k not in {"page", "replay_search_id"}
+    )
+    return "&".join(
+        f"{key}={(request.args.get(key) or '').strip()}"
+        for key in keys
+        if (request.args.get(key) or "").strip() != ""
+    )
+
+
 def create_app(**kwargs) -> Flask:
     app: Flask = Flask(__name__)
 
@@ -41,58 +53,49 @@ def create_app(**kwargs) -> Flask:
 
     app.config.update(**kwargs)
 
+    app.secret_key = (
+        app.config["FLASK_SECRET"] if "FLASK_SECRET" in app.config else None
+    )
+
     # Ensure upload folder exists
     os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
+
+    @app.context_processor
+    def utility_processor():
+        """A ``Flask.context_processor`` that provides helper functions to template."""
+
+        def modify_args_on_page(page: str, args: dict):
+            """A helper that modifies a page's URL arguments to include different or new values.
+
+            Parameters
+            ----------
+            page : str
+                The Flask page to which arguments are appended
+            args : dict
+                A ``dict`` containing the URL arguments to modify or add
+
+            Examples
+            --------
+            >>> # executing on page ``http://localhost:3388/results?query=How+to+Perform+Electrolysis&page=1``
+            >>> modify_args_on_page("results", {"page": 2}})
+            "http://localhost:3388/results?query=How+to+Perform+Electrolysis&page=2"
+            """  # noqa E501
+            return url_for(page, **{**request.args, **args})
+
+        return dict(modify_args_on_page=modify_args_on_page, ceil=math.ceil)
 
     @app.teardown_appcontext
     def teardown_db_connection(exception):
         db_connection: psycopg2.extensions.connection = g.pop("db_connection", None)
-
         if db_connection:
             db_connection.close()
-
-    # Mock history data
-    SEARCH_HISTORY = [
-        {"id": 1, "query": "Sunset Boulevard", "date": "Nov 15, 2025"},
-        {"id": 2, "query": "Charlie Chaplin", "date": "Nov 14, 2025"},
-        {"id": 3, "query": "1927 films", "date": "Nov 12, 2025"},
-        {"id": 4, "query": "film noir", "date": "Nov 10, 2025"},
-        {"id": 5, "query": "Gone with the Wind", "date": "Nov 8, 2025"},
-    ]
-
-    VIEW_HISTORY = [
-        {
-            "id": 1,
-            "title": "Sunset Boulevard",
-            "description": "Copyright registration documents for .",
-            "year": "1950",
-            "documentType": "Copyright Registration",
-            "viewedDate": "Nov 15, 2025",
-        },
-        {
-            "id": 4,
-            "title": "City Lights",
-            "description": "Charlie Chaplin's romantic comedy-drama .",
-            "year": "1931",
-            "documentType": "Copyright Registration",
-            "viewedDate": "Nov 14, 2025",
-        },
-        {
-            "id": 2,
-            "title": "The Jazz Singer",
-            "description": "Historic copyright filing .",
-            "year": "1927",
-            "documentType": "Copyright Registration",
-            "viewedDate": "Nov 12, 2025",
-        },
-    ]
 
     @app.route("/")
     def index():
         search = request.args.get("search", "")
         genre = request.args.get("genre", None)
-        year_min: int = request.args.get("year_min", 1915, type=int)
-        year_max: int = request.args.get("year_max", 1926, type=int)
+        year_min: int = request.args.get("year_min", 1912, type=int)
+        year_max: int = request.args.get("year_max", 1928, type=int)
         page: int = request.args.get("page", 1, type=int)
 
         query: Query = Query(
@@ -117,16 +120,72 @@ def create_app(**kwargs) -> Flask:
             db_utils.get_db_connection(),
             query,
             page,
+            resultsPerPage=app.config["RESULTS_PER_PAGE"],
         )
+
+        headlines: dict[str, str] = db_utils.get_headlines(
+            db_utils.get_db_connection(), results, query
+        )
+        current_search_id: int | None = None
+        viewed_doc_ids: set[str] = set()
+
+        user_name = session.get("user")
+        # If the user is signed in, append to their search history
+        if user_name:
+            viewed_doc_ids = db_utils.get_viewed_document_ids(
+                db_utils.get_db_connection(), user_name
+            )
+            replay_search_id: int | None = request.args.get(
+                "replay_search_id", type=int
+            )
+            replay_entry = (
+                db_utils.get_search_history_entry(
+                    db_utils.get_db_connection(), user_name, replay_search_id
+                )
+                if replay_search_id is not None
+                else None
+            )
+
+            # load from previous search if it is a repeat
+            if replay_entry:
+                current_search_id = replay_entry["id"]
+                session["last_search_signature"] = _search_signature_from_args()
+                session["last_search_id"] = current_search_id
+            else:
+                # Only log when explicit filters are present; avoid logging blank "/" loads.
+                signature: str = _search_signature_from_args()
+                if signature:
+                    if signature == session.get("last_search_signature"):
+                        current_search_id = session.get("last_search_id")
+                    else:
+                        current_search_id = db_utils.log_search(
+                            db_utils.get_db_connection(),
+                            user_name=user_name,
+                            start_year=year_min if "year_min" in request.args else None,
+                            end_year=year_max if "year_max" in request.args else None,
+                            studio=None,  # TODO wire studio filter when available
+                            actors=[],
+                            genres=[genre] if genre else [],
+                            tags=[],
+                            search_text=search,
+                        )
+                        session["last_search_signature"] = signature
+                        session["last_search_id"] = current_search_id
 
         return render_template(
             "index.html",
             documents=results,
+            headlines=headlines,
             search=search,
             genre=genre,
+            year_min=year_min,
+            year_max=year_max,
             page=page,
             num_results=num_results,
             results_per_page=app.config["RESULTS_PER_PAGE"],
+            viewed_doc_ids=viewed_doc_ids,
+            current_search_id=current_search_id,
+            current_results_path=request.full_path.rstrip("?"),
         )
 
     @app.route("/document/<doc_id>")
@@ -135,13 +194,96 @@ def create_app(**kwargs) -> Flask:
         if not document:
             flash("Document not found", "error")
             return redirect(url_for("index"))
-        return render_template("document_detail.html", document=document)
+
+        # if the user is logged in, add the document to the user's viewing history
+        user_name = session.get("user")
+        if user_name:
+            request_search_id: int | None = request.args.get("search_id", type=int)
+            valid_search_id: int | None = None
+            if request_search_id is not None:
+                search_entry = db_utils.get_search_history_entry(
+                    db_utils.get_db_connection(), user_name, request_search_id
+                )
+                valid_search_id = search_entry["id"] if search_entry else None
+
+            db_utils.log_view(
+                db_utils.get_db_connection(),
+                user_name=user_name,
+                document_id=doc_id,
+                search_id=valid_search_id,
+            )
+
+        back_url = url_for("index")
+        return_to = request.args.get("return_to", "")
+        # prevents links which would redirect to outside the website
+        if return_to.startswith("/") and not return_to.startswith("//"):
+            back_url = return_to
+
+        return render_template(
+            "document_detail.html", document=document, back_url=back_url
+        )
+
+    @app.route("/download/<doc_id>.pdf")
+    def download_pdf(doc_id):
+        try:
+            if not valid_id(doc_id):
+                raise Exception("Not a valid doc_id")
+
+            pdf_path: Path = Path(app.config["DOCUMENT_DIR"]) / doc_id / f"{doc_id}.pdf"
+
+            if not pdf_path.exists():
+                raise Exception("Not a valid document path")
+
+            return send_file(
+                pdf_path,
+                mimetype="application/pdf",
+                as_attachment=False,
+                download_name=f"{doc_id}.pdf",
+            )
+        except Exception as e:
+            print(e)
+            return "Document not found", 404
 
     @app.route("/history")
     def view_history():
-        return render_template(
-            "view_history.html", history=VIEW_HISTORY, searches=SEARCH_HISTORY
-        )
+        user_name = session.get("user")
+        if not user_name:
+            flash("Log in to view your history.", "error")
+            return redirect(url_for("index"))
+
+        searches = db_utils.get_search_history(db_utils.get_db_connection(), user_name)
+        history = db_utils.get_view_history(db_utils.get_db_connection(), user_name)
+
+        return render_template("view_history.html", history=history, searches=searches)
+
+        @app.route("/history/replay/<int:search_id>")
+        def replay_search(search_id):
+            user_name = session.get("user")
+            if not user_name:
+                flash("Log in to replay a saved search.", "error")
+                return redirect(url_for("index"))
+
+            search_entry = db_utils.get_search_history_entry(
+                db_utils.get_db_connection(), user_name, search_id
+            )
+            if not search_entry:
+                flash("Saved search not found.", "error")
+                return redirect(url_for("view_history"))
+
+            query_args: dict[str, str | int] = {"replay_search_id": search_id}
+
+            if search_entry["search_text"]:
+                query_args["search"] = search_entry["search_text"]
+            if search_entry["start_year"] is not None:
+                query_args["year_min"] = search_entry["start_year"]
+            if search_entry["end_year"] is not None:
+                query_args["year_max"] = search_entry["end_year"]
+            if search_entry["genres"]:
+                first_genre = search_entry["genres"].split(",")[0].strip()
+                if first_genre:
+                    query_args["genre"] = first_genre
+
+            return redirect(url_for("index", **query_args))
 
     @app.route("/thumbnail/<doc_id>.jpg", methods=["GET"])
     def thumbnail(doc_id):
@@ -196,13 +338,27 @@ def create_app(**kwargs) -> Flask:
 
     @app.route("/history/download")
     def download_history():
+        user_name = session.get("user")
+        if not user_name:
+            flash("Log in to download your history.", "error")
+            return redirect(url_for("index"))
+
+        history = db_utils.get_view_history(db_utils.get_db_connection(), user_name)
+
         # Create CSV
         output = StringIO()
         writer = csv.writer(output)
         writer.writerow(
-            ["Title", "Year", "Document Type", "Description", "Viewed Date"]
+            [
+                "Title",
+                "Year",
+                "Document Type",
+                "Description",
+                "Viewed Date",
+                "Search Text",
+            ]
         )
-        for doc in VIEW_HISTORY:
+        for doc in history:
             writer.writerow(
                 [
                     doc["title"],
@@ -210,13 +366,17 @@ def create_app(**kwargs) -> Flask:
                     doc["documentType"],
                     doc["description"],
                     doc["viewedDate"],
+                    doc["searchText"] or "",
                 ]
             )
 
         # Create response
-        output.seek(0)
+        csv_bytes = output.getvalue().encode("utf-8")
+        buffer = BytesIO(csv_bytes)
+        buffer.seek(0)
+
         return send_file(
-            StringIO(output.getvalue()),
+            buffer,
             mimetype="text/csv",
             as_attachment=True,
             download_name="viewing-history.csv",
@@ -276,17 +436,17 @@ def create_app(**kwargs) -> Flask:
                 errors.append("Invalid name or password.")
 
         if errors:
-            return render_template("index.html", errors=errors, open_modal=True)
+            return jsonify({"errors": errors}), 400
 
         session["user"] = username
-        session["user_name"] = username
 
         flash(f"Welcome back, {username}!", "success")
-        return redirect(url_for("index"))
+        return jsonify({"success": True})
 
     @app.route("/signup", methods=["POST"])
     def signup():
         username = request.form.get("full_name", "").strip()
+        email = request.form.get("email", "").strip()
         password = request.form.get("password", "")
         confirm_password = request.form.get("confirm_password", "")
 
@@ -304,6 +464,12 @@ def create_app(**kwargs) -> Flask:
         elif db_auth.user_exists(db_utils.get_db_connection(), username):
             errors.append("An account with that username already exists.")
 
+        # Email validation
+        if not email:
+            errors.append("Email is required.")
+        elif db_auth.email_exists(db_utils.get_db_connection(), email):
+            errors.append("Email already registered.")
+
         # Password validation
         if not password:
             errors.append("Password is required.")
@@ -320,28 +486,27 @@ def create_app(**kwargs) -> Flask:
                 errors.append("Password must contain at least one number.")
             if not re.search(r"[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]", password):
                 errors.append(
-                    "Password must contain at least one special character (!@#$%^&*()_+-=[]{}|;:,.<>?)."  # noqa: E501
+                    "Password must contain at least one special character (!@#$%^&*()_+-=[]{}|;:,.<>?)."  # noqa E501
                 )
 
         if errors:
-            return render_template(
-                "index.html", errors=errors, open_modal=True, open_signup=True
-            )
+            return jsonify({"errors": errors}), 400
 
         password_hash = generate_password_hash(password)
-        success = db_auth.create_user(
-            db_utils.get_db_connection(), username, password_hash
+        success_signup = db_auth.create_user(
+            db_utils.get_db_connection(), username, email, password_hash
         )
 
-        if not success:
-            flash("Could not create account. Please try again.", "error")
-            return redirect(url_for("index"))
+        if not success_signup:
+            return (
+                jsonify({"errors": ["Could not create account. Please try again."]}),
+                400,
+            )
 
         session["user"] = username
-        session["user_name"] = username
 
         flash(f"Account created! Welcome, {username}.", "success")
-        return redirect(url_for("index"))
+        return jsonify({"success": True})
 
     @app.route("/logout")
     def logout():
@@ -401,50 +566,6 @@ def create_app(**kwargs) -> Flask:
             return jsonify({"message": "OCR content saved successfully!"}), 200
         except Exception as e:
             return jsonify({"error": str(e)}), 500
-
-    @app.route("/results", methods=["GET", "POST"])
-    def results():
-        """Register a new route for the ``results`` page of the app."""
-
-        textQuery: str = request.args.get("query", "")
-
-        yearString: str = request.args.get("year", "")
-        year: int = int(yearString) if yearString.isnumeric() else None
-
-        page = request.args.get("page", 1, type=int)
-
-        print_kwargs(**request.args)
-
-        query: Query = Query(
-            actors=[],  # TODO
-            tags=[],  # TODO
-            genres=[],  # TODO
-            keywords=list(
-                filter(lambda s: s != "", textQuery.split(" "))
-            ),  # TODO allow searching both titles and transcripts
-            documentType=None,  # TODO
-            studio=None,  # TODO
-            copyrightYearRange=(year, year),  # TODO allow a start & end value
-            durationRange=(None, None),  # TODO
-        )
-
-        num_results = db_utils.get_num_results(
-            db_utils.get_db_connection(),
-            query,
-        )
-
-        results: list[Document] = db_utils.search_results(
-            db_utils.get_db_connection(),
-            query,
-            page,
-        )
-
-        return render_template(
-            "results.html",
-            results=results,
-            page=page,
-            num_pages=math.ceil(num_results / app.config["RESULTS_PER_PAGE"]),
-        )
 
     @app.route("/remove", methods=["POST"])
     def remove_documents():

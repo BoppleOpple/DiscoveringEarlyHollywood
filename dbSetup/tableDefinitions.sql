@@ -32,23 +32,23 @@ CREATE TABLE transcripts (
     document_id varchar(15),
     page_number integer,
     content text,
+    text_index_col tsvector GENERATED ALWAYS AS (to_tsvector('english', content)) STORED,
     CONSTRAINT fk_document_id FOREIGN KEY (document_id) REFERENCES documents(id),
     PRIMARY KEY (document_id, page_number)
 );
 
-CREATE TABLE queries (
-    user_name varchar(20),
-    time timestamp,
+CREATE TABLE search_history (
+    id BIGSERIAL PRIMARY KEY,
+    user_name varchar(20) NOT NULL,
+    "time" timestamp NOT NULL DEFAULT NOW(),
     start_year integer,
     end_year integer,
-    start_runtime integer,
-    end_runtime integer,
     studio text,
     actors text,
     genres text,
     tags text,
-    CONSTRAINT fk_user_name FOREIGN KEY (user_name) REFERENCES users(name),
-    PRIMARY KEY (user_name, time)
+    search_text text,
+    CONSTRAINT fk_user_name FOREIGN KEY (user_name) REFERENCES users(name)
 );
 
 CREATE TABLE error_locations (
@@ -68,14 +68,15 @@ CREATE TABLE flagged_by (
     PRIMARY KEY (document_id, user_name)
 );
 
-CREATE TABLE document_viewed (
-    document_id varchar(15),
-    user_name varchar(20),
-    query_time timestamp,
+CREATE TABLE view_history (
+    id BIGSERIAL PRIMARY KEY,
+    document_id varchar(15) NOT NULL,
+    user_name varchar(20) NOT NULL,
+    viewed_at timestamp NOT NULL DEFAULT NOW(),
+    search_id BIGINT,
     CONSTRAINT fk_document_id FOREIGN KEY (document_id) REFERENCES documents(id),
     CONSTRAINT fk_user_name FOREIGN KEY (user_name) REFERENCES users(name),
-    CONSTRAINT fk_query_time FOREIGN KEY (user_name, query_time) REFERENCES queries(user_name, time),
-    PRIMARY KEY (document_id, user_name, query_time)
+    CONSTRAINT fk_view_history_search FOREIGN KEY (search_id) REFERENCES search_history(id) ON DELETE SET NULL
 );
 
 CREATE TABLE has_actor (
@@ -106,5 +107,26 @@ CREATE TABLE has_tag (
 -- OTHER
 
 CREATE INDEX idx_studio ON documents(studio);
-CREATE INDEX idx_copyright_year ON documents(studio);
+CREATE INDEX idx_copyright_year ON documents(copyright_year);
 CREATE INDEX idx_title ON documents(title);
+CREATE INDEX idx_search_history_user_time ON search_history(user_name, "time" DESC);
+CREATE INDEX idx_view_history_user_time ON view_history(user_name, viewed_at DESC);
+CREATE INDEX idx_view_history_search_id ON view_history(search_id);
+
+-- macro for complete transcript text
+CREATE VIEW text_content_view AS (
+    SELECT document_id, STRING_AGG(content, ' ') AS content
+    FROM transcripts
+    GROUP BY document_id
+);
+
+-- index for text searching
+CREATE MATERIALIZED VIEW text_search_view AS (
+    SELECT
+        documents.id AS document_id,
+        setweight(to_tsvector(coalesce(title,'')), 'A') ||
+        setweight(to_tsvector(coalesce(text_content_view.content,'')), 'B') AS text_vector
+    FROM documents, text_content_view
+    WHERE documents.id = text_content_view.document_id
+    GROUP BY id
+) WITH NO DATA;
