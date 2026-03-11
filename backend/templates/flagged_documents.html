@@ -22,7 +22,7 @@
                 <div class="flex gap-4">
                     <div class="flex-shrink-0">
                         <div class="w-24 min-h-16 bg-[#F5F5F0] border border-[#CCCCCC] rounded flex items-center justify-center overflow-hidden">
-                            <img class="grow" src="{{ url_for('thumbnail', doc_id=doc.id, scale=0.2) }}" alt="Thumbnail could not be loaded">
+                            <img class="grow" src="{{ url_for('document.thumbnail', doc_id=doc.id, scale=0.2) }}" alt="Thumbnail could not be loaded">
                             <!-- <svg class="w-12 h-12 text-[#666666]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
                                       d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
@@ -31,7 +31,7 @@
                     </div>
                     <div class="flex-1">
                         <div class="flex items-start justify-between">
-                            <a href="{{ url_for('document_detail', doc_id=doc.id) }}" 
+                            <a href="{{ url_for('document.document_detail', doc_id=doc.id) }}" 
                                class="text-left flex-1 group">
                                 <h3 class="text-[#800080] text-lg font-medium mb-2 group-hover:underline">
                                     {{ doc.title }}

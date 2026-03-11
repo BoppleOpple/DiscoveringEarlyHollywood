@@ -4,33 +4,19 @@ from flask import (
     Flask,
     render_template,
     request,
-    redirect,
-    send_file,
     url_for,
     session,
-    jsonify,
-    flash,
     g,
 )
 import psycopg2
-import csv
-import re
-import PIL
-from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
-from io import StringIO, BytesIO
-from pathlib import Path
-import pdf2image.pdf2image
 
 from . import db_utils
-from . import db_auth
 from .datatypes import Document, Query
-
-
-def valid_id(doc_id: str) -> bool:
-    if doc_id is None:
-        return False
-    return re.fullmatch(r"\w\d{4}\w\d{5}", doc_id) is not None
+from .blueprints.account import account as bp_account
+from .blueprints.document import document as bp_document
+from .blueprints.history import history as bp_history
+from .blueprints.manager import manager as bp_manager
 
 
 def _search_signature_from_args() -> str:
@@ -45,6 +31,11 @@ def _search_signature_from_args() -> str:
     )
 
 
+def _print_kwargs(**kwargs):
+    """Prints keyword arguments to the server console."""
+    print(kwargs)
+
+
 def create_app(**kwargs) -> Flask:
     app: Flask = Flask(__name__)
 
@@ -53,6 +44,11 @@ def create_app(**kwargs) -> Flask:
     app.secret_key = (
         app.config["FLASK_SECRET"] if "FLASK_SECRET" in app.config else None
     )
+
+    app.register_blueprint(bp_account)
+    app.register_blueprint(bp_document)
+    app.register_blueprint(bp_history)
+    app.register_blueprint(bp_manager)
 
     @app.context_processor
     def utility_processor():
@@ -182,345 +178,10 @@ def create_app(**kwargs) -> Flask:
             current_results_path=request.full_path.rstrip("?"),
         )
 
-    @app.route("/document/<doc_id>")
-    def document_detail(doc_id):
-        document = db_utils.get_document(db_utils.get_db_connection(), doc_id)
-        if not document:
-            flash("Document not found", "error")
-            return redirect(url_for("index"))
-
-        # if the user is logged in, add the document to the user's viewing history
-        user_name = session.get("user")
-        if user_name:
-            request_search_id: int | None = request.args.get("search_id", type=int)
-            valid_search_id: int | None = None
-            if request_search_id is not None:
-                search_entry = db_utils.get_search_history_entry(
-                    db_utils.get_db_connection(), user_name, request_search_id
-                )
-                valid_search_id = search_entry["id"] if search_entry else None
-
-            db_utils.log_view(
-                db_utils.get_db_connection(),
-                user_name=user_name,
-                document_id=doc_id,
-                search_id=valid_search_id,
-            )
-
-        back_url = url_for("index")
-        return_to = request.args.get("return_to", "")
-        # prevents links which would redirect to outside the website
-        if return_to.startswith("/") and not return_to.startswith("//"):
-            back_url = return_to
-
-        return render_template(
-            "document_detail.html", document=document, back_url=back_url
-        )
-
-    @app.route("/download/<doc_id>.pdf")
-    def download_pdf(doc_id):
-        try:
-            if not valid_id(doc_id):
-                raise Exception("Not a valid doc_id")
-
-            pdf_path: Path = Path(app.config["DOCUMENT_DIR"]) / doc_id / f"{doc_id}.pdf"
-
-            if not pdf_path.exists():
-                raise Exception("Not a valid document path")
-
-            return send_file(
-                pdf_path,
-                mimetype="application/pdf",
-                as_attachment=False,
-                download_name=f"{doc_id}.pdf",
-            )
-        except Exception as e:
-            print(e)
-            return "Document not found", 404
-
-    @app.route("/history")
-    def view_history():
-        user_name = session.get("user")
-        if not user_name:
-            flash("Log in to view your history.", "error")
-            return redirect(url_for("index"))
-
-        searches = db_utils.get_search_history(db_utils.get_db_connection(), user_name)
-        history = db_utils.get_view_history(db_utils.get_db_connection(), user_name)
-
-        return render_template("view_history.html", history=history, searches=searches)
-
-    @app.route("/history/replay/<int:search_id>")
-    def replay_search(search_id):
-        user_name = session.get("user")
-        if not user_name:
-            flash("Log in to replay a saved search.", "error")
-            return redirect(url_for("index"))
-
-        search_entry = db_utils.get_search_history_entry(
-            db_utils.get_db_connection(), user_name, search_id
-        )
-        if not search_entry:
-            flash("Saved search not found.", "error")
-            return redirect(url_for("view_history"))
-
-        query_args: dict[str, str | int] = {"replay_search_id": search_id}
-
-        if search_entry["search_text"]:
-            query_args["search"] = search_entry["search_text"]
-        if search_entry["start_year"] is not None:
-            query_args["year_min"] = search_entry["start_year"]
-        if search_entry["end_year"] is not None:
-            query_args["year_max"] = search_entry["end_year"]
-        if search_entry["genres"]:
-            first_genre = search_entry["genres"].split(",")[0].strip()
-            if first_genre:
-                query_args["genre"] = first_genre
-
-        return redirect(url_for("index", **query_args))
-
-    @app.route("/thumbnail/<doc_id>.jpg", methods=["GET"])
-    def thumbnail(doc_id):
-        scale: float = request.args.get("scale", 1, type=float)
-        page: int = request.args.get("page", 1, type=int)
-
-        try:
-            if not valid_id(doc_id):
-                raise Exception("Not a valid doc_id")
-
-            pdf_path: Path = Path(app.config["DOCUMENT_DIR"]) / doc_id / f"{doc_id}.pdf"
-
-            if not pdf_path.exists():
-                raise Exception("Not a valid document path")
-
-            # get pdf info for page count and size
-            info: dict = pdf2image.pdfinfo_from_path(
-                pdf_path, poppler_path=app.config["POPPLER_PATH"]
-            )
-
-            page_size_split: list[str] = str(info["Page size"]).split(" ")
-            page_size: tuple[float, float] = (
-                float(page_size_split[0]) * scale,
-                float(page_size_split[2]) * scale,
-            )
-
-            # clamp requested page
-            page = max(1, min(page, info["Pages"]))
-
-            image: PIL.Image.Image = pdf2image.convert_from_path(
-                pdf_path=pdf_path,
-                first_page=page,
-                last_page=page,
-                size=page_size,
-                poppler_path=app.config["POPPLER_PATH"],
-            )[0]
-
-            image_buffer: BytesIO = BytesIO()
-            image.save(image_buffer, format="jpeg")
-
-            # Create response
-            image_buffer.seek(0)
-            return send_file(
-                image_buffer,
-                mimetype="image/jpg",
-                as_attachment=False,
-                download_name=f"{doc_id}_page_{page}.jpg",
-            )
-        except Exception as e:
-            print(e)
-            return "Document not found", 404
-
-    @app.route("/history/download")
-    def download_history():
-        user_name = session.get("user")
-        if not user_name:
-            flash("Log in to download your history.", "error")
-            return redirect(url_for("index"))
-
-        history = db_utils.get_view_history(db_utils.get_db_connection(), user_name)
-
-        # Create CSV
-        output = StringIO()
-        writer = csv.writer(output)
-        writer.writerow(
-            [
-                "Title",
-                "Year",
-                "Document Type",
-                "Description",
-                "Viewed Date",
-                "Search Text",
-            ]
-        )
-        for doc in history:
-            writer.writerow(
-                [
-                    doc["title"],
-                    doc["year"],
-                    doc["documentType"],
-                    doc["description"],
-                    doc["viewedDate"],
-                    doc["searchText"] or "",
-                ]
-            )
-
-        # Create response
-        csv_bytes = output.getvalue().encode("utf-8")
-        buffer = BytesIO(csv_bytes)
-        buffer.seek(0)
-
-        return send_file(
-            buffer,
-            mimetype="text/csv",
-            as_attachment=True,
-            download_name="viewing-history.csv",
-        )
-
     @app.route("/flagged")
     def flagged_documents():
         flagged = db_utils.get_flagged(db_utils.get_db_connection())
         return render_template("flagged_documents.html", documents=flagged)
-
-    def print_kwargs(**kwargs):
-        """Prints keyword arguments to the server console."""
-        print(kwargs)
-
-    @app.route("/manager")
-    def documents_manager():
-        search = request.args.get("search", "")
-        query: Query = Query(
-            actors=[],  # TODO
-            tags=[],  # TODO
-            keywords=list(
-                filter(lambda s: s != "", search.split(" ")) if search else []
-            ),  # TODO allow searching both titles and transcripts
-            documentType=None,  # TODO
-            studio=None,  # TODO
-            durationRange=(None, None),  # TODO
-        )
-
-        docs = db_utils.search_results(db_utils.get_db_connection(), query)
-        if search:
-            docs = [
-                d
-                for d in docs
-                if search.lower() in d["title"].lower()
-                or search.lower() in d.get("studio", "").lower()
-                or search in d["year"]
-            ]
-        return render_template("documents_manager.html", documents=docs, search=search)
-
-    @app.route("/login", methods=["POST"])
-    def login():
-        username = request.form.get("full_name", "").strip()
-        password = request.form.get("password", "")
-
-        errors = []
-
-        if not username or not password:
-            errors.append("Full name and password are required.")
-
-        if not errors:
-            password_hash = db_auth.get_user_password_hash(
-                db_utils.get_db_connection(), username
-            )
-            if password_hash is None or not check_password_hash(
-                password_hash, password
-            ):
-                errors.append("Invalid name or password.")
-
-        if errors:
-            return jsonify({"errors": errors}), 400
-
-        session["user"] = username
-
-        flash(f"Welcome back, {username}!", "success")
-        return jsonify({"success": True})
-
-    @app.route("/signup", methods=["POST"])
-    def signup():
-        username = request.form.get("full_name", "").strip()
-        email = request.form.get("email", "").strip()
-        password = request.form.get("password", "")
-        confirm_password = request.form.get("confirm_password", "")
-
-        errors = []
-
-        # Username validation
-        if not username:
-            errors.append("Username is required.")
-        elif not username.replace("_", "").isalnum():
-            errors.append(
-                "Username must contain only letters, numbers, and underscores."
-            )
-        elif len(username) > 20:
-            errors.append("Username must be 20 characters or less.")
-        elif db_auth.user_exists(db_utils.get_db_connection(), username):
-            errors.append("An account with that username already exists.")
-
-        # Email validation
-        if not email:
-            errors.append("Email is required.")
-        elif db_auth.email_exists(db_utils.get_db_connection(), email):
-            errors.append("Email already registered.")
-
-        # Password validation
-        if not password:
-            errors.append("Password is required.")
-        else:
-            if password != confirm_password:
-                errors.append("Passwords do not match.")
-            if len(password) < 8:
-                errors.append("Password must be at least 8 characters.")
-            if not any(c.isupper() for c in password):
-                errors.append("Password must contain at least one uppercase letter.")
-            if not any(c.islower() for c in password):
-                errors.append("Password must contain at least one lowercase letter.")
-            if not any(c.isdigit() for c in password):
-                errors.append("Password must contain at least one number.")
-            if not re.search(r"[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]", password):
-                errors.append(
-                    "Password must contain at least one special character (!@#$%^&*()_+-=[]{}|;:,.<>?)."  # noqa E501
-                )
-
-        if errors:
-            return jsonify({"errors": errors}), 400
-
-        password_hash = generate_password_hash(password)
-        success_signup = db_auth.create_user(
-            db_utils.get_db_connection(), username, email, password_hash
-        )
-
-        if not success_signup:
-            return (
-                jsonify({"errors": ["Could not create account. Please try again."]}),
-                400,
-            )
-
-        session["user"] = username
-
-        flash(f"Account created! Welcome, {username}.", "success")
-        return jsonify({"success": True})
-
-    @app.route("/logout")
-    def logout():
-        session.clear()
-        flash("You have been logged out.", "success")
-        return redirect(url_for("index"))
-
-    @app.route("/remove", methods=["POST"])
-    def remove_documents():
-        return "Not yet implemented", 404
-
-    @app.route("/upload", methods=["POST"])
-    def upload_documents():
-        return "Not yet implemented", 404
-
-    @app.route("/flag/<doc_id>", methods=["POST"])
-    def flag_document(doc_id):
-        # Mock flagging - in production, save to database
-        flash("Document flagged for review", "success")
-        return render_template(url_for("document_detail", doc_id=doc_id))
 
     return app
 
