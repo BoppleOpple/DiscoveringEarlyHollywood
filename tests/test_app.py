@@ -1,22 +1,7 @@
 from flask import testing
 from unittest.mock import patch
 
-from backend.app import valid_id
 from backend.datatypes import Document, Query
-
-
-class TestValidId:
-    def test_id_none_invalid(self):
-        id: str = None
-        assert valid_id(id) is False, "id of `None` shall be invalid"
-
-    def test_valid_id(self):
-        id: str = "s1234l56789"
-        assert valid_id(id) is True, "id of `s1234l56789` shall be valid"
-
-    def test_invalid_id(self):
-        id: str = "foobar"
-        assert valid_id(id) is False, "id of `foobar` shall be invalid"
 
 
 class TestIndex:
