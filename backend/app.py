@@ -16,7 +16,6 @@ import psycopg2
 import csv
 import re
 import PIL
-from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
 from io import StringIO, BytesIO
@@ -49,16 +48,11 @@ def _search_signature_from_args() -> str:
 def create_app(**kwargs) -> Flask:
     app: Flask = Flask(__name__)
 
-    app.config["UPLOAD_FOLDER"]: Path = Path("uploads")
-
     app.config.update(**kwargs)
 
     app.secret_key = (
         app.config["FLASK_SECRET"] if "FLASK_SECRET" in app.config else None
     )
-
-    # Ensure upload folder exists
-    os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
     @app.context_processor
     def utility_processor():
@@ -256,34 +250,34 @@ def create_app(**kwargs) -> Flask:
 
         return render_template("view_history.html", history=history, searches=searches)
 
-        @app.route("/history/replay/<int:search_id>")
-        def replay_search(search_id):
-            user_name = session.get("user")
-            if not user_name:
-                flash("Log in to replay a saved search.", "error")
-                return redirect(url_for("index"))
+    @app.route("/history/replay/<int:search_id>")
+    def replay_search(search_id):
+        user_name = session.get("user")
+        if not user_name:
+            flash("Log in to replay a saved search.", "error")
+            return redirect(url_for("index"))
 
-            search_entry = db_utils.get_search_history_entry(
-                db_utils.get_db_connection(), user_name, search_id
-            )
-            if not search_entry:
-                flash("Saved search not found.", "error")
-                return redirect(url_for("view_history"))
+        search_entry = db_utils.get_search_history_entry(
+            db_utils.get_db_connection(), user_name, search_id
+        )
+        if not search_entry:
+            flash("Saved search not found.", "error")
+            return redirect(url_for("view_history"))
 
-            query_args: dict[str, str | int] = {"replay_search_id": search_id}
+        query_args: dict[str, str | int] = {"replay_search_id": search_id}
 
-            if search_entry["search_text"]:
-                query_args["search"] = search_entry["search_text"]
-            if search_entry["start_year"] is not None:
-                query_args["year_min"] = search_entry["start_year"]
-            if search_entry["end_year"] is not None:
-                query_args["year_max"] = search_entry["end_year"]
-            if search_entry["genres"]:
-                first_genre = search_entry["genres"].split(",")[0].strip()
-                if first_genre:
-                    query_args["genre"] = first_genre
+        if search_entry["search_text"]:
+            query_args["search"] = search_entry["search_text"]
+        if search_entry["start_year"] is not None:
+            query_args["year_min"] = search_entry["start_year"]
+        if search_entry["end_year"] is not None:
+            query_args["year_max"] = search_entry["end_year"]
+        if search_entry["genres"]:
+            first_genre = search_entry["genres"].split(",")[0].strip()
+            if first_genre:
+                query_args["genre"] = first_genre
 
-            return redirect(url_for("index", **query_args))
+        return redirect(url_for("index", **query_args))
 
     @app.route("/thumbnail/<doc_id>.jpg", methods=["GET"])
     def thumbnail(doc_id):
@@ -514,77 +508,13 @@ def create_app(**kwargs) -> Flask:
         flash("You have been logged out.", "success")
         return redirect(url_for("index"))
 
-    @app.route("/upload", methods=["POST"])
-    def upload_documents():
-        upload_type = request.form.get("upload_type", "zip")
-
-        if upload_type == "zip":
-            zip_file = request.files.get("zip_file")
-            if zip_file:
-                filename = secure_filename(zip_file.filename)
-                zip_file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
-                flash(f'ZIP file "{filename}" uploaded successfully!', "success")
-        else:
-            document_file = request.files.get("document_file")
-            metadata_file = request.files.get("metadata_file")
-            transcript_file = request.files.get("transcript_file")
-
-            files_uploaded = []
-            if document_file:
-                filename = secure_filename(document_file.filename)
-                document_file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
-                files_uploaded.append(filename)
-            if metadata_file:
-                filename = secure_filename(metadata_file.filename)
-                metadata_file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
-                files_uploaded.append(filename)
-            if transcript_file:
-                filename = secure_filename(transcript_file.filename)
-                transcript_file.save(
-                    os.path.join(app.config["UPLOAD_FOLDER"], filename)
-                )
-                files_uploaded.append(filename)
-
-            if files_uploaded:
-                flash(f'Files uploaded: {", ".join(files_uploaded)}', "success")
-
-        return redirect(url_for("documents_manager"))
-
-    @app.route("/save_ocr_content", methods=["POST"])
-    def save_ocr_content():
-        """Register a new route for storing transcript data to the database."""
-        data = request.get_json()
-        image_filename = data["image_filename"]
-        updated_ocr_text = data["ocr_text"]
-
-        try:
-            ocr_file_path = os.path.join(
-                app.config["EDITS_FOLDER"], image_filename + ".txt"
-            )
-            with open(ocr_file_path, "w", encoding="utf-8") as file:
-                file.write(updated_ocr_text)
-            return jsonify({"message": "OCR content saved successfully!"}), 200
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
-
     @app.route("/remove", methods=["POST"])
     def remove_documents():
-        # Get selected document IDs from form
-        doc_ids = request.form.getlist("selected_docs")
+        return "Not yet implemented", 404
 
-        # Mock removal - in production, remove from database
-        flash(f"Removed {len(doc_ids)} document(s) from database", "success")
-        return redirect(url_for("documents_manager"))
-
-    @app.route("/view_document/<doc_id>")
-    def view_document(doc_id):
-        """Register a new route for the ``view_document`` page of the app."""
-        document: Document = db_utils.get_document(db_utils.get_db_connection(), doc_id)
-
-        if not document:
-            return "Document not found", 404
-
-        return render_template("view_document.html", document=document)
+    @app.route("/upload", methods=["POST"])
+    def upload_documents():
+        return "Not yet implemented", 404
 
     @app.route("/flag/<doc_id>", methods=["POST"])
     def flag_document(doc_id):
@@ -600,7 +530,6 @@ if __name__ == "__main__":
 
     app = create_app(
         FLASK_SECRET=os.environ["FLASK_SECRET"],
-        UPLOAD_FOLDER="uploads",
         SQL_HOST=os.environ["SQL_HOST"],
         SQL_PORT=os.environ["SQL_PORT"],
         SQL_DBNAME=os.environ["SQL_DBNAME"],
