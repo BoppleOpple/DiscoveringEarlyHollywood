@@ -6,131 +6,145 @@ from backend.datatypes import Document, Flag, Query
 class TestQuery:
     def test_set_keywords(self):
         # Arrange
-        testQuery = Query()
+        expectedQuery = Query(keywords=["comedy", "drama"])
+        resultQuery = Query()
 
         # Act
-        testQuery.setKeywords(["comedy", "drama"])
+        resultQuery.setKeywords(["comedy", "drama"])
 
         # Assert
-        assert testQuery.keywords == ["comedy", "drama"]
+        assert resultQuery.keywords == expectedQuery.keywords
 
     def test_add_keyword(self):
         # Arrange
-        testQuery = Query()
-        testQuery.setKeywords(["comedy"])
+        expectedQuery = Query(keywords=["drama"])
+        resultQuery = Query()
 
         # Act
-        testQuery.addKeyword("drama")
+        resultQuery.addKeyword("drama")
 
         # Assert
-        assert testQuery.keywords == ["comedy", "drama"]
+        assert resultQuery.keywords == expectedQuery.keywords
 
     def test_set_copyright_year_range(self):
         # Arrange
-        testQuery = Query()
+        expectedQuery = Query(copyrightYearRange=(1915, 1925))
+        resultQuery = Query()
 
         # Act
-        testQuery.setCopyrightYearRange(1915, 1925)
+        resultQuery.setCopyrightYearRange(1915, 1925)
 
         # Assert
-        assert testQuery.copyrightYearRange == (1915, 1925)
+        assert resultQuery.copyrightYearRange == expectedQuery.copyrightYearRange
 
     def test_set_duration_range(self):
         # Arrange
-        testQuery = Query()
+        expectedQuery = Query(durationRange=(5, 10))
+        resultQuery = Query()
 
         # Act
-        testQuery.setDurationRange(5, 10)
+        resultQuery.setDurationRange(5, 10)
 
         # Assert
-        assert testQuery.durationRange == (5, 10)
+        assert resultQuery.durationRange == expectedQuery.durationRange
 
     def test_set_actors(self):
         # Arrange
-        testQuery = Query()
+        expectedQuery = Query(actors=["Charlie Chaplin", "Buster Keaton"])
+        resultQuery = Query()
 
         # Act
-        testQuery.setActors(["Charlie Chaplin", "Buster Keaton"])
+        resultQuery.setActors(["Charlie Chaplin", "Buster Keaton"])
 
         # Assert
-        assert testQuery.actors == ["Charlie Chaplin", "Buster Keaton"]
+        assert resultQuery.actors == expectedQuery.actors
 
     def test_add_actor(self):
         # Arrange
-        testQuery = Query(actors=["Walter Goggins"])
+        expectedQuery = Query(actors=["Walter Goggins"])
+        resultQuery = Query()
 
         # Act
-        testQuery.addActor("Brad Pitt")
+        resultQuery.addActor("Walter Goggins")
 
         # Assert
-        assert testQuery.actors == ["Walter Goggins", "Brad Pitt"]
+        assert resultQuery.actors == expectedQuery.actors
 
     def test_set_tags(self):
         # Arrange
-        testQuery = Query()
+        expectedQuery = Query(tags=["New", "Old"])
+        resultQuery = Query()
 
         # Act
-        testQuery.setTags(["New", "Old"])
+        resultQuery.setTags(["New", "Old"])
 
         # Assert
-        assert testQuery.tags == ["New", "Old"]
+        assert resultQuery.tags == expectedQuery.tags
 
     def test_add_tags(self):
         # Arrange
-        testQuery = Query(tags=["New"])
+        expectedQuery = Query(tags=["Old"])
+        resultQuery = Query()
 
         # Act
-        testQuery.addTag("Old")
+        resultQuery.addTag("Old")
 
         # Assert
-        assert testQuery.tags == ["New", "Old"]
+        assert resultQuery.tags == expectedQuery.tags
 
     def test_set_genres(self):
         # Arrange
-        testQuery = Query()
+        expectedQuery = Query(genres=["comedy", "drama"])
+        resultQuery = Query()
 
         # Act
-        testQuery.setGenres(["comedy", "drama"])
+        resultQuery.setGenres(["comedy", "drama"])
 
         # Assert
-        assert testQuery.genres == ["comedy", "drama"]
+        assert resultQuery.genres == expectedQuery.genres
 
     def test_add_genre(self):
         # Arrange
-        testQuery = Query(genres=["Horror"])
+        expectedQuery = Query(genres=["Thriller"])
+        resultQuery = Query()
 
         # Act
-        testQuery.addGenre("Thriller")
+        resultQuery.addGenre("Thriller")
 
         # Assert
-        assert testQuery.genres == ["Horror", "Thriller"]
+        assert resultQuery.genres == expectedQuery.genres
 
     def test_set_document_type(self):
         # Arrange
-        testQuery = Query()
+        expectedQuery = Query(documentType="TestType")
+        resultQuery = Query()
 
         # Act
-        testQuery.setDocumentType("TestType")
+        resultQuery.setDocumentType("TestType")
 
         # Assert
-        assert testQuery.documentType == "TestType"
+        assert resultQuery.documentType == expectedQuery.documentType
 
     def test_set_studio(self):
         # Arrange
-        testQuery = Query()
+        expectedQuery = Query(studio="Universal")
+        resultQuery = Query()
 
         # Act
-        testQuery.setStudio("Universal")
+        resultQuery.setStudio("Universal")
 
         # Assert
-        assert testQuery.studio == "Universal"
+        assert resultQuery.studio == expectedQuery.studio
 
     def test_constructor_with_keywords(self):
-        # Arrange/Act
-        testQuery = Query(keywords=["silent", "film"])
+        # Arrange
+        expectedQuery = Query(keywords=["silent", "film"])
+
+        # Act
+        resultQuery = Query(keywords=["silent", "film"])
 
         # Assert
-        assert testQuery.keywords == ["silent", "film"]
+        assert resultQuery.keywords == expectedQuery.keywords
 
 
 class TestDocument:
