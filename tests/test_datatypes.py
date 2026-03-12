@@ -5,69 +5,132 @@ from backend.datatypes import Document, Flag, Query
 
 class TestQuery:
     def test_set_keywords(self):
-        q = Query()
-        q.setKeywords(["comedy", "drama"])
-        assert q.keywords == ["comedy", "drama"]
+        # Arrange
+        testQuery = Query()
+
+        # Act
+        testQuery.setKeywords(["comedy", "drama"])
+
+        # Assert
+        assert testQuery.keywords == ["comedy", "drama"]
 
     def test_add_keyword(self):
-        q = Query()
-        q.setKeywords(["comedy"])
-        q.addKeyword("drama")
-        assert q.keywords == ["comedy", "drama"]
+        # Arrange
+        testQuery = Query()
+        testQuery.setKeywords(["comedy"])
+
+        # Act
+        testQuery.addKeyword("drama")
+
+        # Assert
+        assert testQuery.keywords == ["comedy", "drama"]
 
     def test_set_copyright_year_range(self):
-        q = Query()
-        q.setCopyrightYearRange(1915, 1925)
-        assert q.copyrightYearRange == (1915, 1925)
+        # Arrange
+        testQuery = Query()
+
+        # Act
+        testQuery.setCopyrightYearRange(1915, 1925)
+
+        # Assert
+        assert testQuery.copyrightYearRange == (1915, 1925)
 
     def test_set_duration_range(self):
-        q = Query()
-        q.setDurationRange(5, 10)
-        assert q.durationRange == (5, 10)
+        # Arrange
+        testQuery = Query()
+
+        # Act
+        testQuery.setDurationRange(5, 10)
+
+        # Assert
+        assert testQuery.durationRange == (5, 10)
 
     def test_set_actors(self):
-        q = Query()
-        q.setActors(["Charlie Chaplin", "Buster Keaton"])
-        assert q.actors == ["Charlie Chaplin", "Buster Keaton"]
+        # Arrange
+        testQuery = Query()
+
+        # Act
+        testQuery.setActors(["Charlie Chaplin", "Buster Keaton"])
+
+        # Assert
+        assert testQuery.actors == ["Charlie Chaplin", "Buster Keaton"]
 
     def test_add_actor(self):
-        q = Query(actors=["Walter Goggins"])
-        q.addActor("Brad Pitt")
-        assert q.actors == ["Walter Goggins", "Brad Pitt"]
+        # Arrange
+        testQuery = Query(actors=["Walter Goggins"])
+
+        # Act
+        testQuery.addActor("Brad Pitt")
+
+        # Assert
+        assert testQuery.actors == ["Walter Goggins", "Brad Pitt"]
 
     def test_set_tags(self):
-        q = Query()
-        q.setTags(["New", "Old"])
-        assert q.tags == ["New", "Old"]
+        # Arrange
+        testQuery = Query()
+
+        # Act
+        testQuery.setTags(["New", "Old"])
+
+        # Assert
+        assert testQuery.tags == ["New", "Old"]
 
     def test_add_tags(self):
-        q = Query(tags=["New"])
-        q.addTag("Old")
-        assert q.tags == ["New", "Old"]
+        # Arrange
+        testQuery = Query(tags=["New"])
+
+        # Act
+        testQuery.addTag("Old")
+
+        # Assert
+        assert testQuery.tags == ["New", "Old"]
 
     def test_set_genres(self):
-        q = Query()
-        q.setGenres(["comedy", "drama"])
-        assert q.genres == ["comedy", "drama"]
+        # Arrange
+        testQuery = Query()
+
+        # Act
+        testQuery.setGenres(["comedy", "drama"])
+
+        # Assert
+        assert testQuery.genres == ["comedy", "drama"]
 
     def test_add_genre(self):
-        q = Query(genres=["Horror"])
-        q.addGenre("Thriller")
-        assert q.genres == ["Horror", "Thriller"]
+        # Arrange
+        testQuery = Query(genres=["Horror"])
+
+        # Act
+        testQuery.addGenre("Thriller")
+
+        # Assert
+        assert testQuery.genres == ["Horror", "Thriller"]
 
     def test_set_document_type(self):
-        q = Query()
-        q.setDocumentType("TestType")
-        assert q.documentType == "TestType"
+        # Arrange
+        testQuery = Query()
+
+        # Act
+        testQuery.setDocumentType("TestType")
+
+        # Assert
+        assert testQuery.documentType == "TestType"
 
     def test_set_studio(self):
-        q = Query()
-        q.setStudio("Universal")
-        assert q.studio == "Universal"
+        # Arrange
+        testQuery = Query()
+
+        # Act
+        testQuery.setStudio("Universal")
+
+        # Assert
+        assert testQuery.studio == "Universal"
 
     def test_constructor_with_keywords(self):
-        q = Query(keywords=["silent", "film"])
-        assert q.keywords == ["silent", "film"]
+        # Arrange/Act
+        testQuery = Query(keywords=["silent", "film"])
+
+        # Assert
+        assert testQuery.keywords == ["silent", "film"]
 
 
 class TestDocument:
@@ -80,14 +143,20 @@ class TestDocument:
         ],
     )
     def test_id(self, idPrintMessage, id):
+        # Arrange
+        expectedId = id
+
+        # Act
         doc = Document(
             None,
             id=id,
         )
 
         print(idPrintMessage)
-        assert doc.metadata.id == id
-        assert doc.id == id
+
+        # Assert
+        assert doc.metadata.id == expectedId
+        assert doc.id == expectedId
 
     @pytest.mark.parametrize(
         "studioPrintMessage, studio",
@@ -97,14 +166,20 @@ class TestDocument:
         ],
     )
     def test_studio(self, studioPrintMessage, studio):
+        # Arrange
+        expectedStudio = studio
+
+        # Act
         doc = Document(
             None,
             studio=studio,
         )
 
         print(studioPrintMessage)
-        assert doc.metadata.studio == studio
-        assert doc.studio == studio
+
+        # Assert
+        assert doc.metadata.studio == expectedStudio
+        assert doc.studio == expectedStudio
 
     @pytest.mark.parametrize(
         "titlePrintMessage, title",
@@ -114,11 +189,17 @@ class TestDocument:
         ],
     )
     def test_title(self, titlePrintMessage, title):
+        # Arrange
+        expectedTitle = title
+
+        # Act
         doc = Document(None, title=title)
 
         print(titlePrintMessage)
-        assert doc.metadata.title == title
-        assert doc.title == title
+
+        # Assert
+        assert doc.metadata.title == expectedTitle
+        assert doc.title == expectedTitle
 
     @pytest.mark.parametrize(
         "copyrightYearPrintMessage, copyrightYear",
@@ -128,11 +209,17 @@ class TestDocument:
         ],
     )
     def test_copyrightYear(self, copyrightYearPrintMessage, copyrightYear):
+        # Arrange
+        expectedYear = copyrightYear
+
+        # Act
         doc = Document(None, copyrightYear=copyrightYear)
 
         print(copyrightYearPrintMessage)
-        assert doc.metadata.copyrightYear == copyrightYear
-        assert doc.copyrightYear == copyrightYear
+
+        # Assert
+        assert doc.metadata.copyrightYear == expectedYear
+        assert doc.copyrightYear == expectedYear
 
     @pytest.mark.parametrize(
         "reelCountPrintMessage, reelCount",
@@ -142,14 +229,20 @@ class TestDocument:
         ],
     )
     def test_reelCount(self, reelCountPrintMessage, reelCount):
+        # Arrange
+        expectedReelCount = reelCount
+
+        # Act
         doc = Document(
             None,
             reelCount=reelCount,
         )
 
         print(reelCountPrintMessage)
-        assert doc.metadata.reelCount == reelCount
-        assert doc.reelCount == reelCount
+
+        # Assert
+        assert doc.metadata.reelCount == expectedReelCount
+        assert doc.reelCount == expectedReelCount
 
     @pytest.mark.parametrize(
         "uploadedTimePrintMessage, uploadedTime",
@@ -165,14 +258,20 @@ class TestDocument:
         ],
     )
     def test_uploadedTime(self, uploadedTimePrintMessage, uploadedTime):
+        # Arrange
+        expectedUploadedTime = uploadedTime
+
+        # Act
         doc = Document(
             None,
-            uploadedTime=datetime.datetime.fromisoformat("2025-12-22T14:51:11"),
+            uploadedTime=uploadedTime,
         )
 
         print(uploadedTimePrintMessage)
-        assert doc.metadata.uploadedTime == uploadedTime
-        assert doc.uploadedTime == uploadedTime
+
+        # Assert
+        assert doc.metadata.uploadedTime == expectedUploadedTime
+        assert doc.uploadedTime == expectedUploadedTime
 
     @pytest.mark.parametrize(
         "uploadedByPrintMessage, uploadedBy",
@@ -182,14 +281,20 @@ class TestDocument:
         ],
     )
     def test_uploadedBy(self, uploadedByPrintMessage, uploadedBy):
+        # Arrange
+        expectedUploadedBy = uploadedBy
+
+        # Act
         doc = Document(
             None,
             uploadedBy=uploadedBy,
         )
 
         print(uploadedByPrintMessage)
-        assert doc.metadata.uploadedBy == uploadedBy
-        assert doc.uploadedBy == uploadedBy
+
+        # Assert
+        assert doc.metadata.uploadedBy == expectedUploadedBy
+        assert doc.uploadedBy == expectedUploadedBy
 
     @pytest.mark.parametrize(
         "actorsPrintMessage, actors",
@@ -199,14 +304,20 @@ class TestDocument:
         ],
     )
     def test_actors(self, actorsPrintMessage, actors):
+        # Arrange
+        expectedActors = actors
+
+        # Act
         doc = Document(
             None,
             actors=actors,
         )
 
         print(actorsPrintMessage)
-        assert doc.metadata.actors == actors
-        assert doc.actors == actors
+
+        # Assert
+        assert doc.metadata.actors == expectedActors
+        assert doc.actors == expectedActors
 
     @pytest.mark.parametrize(
         "tagsPrintMessage, tags",
@@ -216,14 +327,20 @@ class TestDocument:
         ],
     )
     def test_tags(self, tagsPrintMessage, tags):
+        # Arrange
+        expectedTags = tags
+
+        # Act
         doc = Document(
             None,
             tags=tags,
         )
 
         print(tagsPrintMessage)
-        assert doc.metadata.tags == tags
-        assert doc.tags == tags
+
+        # Assert
+        assert doc.metadata.tags == expectedTags
+        assert doc.tags == expectedTags
 
     @pytest.mark.parametrize(
         "genresPrintMessage, genres",
@@ -233,34 +350,59 @@ class TestDocument:
         ],
     )
     def test_genres(self, genresPrintMessage, genres):
+        # Arrange
+        expectedGenres = genres
+
+        # Act
         doc = Document(
             None,
             genres=genres,
         )
 
         print(genresPrintMessage)
-        assert doc.metadata.genres == genres
-        assert doc.genres == genres
+
+        # Assert
+        assert doc.metadata.genres == expectedGenres
+        assert doc.genres == expectedGenres
 
     def test_content(self):
+        # Arrange
+        expectedContent = "page 1\npage 2"
+        inputContent = [(0, "page 1"), (1, "page 2")]
+
+        # Act
         doc = Document(
             None,
-            transcripts=[(0, "page 1"), (1, "page 2")],
+            transcripts=inputContent,
         )
 
         print(
             "content should concatenate the text of the transcript, seperated by newlines"
         )
-        assert doc.content == "page 1\npage 2"
+
+        # Assert
+        assert doc.content == expectedContent
 
 
 class TestFlag:
     def test_flag_creation(self):
+        # Arrange
+        expectedReporterName = "user1"
+        expectedErrorLocation = "page 3"
+        expectedErrorDescription = "Missing text"
+
+        inputReporterName = "user1"
+        inputErrorLocation = "page 3"
+        inputErrorDescription = "Missing text"
+
+        # Act
         flag = Flag(
-            reporterName="user1",
-            errorLocation="page 3",
-            errorDescription="Missing text",
+            reporterName=inputReporterName,
+            errorLocation=inputErrorLocation,
+            errorDescription=inputErrorDescription,
         )
-        assert flag.reporterName == "user1"
-        assert flag.errorLocation == "page 3"
-        assert flag.errorDescription == "Missing text"
+
+        # Assert
+        assert flag.reporterName == expectedReporterName
+        assert flag.errorLocation == expectedErrorLocation
+        assert flag.errorDescription == expectedErrorDescription
