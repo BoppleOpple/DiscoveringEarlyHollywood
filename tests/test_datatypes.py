@@ -1,4 +1,5 @@
 import datetime
+import pytest
 from backend.datatypes import Document, Flag, Query
 
 
@@ -70,163 +71,176 @@ class TestQuery:
 
 
 class TestDocument:
-    def test_id(self):
+
+    @pytest.mark.parametrize(
+        "idPrintMessage, id",
+        [
+            ("id should propogate from constructor", "s0000l11111"),
+            ("id should propogate from setter", "s2222l33333"),
+        ],
+    )
+    def test_id(self, idPrintMessage, id):
         doc = Document(
             None,
-            id="s0000l11111",
+            id=id,
         )
 
-        print("id should propogate from constructor")
-        assert doc.metadata.id == "s0000l11111"
-        assert doc.id == "s0000l11111"
+        print(idPrintMessage)
+        assert doc.metadata.id == id
+        assert doc.id == id
 
-        print("id should propogate from setter")
-        doc.id = "s2222l33333"
-        assert doc.metadata.id == "s2222l33333"
-        assert doc.id == "s2222l33333"
-
-    def test_studio(self):
+    @pytest.mark.parametrize(
+        "studioPrintMessage, studio",
+        [
+            ("studio should propogate from constructor", "MGM"),
+            ("studio should propogate from setter", "Ghibli"),
+        ],
+    )
+    def test_studio(self, studioPrintMessage, studio):
         doc = Document(
             None,
-            studio="MGM",
+            studio=studio,
         )
 
-        print("studio should propogate from constructor")
-        assert doc.metadata.studio == "MGM"
-        assert doc.studio == "MGM"
+        print(studioPrintMessage)
+        assert doc.metadata.studio == studio
+        assert doc.studio == studio
 
-        print("studio should propogate from setter")
-        doc.studio = "Ghibli"
-        assert doc.metadata.studio == "Ghibli"
-        assert doc.studio == "Ghibli"
+    @pytest.mark.parametrize(
+        "titlePrintMessage, title",
+        [
+            ("title should propogate from constructor", "Arsenic and Old Lace"),
+            ("title should propogate from setter", "Nosferatu"),
+        ],
+    )
+    def test_title(self, titlePrintMessage, title):
+        doc = Document(None, title=title)
 
-    def test_title(self):
+        print(titlePrintMessage)
+        assert doc.metadata.title == title
+        assert doc.title == title
+
+    @pytest.mark.parametrize(
+        "copyrightYearPrintMessage, copyrightYear",
+        [
+            ("copyrightYear should propogate from constructor", 1901),
+            ("copyrightYear should propogate from setter", 1898),
+        ],
+    )
+    def test_copyrightYear(self, copyrightYearPrintMessage, copyrightYear):
+        doc = Document(None, copyrightYear=copyrightYear)
+
+        print(copyrightYearPrintMessage)
+        assert doc.metadata.copyrightYear == copyrightYear
+        assert doc.copyrightYear == copyrightYear
+
+    @pytest.mark.parametrize(
+        "reelCountPrintMessage, reelCount",
+        [
+            ("reelCount should propogate from constructor", 3),
+            ("reelCount should propogate from setter", 1),
+        ],
+    )
+    def test_reelCount(self, reelCountPrintMessage, reelCount):
         doc = Document(
             None,
-            title="Arsenic and Old Lace",
+            reelCount=reelCount,
         )
 
-        print("title should propogate from constructor")
-        assert doc.metadata.title == "Arsenic and Old Lace"
-        assert doc.title == "Arsenic and Old Lace"
+        print(reelCountPrintMessage)
+        assert doc.metadata.reelCount == reelCount
+        assert doc.reelCount == reelCount
 
-        print("title should propogate from setter")
-        doc.title = "Nosferatu"
-        assert doc.metadata.title == "Nosferatu"
-        assert doc.title == "Nosferatu"
-
-    def test_copyrightYear(self):
-        doc = Document(
-            None,
-            copyrightYear=1901,
-        )
-
-        print("copyrightYear should propogate from constructor")
-        assert doc.metadata.copyrightYear == 1901
-        assert doc.copyrightYear == 1901
-
-        print("copyrightYear should propogate from setter")
-        doc.copyrightYear = 1898
-        assert doc.metadata.copyrightYear == 1898
-        assert doc.copyrightYear == 1898
-
-    def test_reelCount(self):
-        doc = Document(
-            None,
-            reelCount=3,
-        )
-
-        print("reelCount should propogate from constructor")
-        assert doc.metadata.reelCount == 3
-        assert doc.reelCount == 3
-
-        print("reelCount should propogate from setter")
-        doc.reelCount = 1
-        assert doc.metadata.reelCount == 1
-        assert doc.reelCount == 1
-
-    def test_uploadedTime(self):
+    @pytest.mark.parametrize(
+        "uploadedTimePrintMessage, uploadedTime",
+        [
+            (
+                "uploadedTime should propogate from constructor",
+                datetime.datetime.fromisoformat("2025-12-22T14:51:11"),
+            ),
+            (
+                "uploadedTime should propogate from setter",
+                datetime.datetime.fromisoformat("2025-12-22T14:51:11"),
+            ),
+        ],
+    )
+    def test_uploadedTime(self, uploadedTimePrintMessage, uploadedTime):
         doc = Document(
             None,
             uploadedTime=datetime.datetime.fromisoformat("2025-12-22T14:51:11"),
         )
 
-        print("uploadedTime should propogate from constructor")
-        assert doc.metadata.uploadedTime == datetime.datetime.fromisoformat(
-            "2025-12-22T14:51:11"
-        )
-        assert doc.uploadedTime == datetime.datetime.fromisoformat(
-            "2025-12-22T14:51:11"
-        )
+        print(uploadedTimePrintMessage)
+        assert doc.metadata.uploadedTime == uploadedTime
+        assert doc.uploadedTime == uploadedTime
 
-        print("uploadedTime should propogate from setter")
-        doc.uploadedTime = datetime.datetime.fromisoformat("2026-02-20T08:00:00")
-        assert doc.metadata.uploadedTime == datetime.datetime.fromisoformat(
-            "2026-02-20T08:00:00"
-        )
-        assert doc.uploadedTime == datetime.datetime.fromisoformat(
-            "2026-02-20T08:00:00"
-        )
-
-    def test_uploadedBy(self):
+    @pytest.mark.parametrize(
+        "uploadedByPrintMessage, uploadedBy",
+        [
+            ("uploadedBy should propogate from constructor", "John_Doe"),
+            ("uploadedBy should propogate from setter", "The_Grinch"),
+        ],
+    )
+    def test_uploadedBy(self, uploadedByPrintMessage, uploadedBy):
         doc = Document(
             None,
-            uploadedBy="John_Doe",
+            uploadedBy=uploadedBy,
         )
 
-        print("uploadedBy should propogate from constructor")
-        assert doc.metadata.uploadedBy == "John_Doe"
-        assert doc.uploadedBy == "John_Doe"
+        print(uploadedByPrintMessage)
+        assert doc.metadata.uploadedBy == uploadedBy
+        assert doc.uploadedBy == uploadedBy
 
-        print("uploadedBy should propogate from setter")
-        doc.uploadedBy = "The_Grinch"
-        assert doc.metadata.uploadedBy == "The_Grinch"
-        assert doc.uploadedBy == "The_Grinch"
-
-    def test_actors(self):
+    @pytest.mark.parametrize(
+        "actorsPrintMessage, actors",
+        [
+            ("actors should propogate from constructor", ["Charlie Chaplin"]),
+            ("actors should propogate from setter", ["Walter Goggins", "Brad Pitt"]),
+        ],
+    )
+    def test_actors(self, actorsPrintMessage, actors):
         doc = Document(
             None,
-            actors=["Charlie Chaplin"],
+            actors=actors,
         )
 
-        print("actors should propogate from constructor")
-        assert doc.metadata.actors == ["Charlie Chaplin"]
-        assert doc.actors == ["Charlie Chaplin"]
+        print(actorsPrintMessage)
+        assert doc.metadata.actors == actors
+        assert doc.actors == actors
 
-        print("actors should propogate from setter")
-        doc.actors = ["Walter Goggins", "Brad Pitt"]
-        assert doc.metadata.actors == ["Walter Goggins", "Brad Pitt"]
-        assert doc.actors == ["Walter Goggins", "Brad Pitt"]
-
-    def test_tags(self):
+    @pytest.mark.parametrize(
+        "tagsPrintMessage, tags",
+        [
+            ("tags should propogate from constructor", ["influential"]),
+            ("tags should propogate from setter", ["serial"]),
+        ],
+    )
+    def test_tags(self, tagsPrintMessage, tags):
         doc = Document(
             None,
-            tags=["influential"],
+            tags=tags,
         )
 
-        print("tags should propogate from constructor")
-        assert doc.metadata.tags == ["influential"]
-        assert doc.tags == ["influential"]
+        print(tagsPrintMessage)
+        assert doc.metadata.tags == tags
+        assert doc.tags == tags
 
-        print("tags should propogate from setter")
-        doc.tags = ["serial"]
-        assert doc.metadata.tags == ["serial"]
-        assert doc.tags == ["serial"]
-
-    def test_genres(self):
+    @pytest.mark.parametrize(
+        "genresPrintMessage, genres",
+        [
+            ("genres should propogate from constructor", ["drama"]),
+            ("genres should propogate from setter", ["comedy", "commentary"]),
+        ],
+    )
+    def test_genres(self, genresPrintMessage, genres):
         doc = Document(
             None,
-            genres=["drama"],
+            genres=genres,
         )
 
-        print("genres should propogate from constructor")
-        assert doc.metadata.genres == ["drama"]
-        assert doc.genres == ["drama"]
-
-        print("genres should propogate from setter")
-        doc.genres = ["comedy", "commentary"]
-        assert doc.metadata.genres == ["comedy", "commentary"]
-        assert doc.genres == ["comedy", "commentary"]
+        print(genresPrintMessage)
+        assert doc.metadata.genres == genres
+        assert doc.genres == genres
 
     def test_content(self):
         doc = Document(
