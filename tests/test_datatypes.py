@@ -1,252 +1,422 @@
 import datetime
+import pytest
 from backend.datatypes import Document, Flag, Query
 
 
 class TestQuery:
     def test_set_keywords(self):
-        q = Query()
-        q.setKeywords(["comedy", "drama"])
-        assert q.keywords == ["comedy", "drama"]
+        # Arrange
+        expectedQuery = Query(keywords=["comedy", "drama"])
+        resultQuery = Query()
+
+        # Act
+        resultQuery.setKeywords(["comedy", "drama"])
+
+        # Assert
+        assert resultQuery.keywords == expectedQuery.keywords
 
     def test_add_keyword(self):
-        q = Query()
-        q.setKeywords(["comedy"])
-        q.addKeyword("drama")
-        assert q.keywords == ["comedy", "drama"]
+        # Arrange
+        expectedQuery = Query(keywords=["drama"])
+        resultQuery = Query()
+
+        # Act
+        resultQuery.addKeyword("drama")
+
+        # Assert
+        assert resultQuery.keywords == expectedQuery.keywords
 
     def test_set_copyright_year_range(self):
-        q = Query()
-        q.setCopyrightYearRange(1915, 1925)
-        assert q.copyrightYearRange == (1915, 1925)
+        # Arrange
+        expectedQuery = Query(copyrightYearRange=(1915, 1925))
+        resultQuery = Query()
+
+        # Act
+        resultQuery.setCopyrightYearRange(1915, 1925)
+
+        # Assert
+        assert resultQuery.copyrightYearRange == expectedQuery.copyrightYearRange
 
     def test_set_duration_range(self):
-        q = Query()
-        q.setDurationRange(5, 10)
-        assert q.durationRange == (5, 10)
+        # Arrange
+        expectedQuery = Query(durationRange=(5, 10))
+        resultQuery = Query()
+
+        # Act
+        resultQuery.setDurationRange(5, 10)
+
+        # Assert
+        assert resultQuery.durationRange == expectedQuery.durationRange
 
     def test_set_actors(self):
-        q = Query()
-        q.setActors(["Charlie Chaplin", "Buster Keaton"])
-        assert q.actors == ["Charlie Chaplin", "Buster Keaton"]
+        # Arrange
+        expectedQuery = Query(actors=["Charlie Chaplin", "Buster Keaton"])
+        resultQuery = Query()
+
+        # Act
+        resultQuery.setActors(["Charlie Chaplin", "Buster Keaton"])
+
+        # Assert
+        assert resultQuery.actors == expectedQuery.actors
 
     def test_add_actor(self):
-        q = Query(actors=["Walter Goggins"])
-        q.addActor("Brad Pitt")
-        assert q.actors == ["Walter Goggins", "Brad Pitt"]
+        # Arrange
+        expectedQuery = Query(actors=["Walter Goggins"])
+        resultQuery = Query()
+
+        # Act
+        resultQuery.addActor("Walter Goggins")
+
+        # Assert
+        assert resultQuery.actors == expectedQuery.actors
 
     def test_set_tags(self):
-        q = Query()
-        q.setTags(["New", "Old"])
-        assert q.tags == ["New", "Old"]
+        # Arrange
+        expectedQuery = Query(tags=["New", "Old"])
+        resultQuery = Query()
+
+        # Act
+        resultQuery.setTags(["New", "Old"])
+
+        # Assert
+        assert resultQuery.tags == expectedQuery.tags
 
     def test_add_tags(self):
-        q = Query(tags=["New"])
-        q.addTag("Old")
-        assert q.tags == ["New", "Old"]
+        # Arrange
+        expectedQuery = Query(tags=["Old"])
+        resultQuery = Query()
+
+        # Act
+        resultQuery.addTag("Old")
+
+        # Assert
+        assert resultQuery.tags == expectedQuery.tags
 
     def test_set_genres(self):
-        q = Query()
-        q.setGenres(["comedy", "drama"])
-        assert q.genres == ["comedy", "drama"]
+        # Arrange
+        expectedQuery = Query(genres=["comedy", "drama"])
+        resultQuery = Query()
+
+        # Act
+        resultQuery.setGenres(["comedy", "drama"])
+
+        # Assert
+        assert resultQuery.genres == expectedQuery.genres
 
     def test_add_genre(self):
-        q = Query(genres=["Horror"])
-        q.addGenre("Thriller")
-        assert q.genres == ["Horror", "Thriller"]
+        # Arrange
+        expectedQuery = Query(genres=["Thriller"])
+        resultQuery = Query()
+
+        # Act
+        resultQuery.addGenre("Thriller")
+
+        # Assert
+        assert resultQuery.genres == expectedQuery.genres
 
     def test_set_document_type(self):
-        q = Query()
-        q.setDocumentType("TestType")
-        assert q.documentType == "TestType"
+        # Arrange
+        expectedQuery = Query(documentType="TestType")
+        resultQuery = Query()
+
+        # Act
+        resultQuery.setDocumentType("TestType")
+
+        # Assert
+        assert resultQuery.documentType == expectedQuery.documentType
 
     def test_set_studio(self):
-        q = Query()
-        q.setStudio("Universal")
-        assert q.studio == "Universal"
+        # Arrange
+        expectedQuery = Query(studio="Universal")
+        resultQuery = Query()
+
+        # Act
+        resultQuery.setStudio("Universal")
+
+        # Assert
+        assert resultQuery.studio == expectedQuery.studio
 
     def test_constructor_with_keywords(self):
-        q = Query(keywords=["silent", "film"])
-        assert q.keywords == ["silent", "film"]
+        # Arrange
+        expectedQuery = Query(keywords=["silent", "film"])
+
+        # Act
+        resultQuery = Query(keywords=["silent", "film"])
+
+        # Assert
+        assert resultQuery.keywords == expectedQuery.keywords
 
 
 class TestDocument:
-    def test_id(self):
+
+    @pytest.mark.parametrize(
+        "idPrintMessage, id",
+        [
+            ("id should propogate from constructor", "s0000l11111"),
+            ("id should propogate from setter", "s2222l33333"),
+        ],
+    )
+    def test_id(self, idPrintMessage, id):
+        # Arrange
+        expectedId = id
+
+        # Act
         doc = Document(
             None,
-            id="s0000l11111",
+            id=id,
         )
 
-        print("id should propogate from constructor")
-        assert doc.metadata.id == "s0000l11111"
-        assert doc.id == "s0000l11111"
+        print(idPrintMessage)
 
-        print("id should propogate from setter")
-        doc.id = "s2222l33333"
-        assert doc.metadata.id == "s2222l33333"
-        assert doc.id == "s2222l33333"
+        # Assert
+        assert doc.metadata.id == expectedId
+        assert doc.id == expectedId
 
-    def test_studio(self):
+    @pytest.mark.parametrize(
+        "studioPrintMessage, studio",
+        [
+            ("studio should propogate from constructor", "MGM"),
+            ("studio should propogate from setter", "Ghibli"),
+        ],
+    )
+    def test_studio(self, studioPrintMessage, studio):
+        # Arrange
+        expectedStudio = studio
+
+        # Act
         doc = Document(
             None,
-            studio="MGM",
+            studio=studio,
         )
 
-        print("studio should propogate from constructor")
-        assert doc.metadata.studio == "MGM"
-        assert doc.studio == "MGM"
+        print(studioPrintMessage)
 
-        print("studio should propogate from setter")
-        doc.studio = "Ghibli"
-        assert doc.metadata.studio == "Ghibli"
-        assert doc.studio == "Ghibli"
+        # Assert
+        assert doc.metadata.studio == expectedStudio
+        assert doc.studio == expectedStudio
 
-    def test_title(self):
+    @pytest.mark.parametrize(
+        "titlePrintMessage, title",
+        [
+            ("title should propogate from constructor", "Arsenic and Old Lace"),
+            ("title should propogate from setter", "Nosferatu"),
+        ],
+    )
+    def test_title(self, titlePrintMessage, title):
+        # Arrange
+        expectedTitle = title
+
+        # Act
+        doc = Document(None, title=title)
+
+        print(titlePrintMessage)
+
+        # Assert
+        assert doc.metadata.title == expectedTitle
+        assert doc.title == expectedTitle
+
+    @pytest.mark.parametrize(
+        "copyrightYearPrintMessage, copyrightYear",
+        [
+            ("copyrightYear should propogate from constructor", 1901),
+            ("copyrightYear should propogate from setter", 1898),
+        ],
+    )
+    def test_copyrightYear(self, copyrightYearPrintMessage, copyrightYear):
+        # Arrange
+        expectedYear = copyrightYear
+
+        # Act
+        doc = Document(None, copyrightYear=copyrightYear)
+
+        print(copyrightYearPrintMessage)
+
+        # Assert
+        assert doc.metadata.copyrightYear == expectedYear
+        assert doc.copyrightYear == expectedYear
+
+    @pytest.mark.parametrize(
+        "reelCountPrintMessage, reelCount",
+        [
+            ("reelCount should propogate from constructor", 3),
+            ("reelCount should propogate from setter", 1),
+        ],
+    )
+    def test_reelCount(self, reelCountPrintMessage, reelCount):
+        # Arrange
+        expectedReelCount = reelCount
+
+        # Act
         doc = Document(
             None,
-            title="Arsenic and Old Lace",
+            reelCount=reelCount,
         )
 
-        print("title should propogate from constructor")
-        assert doc.metadata.title == "Arsenic and Old Lace"
-        assert doc.title == "Arsenic and Old Lace"
+        print(reelCountPrintMessage)
 
-        print("title should propogate from setter")
-        doc.title = "Nosferatu"
-        assert doc.metadata.title == "Nosferatu"
-        assert doc.title == "Nosferatu"
+        # Assert
+        assert doc.metadata.reelCount == expectedReelCount
+        assert doc.reelCount == expectedReelCount
 
-    def test_copyrightYear(self):
+    @pytest.mark.parametrize(
+        "uploadedTimePrintMessage, uploadedTime",
+        [
+            (
+                "uploadedTime should propogate from constructor",
+                datetime.datetime.fromisoformat("2025-12-22T14:51:11"),
+            ),
+            (
+                "uploadedTime should propogate from setter",
+                datetime.datetime.fromisoformat("2025-12-22T14:51:11"),
+            ),
+        ],
+    )
+    def test_uploadedTime(self, uploadedTimePrintMessage, uploadedTime):
+        # Arrange
+        expectedUploadedTime = uploadedTime
+
+        # Act
         doc = Document(
             None,
-            copyrightYear=1901,
+            uploadedTime=uploadedTime,
         )
 
-        print("copyrightYear should propogate from constructor")
-        assert doc.metadata.copyrightYear == 1901
-        assert doc.copyrightYear == 1901
+        print(uploadedTimePrintMessage)
 
-        print("copyrightYear should propogate from setter")
-        doc.copyrightYear = 1898
-        assert doc.metadata.copyrightYear == 1898
-        assert doc.copyrightYear == 1898
+        # Assert
+        assert doc.metadata.uploadedTime == expectedUploadedTime
+        assert doc.uploadedTime == expectedUploadedTime
 
-    def test_reelCount(self):
+    @pytest.mark.parametrize(
+        "uploadedByPrintMessage, uploadedBy",
+        [
+            ("uploadedBy should propogate from constructor", "John_Doe"),
+            ("uploadedBy should propogate from setter", "The_Grinch"),
+        ],
+    )
+    def test_uploadedBy(self, uploadedByPrintMessage, uploadedBy):
+        # Arrange
+        expectedUploadedBy = uploadedBy
+
+        # Act
         doc = Document(
             None,
-            reelCount=3,
+            uploadedBy=uploadedBy,
         )
 
-        print("reelCount should propogate from constructor")
-        assert doc.metadata.reelCount == 3
-        assert doc.reelCount == 3
+        print(uploadedByPrintMessage)
 
-        print("reelCount should propogate from setter")
-        doc.reelCount = 1
-        assert doc.metadata.reelCount == 1
-        assert doc.reelCount == 1
+        # Assert
+        assert doc.metadata.uploadedBy == expectedUploadedBy
+        assert doc.uploadedBy == expectedUploadedBy
 
-    def test_uploadedTime(self):
+    @pytest.mark.parametrize(
+        "actorsPrintMessage, actors",
+        [
+            ("actors should propogate from constructor", ["Charlie Chaplin"]),
+            ("actors should propogate from setter", ["Walter Goggins", "Brad Pitt"]),
+        ],
+    )
+    def test_actors(self, actorsPrintMessage, actors):
+        # Arrange
+        expectedActors = actors
+
+        # Act
         doc = Document(
             None,
-            uploadedTime=datetime.datetime.fromisoformat("2025-12-22T14:51:11"),
+            actors=actors,
         )
 
-        print("uploadedTime should propogate from constructor")
-        assert doc.metadata.uploadedTime == datetime.datetime.fromisoformat(
-            "2025-12-22T14:51:11"
-        )
-        assert doc.uploadedTime == datetime.datetime.fromisoformat(
-            "2025-12-22T14:51:11"
-        )
+        print(actorsPrintMessage)
 
-        print("uploadedTime should propogate from setter")
-        doc.uploadedTime = datetime.datetime.fromisoformat("2026-02-20T08:00:00")
-        assert doc.metadata.uploadedTime == datetime.datetime.fromisoformat(
-            "2026-02-20T08:00:00"
-        )
-        assert doc.uploadedTime == datetime.datetime.fromisoformat(
-            "2026-02-20T08:00:00"
-        )
+        # Assert
+        assert doc.metadata.actors == expectedActors
+        assert doc.actors == expectedActors
 
-    def test_uploadedBy(self):
+    @pytest.mark.parametrize(
+        "tagsPrintMessage, tags",
+        [
+            ("tags should propogate from constructor", ["influential"]),
+            ("tags should propogate from setter", ["serial"]),
+        ],
+    )
+    def test_tags(self, tagsPrintMessage, tags):
+        # Arrange
+        expectedTags = tags
+
+        # Act
         doc = Document(
             None,
-            uploadedBy="John_Doe",
+            tags=tags,
         )
 
-        print("uploadedBy should propogate from constructor")
-        assert doc.metadata.uploadedBy == "John_Doe"
-        assert doc.uploadedBy == "John_Doe"
+        print(tagsPrintMessage)
 
-        print("uploadedBy should propogate from setter")
-        doc.uploadedBy = "The_Grinch"
-        assert doc.metadata.uploadedBy == "The_Grinch"
-        assert doc.uploadedBy == "The_Grinch"
+        # Assert
+        assert doc.metadata.tags == expectedTags
+        assert doc.tags == expectedTags
 
-    def test_actors(self):
+    @pytest.mark.parametrize(
+        "genresPrintMessage, genres",
+        [
+            ("genres should propogate from constructor", ["drama"]),
+            ("genres should propogate from setter", ["comedy", "commentary"]),
+        ],
+    )
+    def test_genres(self, genresPrintMessage, genres):
+        # Arrange
+        expectedGenres = genres
+
+        # Act
         doc = Document(
             None,
-            actors=["Charlie Chaplin"],
+            genres=genres,
         )
 
-        print("actors should propogate from constructor")
-        assert doc.metadata.actors == ["Charlie Chaplin"]
-        assert doc.actors == ["Charlie Chaplin"]
+        print(genresPrintMessage)
 
-        print("actors should propogate from setter")
-        doc.actors = ["Walter Goggins", "Brad Pitt"]
-        assert doc.metadata.actors == ["Walter Goggins", "Brad Pitt"]
-        assert doc.actors == ["Walter Goggins", "Brad Pitt"]
-
-    def test_tags(self):
-        doc = Document(
-            None,
-            tags=["influential"],
-        )
-
-        print("tags should propogate from constructor")
-        assert doc.metadata.tags == ["influential"]
-        assert doc.tags == ["influential"]
-
-        print("tags should propogate from setter")
-        doc.tags = ["serial"]
-        assert doc.metadata.tags == ["serial"]
-        assert doc.tags == ["serial"]
-
-    def test_genres(self):
-        doc = Document(
-            None,
-            genres=["drama"],
-        )
-
-        print("genres should propogate from constructor")
-        assert doc.metadata.genres == ["drama"]
-        assert doc.genres == ["drama"]
-
-        print("genres should propogate from setter")
-        doc.genres = ["comedy", "commentary"]
-        assert doc.metadata.genres == ["comedy", "commentary"]
-        assert doc.genres == ["comedy", "commentary"]
+        # Assert
+        assert doc.metadata.genres == expectedGenres
+        assert doc.genres == expectedGenres
 
     def test_content(self):
+        # Arrange
+        expectedContent = "page 1\npage 2"
+        inputContent = [(0, "page 1"), (1, "page 2")]
+
+        # Act
         doc = Document(
             None,
-            transcripts=[(0, "page 1"), (1, "page 2")],
+            transcripts=inputContent,
         )
 
         print(
             "content should concatenate the text of the transcript, seperated by newlines"
         )
-        assert doc.content == "page 1\npage 2"
+
+        # Assert
+        assert doc.content == expectedContent
 
 
 class TestFlag:
     def test_flag_creation(self):
+        # Arrange
+        expectedReporterName = "user1"
+        expectedErrorLocation = "page 3"
+        expectedErrorDescription = "Missing text"
+
+        inputReporterName = "user1"
+        inputErrorLocation = "page 3"
+        inputErrorDescription = "Missing text"
+
+        # Act
         flag = Flag(
-            reporterName="user1",
-            errorLocation="page 3",
-            errorDescription="Missing text",
+            reporterName=inputReporterName,
+            errorLocation=inputErrorLocation,
+            errorDescription=inputErrorDescription,
         )
-        assert flag.reporterName == "user1"
-        assert flag.errorLocation == "page 3"
-        assert flag.errorDescription == "Missing text"
+
+        # Assert
+        assert flag.reporterName == expectedReporterName
+        assert flag.errorLocation == expectedErrorLocation
+        assert flag.errorDescription == expectedErrorDescription
