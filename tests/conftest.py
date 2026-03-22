@@ -31,30 +31,6 @@ def mock_psycopg2():
     }
 
 
-@pytest.fixture()
-def mock_db_utils():
-    # mock `cursor` object
-    mock_cursor = MagicMock()
-    mock_cursor.fetchone = Mock(return_value=None)
-    mock_cursor.fetchall = Mock(return_value=[])
-
-    # mock `connection` object
-    mock_connection = MagicMock()
-
-    mock_cursor_generator = MagicMock()
-    mock_cursor_generator.__enter__ = Mock(return_value=mock_cursor)
-    mock_connection.cursor = Mock(return_value=mock_cursor_generator)
-
-    # mock `connect` function
-    mock_connect = patch("psycopg2.connect", return_value=mock_connection).start()
-
-    return {
-        "connect": mock_connect,
-        "connection": mock_connection,
-        "cursor": mock_cursor,
-    }
-
-
 @pytest.fixture(autouse=True)
 def env_vars():
     # Manage environment variables
