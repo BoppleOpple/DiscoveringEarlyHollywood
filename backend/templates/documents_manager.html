@@ -28,7 +28,7 @@
 
     <!-- Search Interface -->
     <div class="bg-white border-2 border-[#E0E0E0] rounded-lg p-6 mb-6">
-        <form method="GET" action="{{ url_for('documents_manager') }}" class="flex items-center gap-4 mb-4">
+        <form method="GET" action="{{ url_for('manager.documents_manager') }}" class="flex items-center gap-4 mb-4">
             <div class="flex-1 relative">
                 <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[#666666]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
@@ -47,7 +47,7 @@
     </div>
 
     <!-- Documents List -->
-    <form id="removeForm" action="{{ url_for('remove_documents') }}" method="POST">
+    <form id="removeForm" action="{{ url_for('manager.remove_documents') }}" method="POST">
         <div class="bg-white border-2 border-[#E0E0E0] rounded-lg overflow-hidden">
             <div class="p-4 bg-[#F5F5F0] border-b-2 border-[#E0E0E0] flex items-center justify-between">
                 <div class="flex items-center gap-3">
@@ -74,7 +74,7 @@
                            onchange="updateSelection()">
                     <div class="flex-shrink-0">
                         <div class="w-16 h-20 bg-[#F5F5F0] border border-[#CCCCCC] rounded flex items-center justify-center">
-                            <img class="grow" src="{{ url_for('thumbnail', doc_id=doc.id, scale=0.2) }}" alt="Thumbnail could not be loaded">
+                            <img class="grow" src="{{ url_for('document.thumbnail', doc_id=doc.id, scale=0.2) }}" alt="Thumbnail could not be loaded">
                             <!-- <svg class="w-8 h-8 text-[#666666]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                             </svg> -->
@@ -114,7 +114,7 @@
             </button>
         </div>
 
-        <form action="{{ url_for('upload_documents') }}" method="POST" enctype="multipart/form-data">
+        <form action="{{ url_for('manager.upload_documents') }}" method="POST" enctype="multipart/form-data">
             <!-- ZIP Upload Tab -->
             <div id="zipContent" class="tab-content">
                 <input type="hidden" name="upload_type" value="zip">

@@ -43,4 +43,4 @@ jobs:
       env:
         FLASK_SECRET: test-secret-for-ci
       run: |
-        pytest tests/ -v
+        pytest -v

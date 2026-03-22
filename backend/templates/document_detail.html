@@ -17,7 +17,7 @@
         <div class="flex gap-8">
             <div class="flex-1">
                 <div class="float-right border-[#E0E0E0]">
-                    <form action="{{ url_for('flag_document', doc_id=document.id) }}" method="POST" class="inline">
+                    <form action="{{ url_for('document.flag_document', doc_id=document.id) }}" method="POST" class="inline">
                         <button type="submit" class="bg-[#2C2C2C] hover:bg-[#8B0000] text-white py-2 px-4 rounded transition-colors">
                             Flag Document
                         </button>
@@ -38,9 +38,9 @@
             <tr class="text-[#666666] leading-relaxed border-t-2 border-[#E0E0E0]">
                 <td class="pt-2 pb-2">
                     <div class="flex-shrink-0">
-                        <a href="{{ url_for('download_pdf', doc_id=document.id) }}">
+                        <a href="{{ url_for('document.download_pdf', doc_id=document.id) }}">
                             <div class="w-64 min-h-32 bg-[#F5F5F0] border-2 border-[#CCCCCC] rounded-lg flex items-center justify-center overflow-hidden">
-                                <img class="grow" src="{{ url_for('thumbnail', doc_id=document.id, page=page+1) }}" alt="Thumbnail could not be loaded">
+                                <img class="grow" src="{{ url_for('document.thumbnail', doc_id=document.id, page=page+1) }}" alt="Thumbnail could not be loaded">
                                 <!-- <div class="text-center">
                                     <svg class="w-24 h-24 text-[#666666] mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" 
