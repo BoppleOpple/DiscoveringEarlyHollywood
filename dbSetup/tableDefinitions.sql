@@ -14,7 +14,9 @@ CREATE TABLE tags (
 
 CREATE TABLE users (
     name varchar(20) PRIMARY KEY,
-    encoded_password char(20)
+    email varchar(320) NOT NULL,
+    encoded_password varchar(255),
+    CONSTRAINT unique_email UNIQUE (email)
 );
 
 CREATE TABLE documents (
