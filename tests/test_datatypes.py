@@ -314,7 +314,7 @@ class TestDocument:
         )
 
         print(
-            "content should concatenate the text of the transcript, seperated by newlines"
+            "content should concatenate the text of the transcript, separated by newlines"
         )
 
         # Assert
