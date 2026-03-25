@@ -9,32 +9,50 @@ from unittest.mock import MagicMock
 
 class TestRelationFromIdToAllValues:
     def test_returns_sql_object(self):
+        # Arrange
+        inputIdColumn = "document_id"
+        inputValueColumn = "genre"
+        inputRelation = "has_genre"
+        inputValues = ["comedy", "drama"]
+
+        # Act
         result = relation_from_id_to_all_values(
-            idColumn="document_id",
-            valueColumn="genre",
-            relation="has_genre",
-            values=["comedy", "drama"],
+            inputIdColumn, inputValueColumn, inputRelation, inputValues
         )
+
+        # Assert
         assert result is not None
         assert isinstance(result, sql.Composed)
 
     def test_handles_single_value(self):
+        # Arrange
+        inputIdColumn = "document_id"
+        inputValueColumn = "actor_name"
+        inputRelation = "has_actor"
+        inputValues = ["Charlie Chaplin"]
+
+        # Act
         result = relation_from_id_to_all_values(
-            idColumn="document_id",
-            valueColumn="actor_name",
-            relation="has_actor",
-            values=["Charlie Chaplin"],
+            inputIdColumn, inputValueColumn, inputRelation, inputValues
         )
+
+        # Assert
         assert result is not None
         assert isinstance(result, sql.Composed)
 
     def test_deduplicates_values(self):
+        # Arrange
+        inputIdColumn = "document_id"
+        inputValueColumn = "genre"
+        inputRelation = "has_genre"
+        inputValues = ["comedy", "comedy", "drama"]
+
+        # Act
         result = relation_from_id_to_all_values(
-            idColumn="document_id",
-            valueColumn="genre",
-            relation="has_genre",
-            values=["comedy", "comedy", "drama"],
+            inputIdColumn, inputValueColumn, inputRelation, inputValues
         )
+
+        # Assert
         assert result is not None
 
 
@@ -42,7 +60,6 @@ class TestExecuteDocumentQuery:
     def test_defaultInputs_executesDefaultQuery(self):
         # Arrange
         inputQuery = Query()
-
         mockCursor = MagicMock()
 
         # Act
