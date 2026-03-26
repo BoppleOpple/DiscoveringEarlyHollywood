@@ -4,3 +4,4 @@ werkzeug
 pdf2image
 python-dotenv
 psycopg2
+tqdm
