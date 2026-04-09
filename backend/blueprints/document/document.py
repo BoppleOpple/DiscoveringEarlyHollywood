@@ -1,4 +1,5 @@
 import pdf2image.pdf2image
+import psycopg2
 import PIL
 import re
 
@@ -14,7 +15,7 @@ from flask import (
     render_template,
 )
 from pathlib import Path
-from io import BytesIO, StringIO
+from io import BytesIO
 
 from ... import db_utils
 
@@ -92,25 +93,24 @@ def download_pdf(doc_id):
 
 @document.route("/<doc_id>.csv")
 def download_csv(doc_id):
-    # download: bool = request.args.get("download", True, type=_bool_string)
-    try:
-        if not _valid_id(doc_id):
-            raise Exception("Not a valid doc_id")
+    download: bool = request.args.get("download", True, type=_bool_string)
+    # try:
+    if not _valid_id(doc_id):
+        raise Exception("Not a valid doc_id")
 
-        file_buffer: StringIO = StringIO()
+    connection: psycopg2.extensions.connection = db_utils.get_db_connection()
 
-        file_buffer.write()
+    content: str = db_utils.get_documents_as_csv(connection, [doc_id])
 
-        # return send_file(
-        #     pdf_path,
-        #     mimetype="text/csv",
-        #     as_attachment=download,
-        #     download_name=f"{doc_id}.csv",
-        # )
-        return "Feature not yet implemented", 501
-    except Exception as e:
-        print(e)
-        return "Document not found", 404
+    return send_file(
+        BytesIO(content.encode("utf-8")),
+        mimetype="text/csv",
+        as_attachment=download,
+        download_name=f"{doc_id}.csv",
+    )
+    # except Exception as e:
+    #     print(e)
+    #     return "Document not found", 404
 
 
 @document.route("/<doc_id>.jpg", methods=["GET"])

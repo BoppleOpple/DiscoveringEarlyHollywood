@@ -468,10 +468,17 @@ def get_flagged(conn: connection) -> list[Document]:
     return documents
 
 
+def _clean_csv_value(value: str) -> str:
+    if value:
+        return f"\"{value.strip().replace("\"", "\"\"").replace("\n", " ")}\""
+    else:
+        return ""
+
+
 def _csv(values: list[str] | None) -> str | None:
     if not values:
         return None
-    return ",".join(v.strip() for v in values if v and v.strip()) or None
+    return ",".join(v.strip() for v in values if v is not None) or None
 
 
 def _search_label(
@@ -800,8 +807,6 @@ def get_documents(conn: connection, doc_ids: list[str]) -> str:
 
     # create document objects
     for document_row in document_data:
-        print(document_row)
-
         id: str = document_row[0]
         copyright_year: int = (
             int(document_row[1]) if document_row[1] is not None else None
@@ -899,22 +904,65 @@ def get_document(conn: connection, doc_id: str) -> Document:
     return document
 
 
-# def get_documents_as_csv(conn: connection, doc_ids: list[str]) -> str:
-#     """Fetch *all* data pertaining to a document.
+def get_documents_as_csv(conn: connection, doc_ids: list[str]) -> str:
+    """Fetch *all* data pertaining to a document.
 
-#     Parameters
-#     ----------
-#     conn : :obj:`psycopg2.extensions.connection`
-#         A ``psycopg2`` connection to perform queries with
+    Parameters
+    ----------
+    conn : :obj:`psycopg2.extensions.connection`
+        A ``psycopg2`` connection to perform queries with
 
-#     doc_ids : list[str]
-#         The id of the desired document
+    doc_ids : list[str]
+        The id of the desired document
 
-#     Returns
-#     -------
-#     csv_body : str
-#         A ``str`` with information from the specified ``doc_ids``, formatted as a csv
-#     """
+    Returns
+    -------
+    csv_body : str
+        A ``str`` with information from the specified ``doc_ids``, formatted as a csv
+    """
+
+    documents: list[Document] = get_documents(conn, doc_ids)
+
+    csv_body: str = (
+        _csv(
+            [
+                "id",
+                "copyright_year",
+                "studio",
+                "title",
+                "reel_count",
+                "uploaded_by",
+                "uploaded_time",
+                "transcript",
+                "actors",
+                "genres",
+                "tags",
+            ]
+        )
+        + "\n"
+    )
+
+    for doc in documents:
+        csv_body += (
+            _csv(
+                [
+                    _clean_csv_value(doc.id),
+                    _clean_csv_value(str(doc.copyrightYear)),
+                    _clean_csv_value(doc.studio),
+                    _clean_csv_value(doc.title),
+                    _clean_csv_value(str(doc.reelCount)),
+                    _clean_csv_value(doc.uploadedBy),
+                    _clean_csv_value(str(doc.uploadedTime)),
+                    _clean_csv_value(doc.content),
+                    _clean_csv_value(";".join(doc.actors)),
+                    _clean_csv_value(";".join(doc.genres)),
+                    _clean_csv_value(";".join(doc.tags)),
+                ]
+            )
+            + "\n"
+        )
+
+    return csv_body
 
 
 if __name__ == "__main__":
