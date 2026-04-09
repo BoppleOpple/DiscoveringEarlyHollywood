@@ -184,7 +184,7 @@ class Document:
     genres: list[str], default = []
         The list of genres associated with this document
 
-    transcripts: list[str], default = []
+    transcripts: list[tuple[int, str]], default = []
         A list of the text of each page, in order
 
     flags: Union[list[Flag], None], default = None
@@ -195,7 +195,7 @@ class Document:
     images: list[Any]
         Not yet implemented
 
-    transcripts: list[str]
+    transcripts: list[tuple[int, str]]
         A list of the text of each page, in order
 
     flags: Union[list[Flag], None]
@@ -206,7 +206,7 @@ class Document:
     """
 
     images: list[Any] = None
-    transcripts: list[str] = []
+    transcripts: list[tuple[int, str]] = []
     flags: Union[list[Flag], None] = None
 
     metadata: Metadata = Metadata()
@@ -225,7 +225,7 @@ class Document:
         actors: list[str] = [],
         tags: list[str] = [],
         genres: list[str] = [],
-        transcripts: list[str] = [],
+        transcripts: list[tuple[int, str]] = [],
         flags: list[Flag] = [],
     ):
         self.metadata = Metadata(

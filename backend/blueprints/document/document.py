@@ -14,7 +14,7 @@ from flask import (
     render_template,
 )
 from pathlib import Path
-from io import BytesIO
+from io import BytesIO, StringIO
 
 from ... import db_utils
 
@@ -85,6 +85,29 @@ def download_pdf(doc_id):
             as_attachment=download,
             download_name=f"{doc_id}.pdf",
         )
+    except Exception as e:
+        print(e)
+        return "Document not found", 404
+
+
+@document.route("/<doc_id>.csv")
+def download_csv(doc_id):
+    # download: bool = request.args.get("download", True, type=_bool_string)
+    try:
+        if not _valid_id(doc_id):
+            raise Exception("Not a valid doc_id")
+
+        file_buffer: StringIO = StringIO()
+
+        file_buffer.write()
+
+        # return send_file(
+        #     pdf_path,
+        #     mimetype="text/csv",
+        #     as_attachment=download,
+        #     download_name=f"{doc_id}.csv",
+        # )
+        return "Feature not yet implemented", 501
     except Exception as e:
         print(e)
         return "Document not found", 404

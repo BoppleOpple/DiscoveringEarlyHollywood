@@ -711,7 +711,169 @@ def get_viewed_document_ids(conn: connection, user_name: str) -> set[str]:
     return {row[0] for row in rows}
 
 
-def get_document(conn: connection, doc_id: str) -> dict:
+def get_documents(conn: connection, doc_ids: list[str]) -> str:
+    """Fetch *all* data pertaining to multiple documents.
+
+    Parameters
+    ----------
+    conn : :obj:`psycopg2.extensions.connection`
+        A ``psycopg2`` connection to perform queries with
+
+    doc_ids : list[str]
+        The id of the desired document
+
+    Returns
+    -------
+    docs : list[Document]
+        A list of ``Document``s with information from the specified ``doc_ids``
+    """
+
+    document_data: list[tuple] = None
+    transcript_data: list[tuple] = None
+    actor_data: list[tuple] = None
+    genre_data: list[tuple] = None
+    tag_data: list[tuple] = None
+    flag_data: list[tuple] = None
+    cur: cursor = None
+
+    cleaned_ids: tuple = tuple(id.lower() for id in doc_ids)
+
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT id, copyright_year, studio, title, reel_count, uploaded_by, uploaded_time \
+            FROM documents \
+            WHERE id IN %s;",
+            [cleaned_ids],
+        )
+
+        document_data = cur.fetchall()
+
+        cur.execute(
+            "SELECT document_id, page_number, content \
+            FROM transcripts \
+            WHERE document_id IN %s \
+            ORDER BY page_number;",
+            [cleaned_ids],
+        )
+
+        transcript_data = cur.fetchall()
+
+        cur.execute(
+            "SELECT document_id, actor_name \
+            FROM has_actor \
+            WHERE document_id IN %s;",
+            [cleaned_ids],
+        )
+
+        actor_data = cur.fetchall()
+
+        cur.execute(
+            "SELECT document_id, genre \
+            FROM has_genre \
+            WHERE document_id IN %s;",
+            [cleaned_ids],
+        )
+
+        genre_data = cur.fetchall()
+
+        cur.execute(
+            "SELECT document_id, tag \
+            FROM has_tag \
+            WHERE document_id IN %s;",
+            [cleaned_ids],
+        )
+
+        tag_data = cur.fetchall()
+
+        cur.execute(
+            "SELECT document_id, user_name, error_location, error_description \
+            FROM flagged_by \
+            WHERE document_id IN %s;",
+            [cleaned_ids],
+        )
+
+        flag_data = cur.fetchall()
+
+    conn.commit()
+
+    documents: dict[str, Document] = {}
+
+    # create document objects
+    for document_row in document_data:
+        print(document_row)
+
+        id: str = document_row[0]
+        copyright_year: int = (
+            int(document_row[1]) if document_row[1] is not None else None
+        )
+        studio: str = document_row[2]
+        title: str = document_row[3]
+        reel_count: int = int(document_row[4]) if document_row[4] is not None else None
+        uploaded_by: str = document_row[5]
+        uploaded_time: str = document_row[6]
+
+        documents[id] = Document(
+            None,  # TODO
+            id=id,
+            studio=studio,
+            title=title,
+            documentType=None,  # TODO
+            copyrightYear=copyright_year,
+            reelCount=reel_count,
+            uploadedTime=uploaded_time,
+            uploadedBy=uploaded_by,
+        )
+
+    # include transcript data
+    for transcript_row in transcript_data:
+        id: str = transcript_row[0]
+        page_number: int = (
+            int(transcript_row[1]) if transcript_row[1] is not None else None
+        )
+        content: str = transcript_row[2]
+
+        documents[id].transcripts.append((page_number, content))
+
+    # include actor data
+    for actor_row in actor_data:
+        id: str = actor_row[0]
+        name: str = actor_row[1]
+
+        documents[id].actors.append(name)
+
+    # include genre data
+    for genre_row in genre_data:
+        id: str = genre_row[0]
+        genre: str = genre_row[1]
+
+        documents[id].genres.append(genre)
+
+    # include tag data
+    for tag_row in tag_data:
+        id: str = tag_row[0]
+        tag: str = tag_row[1]
+
+        documents[id].tags.append(tag)
+
+    # include flag data
+    for flag_row in flag_data:
+        id: str = flag_row[0]
+        reporter_name: str = flag_row[1]
+        error_location: str = flag_row[2]
+        error_description: str = flag_row[3]
+
+        documents[id].flags.append(
+            Flag(
+                reporterName=reporter_name,
+                errorLocation=error_location,
+                errorDescription=error_description,
+            )
+        )
+
+    return list(documents.values())
+
+
+def get_document(conn: connection, doc_id: str) -> Document:
     """Fetch *all* data pertaining to a document.
 
     Parameters
@@ -729,94 +891,30 @@ def get_document(conn: connection, doc_id: str) -> dict:
     if not conn:
         raise Exception("No SQL connection found")
 
-    document: tuple = None
-    transcripts: list = []
-    actors: list = []
-    cur: cursor = None
-    with conn.cursor() as cur:
-        cur.execute(
-            "SELECT id, copyright_year, studio, title, reel_count, uploaded_by, uploaded_time \
-            FROM documents \
-            WHERE id=%s;",
-            [doc_id.lower()],
-        )
-
-        document = cur.fetchone()
-
-        cur.execute(
-            "SELECT page_number, content \
-            FROM transcripts \
-            WHERE document_id=%s \
-            ORDER BY page_number;",
-            [doc_id.lower()],
-        )
-
-        transcripts = cur.fetchall()
-
-        cur.execute(
-            "SELECT actor_name \
-            FROM has_actor \
-            WHERE document_id=%s;",
-            [doc_id.lower()],
-        )
-
-        actors = cur.fetchall()
-
-        cur.execute(
-            "SELECT genre \
-            FROM has_genre \
-            WHERE document_id=%s;",
-            [doc_id.lower()],
-        )
-
-        genres = cur.fetchall()
-
-        cur.execute(
-            "SELECT tag \
-            FROM has_tag \
-            WHERE document_id=%s;",
-            [doc_id.lower()],
-        )
-
-        tags = cur.fetchall()
-
-        cur.execute(
-            "SELECT user_name, error_location, error_description \
-            FROM flagged_by \
-            WHERE document_id=%s;",
-            [doc_id.lower()],
-        )
-
-        flags = [
-            Flag(
-                reporterName=flagData[0],
-                errorLocation=flagData[1],
-                errorDescription=flagData[2],
-            )
-            for flagData in cur.fetchall()
-        ]
-
-    conn.commit()
+    document: Document = get_documents(conn, [doc_id])[0]
 
     if not document:
         return None
 
-    return Document(
-        None,  # TODO
-        id=document[0],
-        studio=document[2],
-        title=document[3],
-        documentType=None,  # TODO
-        copyrightYear=document[1],
-        reelCount=document[4],
-        uploadedTime=document[6],
-        uploadedBy=document[5],
-        actors=[result[0] for result in actors],
-        tags=tags,
-        genres=genres,
-        transcripts=transcripts,
-        flags=flags,
-    )
+    return document
+
+
+# def get_documents_as_csv(conn: connection, doc_ids: list[str]) -> str:
+#     """Fetch *all* data pertaining to a document.
+
+#     Parameters
+#     ----------
+#     conn : :obj:`psycopg2.extensions.connection`
+#         A ``psycopg2`` connection to perform queries with
+
+#     doc_ids : list[str]
+#         The id of the desired document
+
+#     Returns
+#     -------
+#     csv_body : str
+#         A ``str`` with information from the specified ``doc_ids``, formatted as a csv
+#     """
 
 
 if __name__ == "__main__":
