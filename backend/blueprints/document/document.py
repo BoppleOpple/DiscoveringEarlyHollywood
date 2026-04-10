@@ -94,23 +94,23 @@ def download_pdf(doc_id):
 @document.route("/<doc_id>.csv")
 def download_csv(doc_id):
     download: bool = request.args.get("download", True, type=_bool_string)
-    # try:
-    if not _valid_id(doc_id):
-        raise Exception("Not a valid doc_id")
+    try:
+        if not _valid_id(doc_id):
+            raise Exception("Not a valid doc_id")
 
-    connection: psycopg2.extensions.connection = db_utils.get_db_connection()
+        connection: psycopg2.extensions.connection = db_utils.get_db_connection()
 
-    content: str = db_utils.get_documents_as_csv(connection, [doc_id])
+        content: str = db_utils.get_documents_as_csv(connection, [doc_id])
 
-    return send_file(
-        BytesIO(content.encode("utf-8")),
-        mimetype="text/csv",
-        as_attachment=download,
-        download_name=f"{doc_id}.csv",
-    )
-    # except Exception as e:
-    #     print(e)
-    #     return "Document not found", 404
+        return send_file(
+            BytesIO(content.encode("utf-8")),
+            mimetype="text/csv",
+            as_attachment=download,
+            download_name=f"{doc_id}.csv",
+        )
+    except Exception as e:
+        print(e)
+        return "Document not found", 404
 
 
 @document.route("/<doc_id>.jpg", methods=["GET"])
