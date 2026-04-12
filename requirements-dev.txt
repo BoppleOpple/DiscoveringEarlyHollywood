@@ -5,4 +5,5 @@ numpydoc
 pytest
 pytest-cov
 pytest-mock
+Pillow
 -rrequirements.txt

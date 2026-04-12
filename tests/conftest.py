@@ -1,9 +1,10 @@
 import os
-from flask import Flask
-from unittest.mock import Mock, MagicMock, patch
-
-from dotenv import load_dotenv
 import pytest
+import re
+from dotenv import load_dotenv
+from flask import Flask, testing
+from typing import Callable
+from unittest.mock import Mock, MagicMock, patch
 
 
 # Mock DB connection
@@ -31,6 +32,22 @@ def mock_psycopg2():
     }
 
 
+# Helper for getting a filename from a TestClient respones
+@pytest.fixture()
+def get_filename() -> Callable[[testing.TestResponse], str]:
+    def _get_filename(response: testing.TestResponse) -> str:
+        content_header: str = response.headers.get("Content-Disposition")
+
+        filename_match: re.Match = re.search(
+            r"filename=(.*?)(?:;|\n|\z)", content_header
+        )
+        response_filename: str = filename_match.group(1)
+
+        return response_filename
+
+    return _get_filename
+
+
 @pytest.fixture(autouse=True)
 def env_vars():
     # Manage environment variables
@@ -56,7 +73,9 @@ def app():
         SQL_USER="DB_User",
         SQL_PASSWORD="Password_Foo_Bar",
         DOCUMENT_DIR="./test_data/documents",
-        POPPLER_PATH=("./poppler/bin"),
+        POPPLER_PATH=(
+            os.environ["POPPLER_PATH"] if "POPPLER_PATH" in os.environ else None
+        ),
         RESULTS_PER_PAGE=20,
     )
 

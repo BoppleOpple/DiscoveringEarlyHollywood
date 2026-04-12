@@ -143,7 +143,8 @@ def thumbnail(doc_id):
         )
 
         # clamp requested page
-        page = max(1, min(page, info["Pages"]))
+        if page < 1 or page > info["Pages"]:
+            raise IndexError("Page number not valid")
 
         image: PIL.Image.Image = pdf2image.convert_from_path(
             pdf_path=pdf_path,
