@@ -3,4 +3,5 @@ flask-cors
 werkzeug
 pdf2image
 python-dotenv
+python-poppler
 psycopg2
