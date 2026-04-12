@@ -75,7 +75,7 @@ def download_pdf(doc_id):
 
         pdf_path: Path = (
             Path(current_app.config["DOCUMENT_DIR"]) / doc_id / f"{doc_id}.pdf"
-        )
+        ).absolute()
 
         if not pdf_path.exists():
             raise Exception("Not a valid document path")

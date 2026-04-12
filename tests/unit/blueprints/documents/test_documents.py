@@ -20,9 +20,7 @@ class TestValidId:
 
 
 class TestDownloadPDF:
-    def test_invalid_id_gives_404(
-        self, mocker: MockerFixture, client: testing.FlaskClient
-    ):
+    def test_invalid_id_gives_404(self, client: testing.FlaskClient):
         # Arrange
         doc_id: str = "invalid string"
 
@@ -33,14 +31,9 @@ class TestDownloadPDF:
         # Assert
         assert response.status_code == 404
 
-    def test_missing_file_gives_404(
-        self, mocker: MockerFixture, client: testing.FlaskClient
-    ):
+    def test_missing_file_gives_404(self, client: testing.FlaskClient):
         # Arrange
         doc_id: str = "s1234l56789"
-
-        mock_exists: MockType = mocker.patch("pathlib.Path.exists")
-        mock_exists.return_value = False
 
         # Act
         with client:
@@ -49,17 +42,9 @@ class TestDownloadPDF:
         # Assert
         assert response.status_code == 404
 
-    def test_existing_file_sends_file(
-        self, mocker: MockerFixture, client: testing.FlaskClient
-    ):
+    def test_existing_file_sends_file(self, client: testing.FlaskClient):
         # Arrange
         doc_id: str = "s1229l00001"
-
-        mock_exists: MockType = mocker.patch("pathlib.Path.exists")
-        mock_exists.return_value = True
-
-        mock_send_file: MockType = mocker.patch("flask.send_file")
-        mock_send_file.return_value = None
 
         # Act
         with client:
@@ -73,9 +58,7 @@ class TestDownloadPDF:
 
 
 class TestDownloadCSV:
-    def test_invalid_id_gives_404(
-        self, mocker: MockerFixture, client: testing.FlaskClient
-    ):
+    def test_invalid_id_gives_404(self, client: testing.FlaskClient):
         # Arrange
         doc_id: str = "invalid string"
 
@@ -85,3 +68,34 @@ class TestDownloadCSV:
 
         # Assert
         assert response.status_code == 404
+
+    def test_missing_file_gives_404(self, client: testing.FlaskClient):
+        # Arrange
+        doc_id: str = "s1234l56789"
+
+        # Act
+        with client:
+            response: testing.TestResponse = client.get(f"/document/{doc_id}.csv")
+
+        # Assert
+        assert response.status_code == 404
+
+    def test_existing_file_sends_utf8_file(
+        self, mocker: MockerFixture, client: testing.FlaskClient, mock_psycopg2
+    ):
+        # Arrange
+        doc_id: str = "s1229l00001"
+        csv_data: str = "foobar"
+        expected_bytes: bytes = csv_data.encode("utf-8")
+
+        mock_get_documents_as_csv: MockType = mocker.patch(
+            "backend.db_utils.get_documents_as_csv"
+        )
+        mock_get_documents_as_csv.return_value = csv_data
+
+        # Act
+        with client:
+            response: testing.TestResponse = client.get(f"/document/{doc_id}.csv")
+
+        # Assert
+        assert response.get_data() == expected_bytes
