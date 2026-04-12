@@ -272,6 +272,14 @@ class Document:
         self.metadata.title = value
 
     @property
+    def documentType(self) -> str:
+        return self.metadata.documentType if self.metadata else None
+
+    @documentType.setter
+    def documentType(self, value: str):
+        self.metadata.documentType = value
+
+    @property
     def copyrightYear(self) -> str:
         return self.metadata.copyrightYear if self.metadata else None
 
