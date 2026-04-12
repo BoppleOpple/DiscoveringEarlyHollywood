@@ -136,6 +136,40 @@ class TestDocumentDetail:
         for url in page_urls:
             assert url in response.text
 
+    def test_valid_id_displays_metadata(
+        self,
+        mocker: MockerFixture,
+        client: testing.FlaskClient,
+        mock_psycopg2: dict,
+        example_document: Document,
+    ):
+        # Arrange
+        doc_id: str = example_document.id
+
+        mocker.patch("backend.db_utils.get_document", return_value=example_document)
+
+        # Act
+        with client:
+            response: testing.TestResponse = client.get(f"/document/{doc_id}")
+
+        # Assert
+        assert example_document.id in response.text
+        assert example_document.studio in response.text
+        assert example_document.title in response.text
+        assert example_document.documentType in response.text
+        assert str(example_document.copyrightYear) in response.text
+        assert str(example_document.reelCount) in response.text
+        assert str(example_document.uploadedTime) in response.text
+
+        for genre in example_document.genres:
+            assert genre in response.text
+
+        for actor in example_document.actors:
+            assert actor in response.text
+
+        for page, text in example_document.transcripts:
+            assert text in response.text
+
     def test_invalid_return_url_not_displayed(
         self,
         mocker: MockerFixture,
