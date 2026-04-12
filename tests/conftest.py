@@ -55,7 +55,7 @@ def app():
         SQL_DBNAME="testdb",
         SQL_USER="DB_User",
         SQL_PASSWORD="Password_Foo_Bar",
-        DOCUMENT_DIR="document_dir",
+        DOCUMENT_DIR="../test_data/documents",
         POPPLER_PATH=("./poppler/bin"),
         RESULTS_PER_PAGE=20,
     )

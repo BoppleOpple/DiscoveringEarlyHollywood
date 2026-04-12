@@ -49,27 +49,27 @@ class TestDownloadPDF:
         # Assert
         assert response.status_code == 404
 
-    # def test_existing_file_sends_file(self, mocker: MockerFixture, client: testing.FlaskClient):
-    #     # Arrange
-    #     doc_id: str = "s1234l56789"
+    def test_existing_file_sends_file(
+        self, mocker: MockerFixture, client: testing.FlaskClient
+    ):
+        # Arrange
+        doc_id: str = "s1229l00001"
 
-    #     mock_exists: MockType = mocker.patch("pathlib.Path.exists")
-    #     mock_exists.return_value = True
+        mock_exists: MockType = mocker.patch("pathlib.Path.exists")
+        mock_exists.return_value = True
 
-    #     mock_send_file: MockType = mocker.patch("flask.send_file")
-    #     mock_send_file.return_value = None
+        mock_send_file: MockType = mocker.patch("flask.send_file")
+        mock_send_file.return_value = None
 
-    #     mock_open: MockType = mocker.patch("builtins.open")
-    #     mock_open.return_value = BytesIO()
+        # Act
+        with client:
+            response: testing.TestResponse = client.get(f"/document/{doc_id}.pdf")
 
-    #     # Act
-    #     with client:
-    #         response: testing.TestResponse = client.get(f"/document/{doc_id}.pdf")
-
-    #     # Assert
-    #     print(response.get_data())
-    #     assert response.content_type
-    #     assert False
+        # Assert
+        with open(
+            "./test_data/documents/s1229l00001/s1229l00001.pdf", "rb"
+        ) as document:
+            assert response.get_data() == document.read()
 
 
 class TestDownloadCSV:
