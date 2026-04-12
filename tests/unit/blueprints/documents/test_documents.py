@@ -1,11 +1,39 @@
 import PIL
 import pytest
-from flask import testing
+from datetime import datetime
+from flask import testing, request, url_for
 from io import BytesIO
 from pathlib import Path
 from pytest_mock import MockerFixture, MockType
 
 from backend.blueprints.document.document import _valid_id, _bool_string
+from backend.datatypes import Document, Flag
+
+
+@pytest.fixture
+def example_document() -> Document:
+    return Document(
+        None,
+        id="s1234l56789",
+        studio="MGM",
+        title="A great movie",
+        documentType="synopsis",
+        copyrightYear=1920,
+        reelCount=4,
+        uploadedTime=datetime.now(),
+        uploadedBy="admin_user",
+        actors=["Kayla Morris", "Greg Morris"],
+        tags=["foo", "bar"],
+        genres=["drama", "horror"],
+        transcripts=[(1, "S1234L56789"), (2, "document body"), (3, "copyright page")],
+        flags=[
+            Flag(
+                reporterName="userX",
+                errorLocation="title",
+                errorDescription="the title is incorrect.",
+            )
+        ],
+    )
 
 
 class TestValidId:
@@ -45,6 +73,179 @@ class TestBoolString:
 
         # Assert
         assert result == expected_output
+
+
+class TestDocumentDetail:
+    def test_invalid_id_returns_to_index(
+        self, client: testing.FlaskClient, mock_psycopg2
+    ):
+        # Arrange
+        doc_id: str = "invalid string"
+
+        # Act
+        with client:
+            client.get(f"/document/{doc_id}", follow_redirects=True)
+            final_path: str = request.path
+            expected_path: str = url_for("index")
+
+        # Assert
+        assert final_path == expected_path
+
+    def test_invalid_id_flashes_error(self, client: testing.FlaskClient, mock_psycopg2):
+        # Arrange
+        doc_id: str = "invalid string"
+        expected_message: str = "Document not found"
+
+        # Act
+        with client:
+            client.get(f"/document/{doc_id}")
+
+            with client.session_transaction() as session:
+                flashes: dict = dict(session["_flashes"])
+
+        # Assert
+        assert "error" in flashes, 'An "error" flash should be raised'
+        assert (
+            flashes["error"] == expected_message
+        ), f'The error should be "{expected_message}"'
+
+    def test_valid_id_displays_pages(
+        self,
+        mocker: MockerFixture,
+        client: testing.FlaskClient,
+        mock_psycopg2: dict,
+        example_document: Document,
+    ):
+        # Arrange
+        doc_id: str = example_document.id
+
+        mocker.patch("backend.db_utils.get_document", return_value=example_document)
+
+        # Act
+        with client:
+            response: testing.TestResponse = client.get(f"/document/{doc_id}")
+            page_urls: list[str] = [
+                url_for(
+                    "document.thumbnail",
+                    doc_id=doc_id,
+                    page=len(example_document.transcripts),
+                )
+            ]
+
+        # Assert
+        for url in page_urls:
+            assert url in response.text
+
+    def test_invalid_return_url_not_displayed(
+        self,
+        mocker: MockerFixture,
+        client: testing.FlaskClient,
+        mock_psycopg2: dict,
+        example_document: Document,
+    ):
+        # Arrange
+        doc_id: str = example_document.id
+        return_url: str = "http://google.com"
+
+        mocker.patch("backend.db_utils.get_document", return_value=example_document)
+
+        # Act
+        with client:
+            # init http session, allowing `url_for`
+            client.get(f"/document/{doc_id}")
+            document_url: str = url_for(
+                "document.document_detail", doc_id=doc_id, return_to=return_url
+            )
+
+            response: testing.TestResponse = client.get(document_url)
+
+        # Assert
+        assert return_url not in response.text
+
+    def test_valid_return_url_displayed(
+        self,
+        mocker: MockerFixture,
+        client: testing.FlaskClient,
+        mock_psycopg2: dict,
+        example_document: Document,
+    ):
+        # Arrange
+        doc_id: str = example_document.id
+
+        mocker.patch("backend.db_utils.get_document", return_value=example_document)
+
+        # Act
+        with client:
+            # init http session, allowing `url_for`
+            client.get(f"/document/{doc_id}")
+            return_url: str = url_for("index")
+            document_url: str = url_for(
+                "document.document_detail", doc_id=doc_id, return_to=return_url
+            )
+
+            response: testing.TestResponse = client.get(document_url)
+
+        # Assert
+        assert return_url in response.text
+
+    def test_document_added_to_history_with_search_id(
+        self,
+        mocker: MockerFixture,
+        client: testing.FlaskClient,
+        mock_psycopg2: dict,
+        example_document: Document,
+    ):
+        # Arrange
+        doc_id: str = example_document.id
+        user_name: str = "example_user"
+        search_id: int = 42
+        document_url: str = f"/document/{doc_id}?search_id={search_id}"
+
+        mocker.patch("backend.db_utils.get_document", return_value=example_document)
+        mock_log_view: MockType = mocker.patch("backend.db_utils.log_view")
+
+        mocker.patch(
+            "backend.db_utils.get_search_history_entry", return_value={"id": search_id}
+        )
+
+        # Act
+        with client:
+            with client.session_transaction() as session:
+                session["user"] = user_name
+
+            client.get(document_url)
+
+        # Assert
+        assert mock_log_view.call_args.kwargs["user_name"] == user_name
+        assert mock_log_view.call_args.kwargs["document_id"] == doc_id
+        assert mock_log_view.call_args.kwargs["search_id"] == search_id
+
+    def test_document_added_to_history_without_search_id(
+        self,
+        mocker: MockerFixture,
+        client: testing.FlaskClient,
+        mock_psycopg2: dict,
+        example_document: Document,
+    ):
+        # Arrange
+        doc_id: str = example_document.id
+        user_name: str = "example_user"
+        document_url: str = f"/document/{doc_id}"
+
+        mocker.patch("backend.db_utils.get_document", return_value=example_document)
+        mock_log_view: MockType = mocker.patch("backend.db_utils.log_view")
+
+        # Act
+        with client:
+            with client.session_transaction() as session:
+                session["user"] = user_name
+
+            client.get(document_url)
+
+        # Assert
+        assert mock_log_view.call_args.kwargs["user_name"] == user_name
+        assert mock_log_view.call_args.kwargs["document_id"] == doc_id
+        assert mock_log_view.call_args.kwargs["search_id"] is None
 
 
 class TestDownloadPDF:
