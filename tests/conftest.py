@@ -3,27 +3,29 @@ import pytest
 import re
 from dotenv import load_dotenv
 from flask import Flask, testing
+from pytest_mock import MockerFixture, MockType
 from typing import Callable
-from unittest.mock import Mock, MagicMock, patch
 
 
 # Mock DB connection
 @pytest.fixture()
-def mock_psycopg2():
+def mock_psycopg2(mocker: MockerFixture):
     # mock `cursor` object
-    mock_cursor = MagicMock()
-    mock_cursor.fetchone = Mock(return_value=None)
-    mock_cursor.fetchall = Mock(return_value=[])
+    mock_cursor = mocker.MagicMock()
+    mock_cursor.fetchone = mocker.Mock(return_value=None)
+    mock_cursor.fetchall = mocker.Mock(return_value=[])
 
     # mock `connection` object
-    mock_connection = MagicMock()
+    mock_connection = mocker.MagicMock()
 
-    mock_cursor_generator = MagicMock()
-    mock_cursor_generator.__enter__ = Mock(return_value=mock_cursor)
-    mock_connection.cursor = Mock(return_value=mock_cursor_generator)
+    mock_cursor_generator = mocker.MagicMock()
+    mock_cursor_generator.__enter__ = mocker.Mock(return_value=mock_cursor)
+    mock_connection.cursor = mocker.Mock(return_value=mock_cursor_generator)
 
     # mock `connect` function
-    mock_connect = patch("psycopg2.connect", return_value=mock_connection).start()
+    mock_connect: MockType = mocker.patch(
+        "psycopg2.connect", return_value=mock_connection
+    )
 
     return {
         "connect": mock_connect,
