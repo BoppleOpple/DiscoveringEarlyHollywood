@@ -1,8 +1,9 @@
 from flask import testing
 
-from backend.blueprints.document.document import _valid_id
+from backend.blueprints.document.document import _valid_id, _bool_string
 
 from pytest_mock import MockerFixture, MockType
+import pytest
 
 
 class TestValidId:
@@ -17,6 +18,31 @@ class TestValidId:
     def test_invalid_id(self):
         id: str = "foobar"
         assert _valid_id(id) is False, "id of `foobar` shall be invalid"
+
+
+class TestBoolString:
+
+    @pytest.mark.parametrize("string", [None, "False", "false", "arbitrary string"])
+    def test_false_string(self, string: str | None):
+        # Arrange
+        expected_output: bool = False
+
+        # Act
+        result: bool = _bool_string(string)
+
+        # Assert
+        assert result == expected_output
+
+    @pytest.mark.parametrize("string", ["True", "true"])
+    def test_true_string(self, string: str):
+        # Arrange
+        expected_output: bool = True
+
+        # Act
+        result: bool = _bool_string(string)
+
+        # Assert
+        assert result == expected_output
 
 
 class TestDownloadPDF:

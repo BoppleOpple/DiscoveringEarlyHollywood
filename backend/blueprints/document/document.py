@@ -29,6 +29,8 @@ def _valid_id(doc_id: str) -> bool:
 
 
 def _bool_string(s: str) -> bool:
+    if s is None:
+        return False
     return s.lower() == "true"
 
 
