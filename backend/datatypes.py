@@ -184,7 +184,7 @@ class Document:
     genres: list[str], default = []
         The list of genres associated with this document
 
-    transcripts: list[str], default = []
+    transcripts: list[tuple[int, str]], default = []
         A list of the text of each page, in order
 
     flags: Union[list[Flag], None], default = None
@@ -195,7 +195,7 @@ class Document:
     images: list[Any]
         Not yet implemented
 
-    transcripts: list[str]
+    transcripts: list[tuple[int, str]]
         A list of the text of each page, in order
 
     flags: Union[list[Flag], None]
@@ -206,7 +206,7 @@ class Document:
     """
 
     images: list[Any] = None
-    transcripts: list[str] = []
+    transcripts: list[tuple[int, str]] = []
     flags: Union[list[Flag], None] = None
 
     metadata: Metadata = Metadata()
@@ -225,7 +225,7 @@ class Document:
         actors: list[str] = [],
         tags: list[str] = [],
         genres: list[str] = [],
-        transcripts: list[str] = [],
+        transcripts: list[tuple[int, str]] = [],
         flags: list[Flag] = [],
     ):
         self.metadata = Metadata(
@@ -304,27 +304,27 @@ class Document:
         self.metadata.uploadedBy = value
 
     @property
-    def actors(self) -> str:
+    def actors(self) -> list[str]:
         return self.metadata.actors if self.metadata else None
 
     @actors.setter
-    def actors(self, value: str):
+    def actors(self, value: list[str]):
         self.metadata.actors = value
 
     @property
-    def tags(self) -> str:
+    def tags(self) -> list[str]:
         return self.metadata.tags if self.metadata else None
 
     @tags.setter
-    def tags(self, value: str):
+    def tags(self, value: list[str]):
         self.metadata.tags = value
 
     @property
-    def genres(self) -> str:
+    def genres(self) -> list[str]:
         return self.metadata.genres if self.metadata else None
 
     @genres.setter
-    def genres(self, value: str):
+    def genres(self, value: list[str]):
         self.metadata.genres = value
 
     @property

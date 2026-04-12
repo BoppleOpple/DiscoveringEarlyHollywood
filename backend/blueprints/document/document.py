@@ -1,4 +1,5 @@
 import pdf2image.pdf2image
+import psycopg2
 import PIL
 import re
 
@@ -25,6 +26,10 @@ def _valid_id(doc_id: str) -> bool:
     if doc_id is None:
         return False
     return re.fullmatch(r"\w\d{4}\w\d{5}", doc_id) is not None
+
+
+def _bool_string(s: str) -> bool:
+    return s.lower() == "true"
 
 
 @document.route("/<doc_id>")
@@ -63,13 +68,14 @@ def document_detail(doc_id):
 
 @document.route("/<doc_id>.pdf")
 def download_pdf(doc_id):
+    download: bool = request.args.get("download", True, type=_bool_string)
     try:
         if not _valid_id(doc_id):
             raise Exception("Not a valid doc_id")
 
         pdf_path: Path = (
             Path(current_app.config["DOCUMENT_DIR"]) / doc_id / f"{doc_id}.pdf"
-        )
+        ).absolute()
 
         if not pdf_path.exists():
             raise Exception("Not a valid document path")
@@ -77,8 +83,30 @@ def download_pdf(doc_id):
         return send_file(
             pdf_path,
             mimetype="application/pdf",
-            as_attachment=False,
+            as_attachment=download,
             download_name=f"{doc_id}.pdf",
+        )
+    except Exception as e:
+        print(e)
+        return "Document not found", 404
+
+
+@document.route("/<doc_id>.csv")
+def download_csv(doc_id):
+    download: bool = request.args.get("download", True, type=_bool_string)
+    try:
+        if not _valid_id(doc_id):
+            raise Exception("Not a valid doc_id")
+
+        connection: psycopg2.extensions.connection = db_utils.get_db_connection()
+
+        content: str = db_utils.get_documents_as_csv(connection, [doc_id])
+
+        return send_file(
+            BytesIO(content.encode("utf-8")),
+            mimetype="text/csv",
+            as_attachment=download,
+            download_name=f"{doc_id}.csv",
         )
     except Exception as e:
         print(e)
