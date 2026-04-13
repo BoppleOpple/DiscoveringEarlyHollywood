@@ -49,7 +49,7 @@ jobs:
         pre-commit run --all-files
     - name: Start program
       run: |
-        python -m backend.app
+        python -m backend.app &
     - name: Run unit tests
       env:
         FLASK_SECRET: test-secret-for-ci
