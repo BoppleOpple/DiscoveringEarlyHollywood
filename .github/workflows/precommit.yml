@@ -39,6 +39,9 @@ jobs:
     - name: Ensure all files pass pre-commit constraints
       run: |
         pre-commit run --all-files
+    - name: Start program
+      run: |
+        python -m backend.app
     - name: Run unit tests
       env:
         FLASK_SECRET: test-secret-for-ci
