@@ -25,7 +25,7 @@ jobs:
       SQL_USER: ${{secrets.SQL_USER}}
       SQL_PASSWORD: ${{secrets.SQL_PASSWORD}}
       FLASK_SECRET: ${{secrets.FLASK_SECRET}}
-      DOCUMENT_DIR: ${{secrets.DOCUMENT_DIR}}
+      DOCUMENT_DIR: "/mnt/Database Storage/http/capstone/film_copyright"
 
     strategy:
       matrix:
