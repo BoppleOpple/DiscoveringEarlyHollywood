@@ -33,9 +33,6 @@
                 <a href="{{ url_for('flagged_documents') }}" class="text-white hover:opacity-80 transition-opacity">
                     Flagged Documents
                 </a>
-                <a href="{{ url_for('manager.documents_manager') }}" class="text-white hover:opacity-80 transition-opacity">
-                    Documents Manager
-                </a>
                 {% if session.get('user') %}
                     <a href="{{ url_for('account.logout') }}" class="text-white hover:opacity-80 transition-opacity">
                         Logout

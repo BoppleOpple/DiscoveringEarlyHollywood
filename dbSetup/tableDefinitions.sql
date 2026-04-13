@@ -1,3 +1,5 @@
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 -- ENTITY SETS
 
 CREATE TABLE actors (
@@ -60,14 +62,14 @@ CREATE TABLE error_locations (
 -- RELATIONSHIPS
 
 CREATE TABLE flagged_by (
-    document_id varchar(15),
-    user_name varchar(20),
-    error_location varchar(20),
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    document_id varchar(15) NOT NULL,
+    user_name varchar(20) NOT NULL,
+    error_location varchar(20) NOT NULL,
     error_description text,
     CONSTRAINT fk_document_id FOREIGN KEY (document_id) REFERENCES documents(id),
     CONSTRAINT fk_user_name FOREIGN KEY (user_name) REFERENCES users(name),
-    CONSTRAINT fk_error_location FOREIGN KEY (error_location) REFERENCES error_locations(location),
-    PRIMARY KEY (document_id, user_name)
+    CONSTRAINT fk_error_location FOREIGN KEY (error_location) REFERENCES error_locations(location)
 );
 
 CREATE TABLE view_history (

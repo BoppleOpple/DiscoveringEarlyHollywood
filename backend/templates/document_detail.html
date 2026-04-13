@@ -16,16 +16,67 @@
         
         <div class="flex gap-8">
             <div class="flex-1">
-                <div class="float-right border-[#E0E0E0]">
-                    <form action="{{ url_for('document.flag_document', doc_id=document.id) }}" method="POST" class="inline">
+                <div class="flex items-start justify-between gap-4 mb-4">
+                    <h2 class="text-[#800080] text-xl font-medium">
+                        {{ document.title }}
+                    </h2>
+                    <button
+                        type="button"
+                        onclick="toggleFlagForm()"
+                        class="shrink-0 bg-[#2C2C2C] hover:bg-[#8B0000] text-white py-2 px-4 rounded transition-colors"
+                    >
+                        Flag Document
+                    </button>
+                </div>
+                <div id="flagFormPanel" class="hidden mb-6 max-w-xl border-2 border-[#E0E0E0] rounded-lg bg-[#F9F7F2] p-4">
+                    <div class="flex items-center justify-between gap-4 mb-3">
+                        <h3 class="text-[#2C2C2C] font-medium">Flag This Document</h3>
+                        <button
+                            type="button"
+                            onclick="toggleFlagForm()"
+                            class="text-sm text-[#666666] hover:text-[#8B0000] transition-colors"
+                        >
+                            Close
+                        </button>
+                    </div>
+                    <form action="{{ url_for('document.flag_document', doc_id=document.id) }}" method="POST" class="space-y-3">
+                        <input type="hidden" name="return_to" value="{{ request.args.get('return_to', '') }}">
+                        <input type="hidden" name="search_id" value="{{ request.args.get('search_id', '') }}">
+                        <div>
+                            <label for="error_location" class="block text-[#2C2C2C] mb-1">Issue Location</label>
+                            <input
+                                id="error_location"
+                                name="error_location"
+                                type="text"
+                                maxlength="20"
+                                placeholder="Page 3"
+                                class="w-full px-3 py-2 bg-white border-2 border-[#2B6CB0] focus:border-[#8B0000] focus:outline-none focus:ring-2 focus:ring-[#8B0000] rounded"
+                                required
+                            >
+                        </div>
+                        <div>
+                            <label for="error_description" class="block text-[#2C2C2C] mb-1">What should be reviewed?</label>
+                            <textarea
+                                id="error_description"
+                                name="error_description"
+                                rows="4"
+                                placeholder="Describe the transcription or metadata issue."
+                                class="w-full px-3 py-2 bg-white border-2 border-[#2B6CB0] focus:border-[#8B0000] focus:outline-none focus:ring-2 focus:ring-[#8B0000] rounded"
+                                required
+                            ></textarea>
+                        </div>
+                        <p class="text-sm text-[#666666]">
+                            {% if session.get('user') %}
+                            Your report will be saved under your account.
+                            {% else %}
+                            Log in to flag documents for review.
+                            {% endif %}
+                        </p>
                         <button type="submit" class="bg-[#2C2C2C] hover:bg-[#8B0000] text-white py-2 px-4 rounded transition-colors">
-                            Flag Document
+                            Submit Flag
                         </button>
                     </form>
                 </div>
-                <h2 class="text-[#800080] text-xl font-medium mb-4">
-                    {{ document.title }}
-                </h2>
             </div>
         </div>
         <!-- Document Content -->
@@ -78,7 +129,7 @@
                     </div>
                     <div class="flex">
                         <span class="text-[#666666] w-24">Genre:</span>
-                        <span class="text-[#2C2C2C]">{{ document.genres }}</span>
+                        <span class="text-[#2C2C2C]">{{ document.genres|join(', ') if document.genres else 'Unspecified' }}</span>
                     </div>
                     <div class="flex">
                         <span class="text-[#666666] w-24">Director:</span>
@@ -122,6 +173,22 @@
         </div>
         
         <div class="mt-8 pt-6 border-t-2 border-[#E0E0E0]">
+            {% if document.flags %}
+            <div class="mb-6">
+                <h4 class="text-[#2C2C2C] font-medium mb-3">Submitted Review Flags</h4>
+                <div class="space-y-3">
+                    {% for flag in document.flags %}
+                    <div class="bg-[#FFF8F0] border border-[#E0E0E0] rounded-lg p-4">
+                        <div class="flex items-center justify-between gap-4 mb-2">
+                            <p class="text-[#2C2C2C] font-medium">{{ flag.reporterName }}</p>
+                            <p class="text-sm text-[#666666]">{{ flag.errorLocation }}</p>
+                        </div>
+                        <p class="text-[#666666]">{{ flag.errorDescription }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
             <form action="{{ url_for('document.download_pdf', doc_id=document.id) }}" method="GET" class="inline">
                 <button type="submit" class="bg-[#2C2C2C] hover:bg-[#8B0000] text-white py-2 px-4 rounded transition-colors">
                     Download Document
@@ -135,4 +202,10 @@
         </div>
     </div>
 </div>
+<script>
+    function toggleFlagForm() {
+        const panel = document.getElementById('flagFormPanel');
+        panel.classList.toggle('hidden');
+    }
+</script>
 {% endblock %}

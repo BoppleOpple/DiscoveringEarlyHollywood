@@ -99,6 +99,8 @@ def download_csv(doc_id):
             raise Exception("Not a valid doc_id")
 
         connection: psycopg2.extensions.connection = db_utils.get_db_connection()
+        if not db_utils.get_document(connection, doc_id):
+            raise Exception("Not a valid document path")
 
         content: str = db_utils.get_documents_as_csv(connection, [doc_id])
 
@@ -169,6 +171,52 @@ def thumbnail(doc_id):
 
 @document.route("/flag/<doc_id>", methods=["POST"])
 def flag_document(doc_id):
-    # Mock flagging - in production, save to database
-    flash("Document flagged for review", "success")
-    return render_template(url_for("document_detail", doc_id=doc_id))
+    redirect_args: dict[str, str] = {}
+
+    return_to = request.form.get("return_to", "").strip()
+    search_id = request.form.get("search_id", "").strip()
+    if return_to:
+        redirect_args["return_to"] = return_to
+    if search_id:
+        redirect_args["search_id"] = search_id
+
+    user_name = session.get("user")
+    if not user_name:
+        flash("Log in to flag documents for review.", "error")
+        return redirect(
+            url_for("document.document_detail", doc_id=doc_id, **redirect_args)
+        )
+
+    if not db_utils.get_document(db_utils.get_db_connection(), doc_id):
+        flash("Document not found", "error")
+        return redirect(url_for("index"))
+
+    error_location = request.form.get("error_location", "").strip()
+    error_description = request.form.get("error_description", "").strip()
+
+    if not error_location:
+        flash("Please provide where the issue appears.", "error")
+        return redirect(
+            url_for("document.document_detail", doc_id=doc_id, **redirect_args)
+        )
+    if len(error_location) > 20:
+        flash("Issue location must be 20 characters or fewer.", "error")
+        return redirect(
+            url_for("document.document_detail", doc_id=doc_id, **redirect_args)
+        )
+    if not error_description:
+        flash("Please describe the issue before submitting a flag.", "error")
+        return redirect(
+            url_for("document.document_detail", doc_id=doc_id, **redirect_args)
+        )
+
+    db_utils.log_flag(
+        db_utils.get_db_connection(),
+        user_name=user_name,
+        document_id=doc_id,
+        error_location=error_location,
+        error_description=error_description,
+    )
+
+    flash("Document flagged for review.", "success")
+    return redirect(url_for("document.document_detail", doc_id=doc_id, **redirect_args))

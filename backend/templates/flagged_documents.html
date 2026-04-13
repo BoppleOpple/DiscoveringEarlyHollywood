@@ -16,6 +16,11 @@
     </div>
 
     <div class="space-y-4">
+        {% if not documents %}
+        <div class="bg-white border-2 border-[#E0E0E0] rounded-lg p-6 text-[#666666]">
+            No documents have been flagged yet.
+        </div>
+        {% endif %}
         {% for doc in documents %}
         <div class="bg-white border-2 border-[#E0E0E0] rounded-lg overflow-hidden">
             <div class="p-4">
@@ -36,14 +41,20 @@
                                 <h3 class="text-[#800080] text-lg font-medium mb-2 group-hover:underline">
                                     {{ doc.title }}
                                 </h3>
-                                <p class="text-[#666666] mb-3">{{ doc.description }}</p>
+                                <p class="text-[#666666] mb-3">
+                                    {% if doc.studio %}
+                                    Studio: {{ doc.studio }}
+                                    {% else %}
+                                    No studio information available.
+                                    {% endif %}
+                                </p>
                                 <div class="flex gap-4">
-                                    <span class="text-[#2B6CB0]">{{ doc.year }}</span>
+                                    <span class="text-[#2B6CB0]">{{ doc.copyrightYear }}</span>
                                     <span class="text-[#666666]">•</span>
-                                    <span class="text-[#666666]">{{ doc.documentType }}</span>
+                                    <span class="text-[#666666]">{{ doc.documentType or 'Document' }}</span>
                                 </div>
                             </a>
-                            <button onclick="toggleFlags({ doc_id })" 
+                            <button onclick="toggleFlags('{{ doc.id }}')" 
                                     class="ml-4 flex items-center gap-2 px-4 py-2 bg-[#8B0000] text-white rounded hover:bg-[#A52A2A] transition-colors">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"/>
@@ -69,17 +80,17 @@
                         <div class="flex items-start justify-between mb-2">
                             <div class="flex items-center gap-2">
                                 <div class="w-8 h-8 bg-[#8B0000] rounded-full flex items-center justify-center text-white text-sm">
-                                    {% set initials = flag.user.split(' ') %}
+                                    {% set initials = flag.reporterName.split(' ') %}
                                     {{ initials[0][0] }}{% if initials|length > 1 %}{{ initials[1][0] }}{% endif %}
                                 </div>
                                 <div>
-                                    <p class="text-[#2C2C2C] font-medium">{{ flag.user }}</p>
-                                    <p class="text-[#999999] text-sm">{{ flag.date }}</p>
+                                    <p class="text-[#2C2C2C] font-medium">{{ flag.reporterName }}</p>
+                                    <p class="text-[#999999] text-sm">{{ flag.errorLocation }}</p>
                                 </div>
                             </div>
                         </div>
                         <p class="text-[#666666] ml-10">
-                            {{ flag.reason }}
+                            {{ flag.errorDescription }}
                         </p>
                     </div>
                     {% endfor %}
