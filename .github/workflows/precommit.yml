@@ -50,7 +50,7 @@ jobs:
     - name: Start program
       run: |
         python -m backend.app &
-    - name: Run unit tests
+    - name: Run regression tests
       env:
         FLASK_SECRET: test-secret-for-ci
       run: |
