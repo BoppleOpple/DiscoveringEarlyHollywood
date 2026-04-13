@@ -19,13 +19,13 @@ jobs:
     
     runs-on: ${{matrix.os}}
     env:
-      SQL_HOST: "boppleopple.net"
+      SQL_HOST: ${{secrets.SQL_HOST}}
       SQL_PORT: ${{secrets.SQL_PORT}}
-      SQL_DBNAME: "discovering_early_hollywood"
-      SQL_USER: "deh"
-      SQL_PASSWORD: "willy_n_gang"
+      SQL_DBNAME: ${{secrets.SQL_DBNAME}}
+      SQL_USER: ${{secrets.SQL_USER}}
+      SQL_PASSWORD: ${{secrets.SQL_PASSWORD}}
       FLASK_SECRET: ${{secrets.FLASK_SECRET}}
-      DOCUMENT_DIR: "/mnt/Database Storage/http/capstone/film_copyright"
+      DOCUMENT_DIR: ${{secrets.DOCUMENT_DIR}}
 
     strategy:
       matrix:
