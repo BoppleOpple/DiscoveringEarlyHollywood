@@ -19,7 +19,7 @@ jobs:
     
     runs-on: ${{matrix.os}}
     env:
-      SQL_HOST: "boppleopple.net"
+      SQL_HOST: ${{secrets.SQL_HOST}}
       SQL_PORT: "5432"
       SQL_DBNAME: "discovering_early_hollywood"
       SQL_USER: "deh"
