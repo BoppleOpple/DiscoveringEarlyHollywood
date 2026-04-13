@@ -193,6 +193,19 @@ class TestDocument:
         assert doc.metadata.title == expectedTitle
         assert doc.title == expectedTitle
 
+    def test_documentType(self):
+        # Arrange
+        constructorDocumentType = "script"
+        expectedDocumentType = "synopsis"
+        doc = Document(None, documentType=constructorDocumentType)
+
+        # Act
+        doc.documentType = expectedDocumentType
+
+        # Assert
+        assert doc.metadata.documentType == expectedDocumentType
+        assert doc.documentType == expectedDocumentType
+
     def test_copyrightYear(self):
         # Arrange
         constructorYear = 1901

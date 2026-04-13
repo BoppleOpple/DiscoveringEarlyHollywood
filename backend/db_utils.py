@@ -345,7 +345,12 @@ def get_num_results(conn: connection, query: Query):
             prefix=sql.SQL("SELECT COUNT(*)"),
         )
 
-        count = cur.fetchone()[0]
+        result: tuple = cur.fetchone()
+
+    # set `count` to the number of results if any exist, otherwise 0
+    count: int = 0
+    if result:
+        count = result[0]
 
     conn.commit()
 
@@ -896,10 +901,12 @@ def get_document(conn: connection, doc_id: str) -> Document:
     if not conn:
         raise Exception("No SQL connection found")
 
-    document: Document = get_documents(conn, [doc_id])[0]
+    documents: list[Document] = get_documents(conn, [doc_id])
 
-    if not document:
+    if len(documents) < 1:
         return None
+
+    document: Document = get_documents(conn, [doc_id])[0]
 
     return document
 

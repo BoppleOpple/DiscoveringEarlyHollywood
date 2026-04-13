@@ -1,34 +1,53 @@
 import os
-from flask import Flask
-from unittest.mock import Mock, MagicMock, patch
-
-from dotenv import load_dotenv
 import pytest
+import re
+from dotenv import load_dotenv
+from flask import Flask, testing
+from pytest_mock import MockerFixture, MockType
+from typing import Callable
 
 
 # Mock DB connection
 @pytest.fixture()
-def mock_psycopg2():
+def mock_psycopg2(mocker: MockerFixture):
     # mock `cursor` object
-    mock_cursor = MagicMock()
-    mock_cursor.fetchone = Mock(return_value=None)
-    mock_cursor.fetchall = Mock(return_value=[])
+    mock_cursor = mocker.MagicMock()
+    mock_cursor.fetchone = mocker.Mock(return_value=None)
+    mock_cursor.fetchall = mocker.Mock(return_value=[])
 
     # mock `connection` object
-    mock_connection = MagicMock()
+    mock_connection = mocker.MagicMock()
 
-    mock_cursor_generator = MagicMock()
-    mock_cursor_generator.__enter__ = Mock(return_value=mock_cursor)
-    mock_connection.cursor = Mock(return_value=mock_cursor_generator)
+    mock_cursor_generator = mocker.MagicMock()
+    mock_cursor_generator.__enter__ = mocker.Mock(return_value=mock_cursor)
+    mock_connection.cursor = mocker.Mock(return_value=mock_cursor_generator)
 
     # mock `connect` function
-    mock_connect = patch("psycopg2.connect", return_value=mock_connection).start()
+    mock_connect: MockType = mocker.patch(
+        "psycopg2.connect", return_value=mock_connection
+    )
 
     return {
         "connect": mock_connect,
         "connection": mock_connection,
         "cursor": mock_cursor,
     }
+
+
+# Helper for getting a filename from a TestClient respones
+@pytest.fixture()
+def get_filename() -> Callable[[testing.TestResponse], str]:
+    def _get_filename(response: testing.TestResponse) -> str:
+        content_header: str = response.headers.get("Content-Disposition")
+
+        filename_match: re.Match = re.search(
+            r"filename=(.*?)(?:;|\n|\z)", content_header
+        )
+        response_filename: str = filename_match.group(1)
+
+        return response_filename
+
+    return _get_filename
 
 
 @pytest.fixture(autouse=True)
@@ -56,7 +75,9 @@ def app():
         SQL_USER="DB_User",
         SQL_PASSWORD="Password_Foo_Bar",
         DOCUMENT_DIR="./test_data/documents",
-        POPPLER_PATH=("./poppler/bin"),
+        POPPLER_PATH=(
+            os.environ["POPPLER_PATH"] if "POPPLER_PATH" in os.environ else None
+        ),
         RESULTS_PER_PAGE=20,
     )
 
