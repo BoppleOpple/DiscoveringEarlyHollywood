@@ -7,12 +7,12 @@ from selenium.webdriver.firefox.options import Options as FirefoxOptions
 def create_driver(browser):
     if browser == "chrome":
         options = ChromeOptions()
-        options.add_argument("--window-size=1920,1080")
+        options.add_argument("--headless=new")
         return webdriver.Chrome(options=options)
 
     elif browser == "firefox":
         options = FirefoxOptions()
-        options.add_argument("--width=1920,1080")
+        options.add_argument("--headless=new")
         return webdriver.Firefox(options=options)
 
     else:
