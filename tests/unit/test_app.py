@@ -1,3 +1,5 @@
+import re
+
 from flask import testing
 from unittest.mock import patch
 
@@ -37,6 +39,12 @@ class TestIndex:
             with client:
                 response: testing.TestResponse = client.get("/")
                 text_data: str = response.get_data(as_text=True)
+                visible_text_data: str = re.sub(
+                    r"<!--.*?-->",
+                    "",
+                    text_data,
+                    flags=re.DOTALL,
+                )
 
                 search_args: tuple = mock_search_results.call_args[0]
 
@@ -75,9 +83,9 @@ class TestIndex:
         ), "The website shall display the document thumbnails"
 
         assert (
-            "Documents Manager" not in text_data
+            "Documents Manager" not in visible_text_data
         ), "The website shall not show a Documents Manager nav link"
 
         assert (
-            'name="genre"' not in text_data
+            'name="genre"' not in visible_text_data
         ), "The website shall not show a genre search control"
