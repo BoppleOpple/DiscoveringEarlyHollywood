@@ -24,7 +24,7 @@ jobs:
       SQL_DBNAME: "discovering_early_hollywood"
       SQL_USER: "deh"
       SQL_PASSWORD: "willy_n_gang"
-      FLASK_SECRET: ${{secrets.FLASK_SECRET_KEY}}
+      FLASK_SECRET: ${{secrets.FLASK_SECRET}}
       DOCUMENT_DIR: "/mnt/Database Storage/http/capstone/film_copyright"
 
     strategy:
