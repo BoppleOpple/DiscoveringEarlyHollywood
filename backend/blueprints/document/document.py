@@ -61,11 +61,18 @@ def document_detail(doc_id):
 
     back_url = url_for("index")
     return_to = request.args.get("return_to", "")
+    safe_return_to = ""
     # prevents links which would redirect to outside the website
     if return_to.startswith("/") and not return_to.startswith("//"):
         back_url = return_to
+        safe_return_to = return_to
 
-    return render_template("document_detail.html", document=document, back_url=back_url)
+    return render_template(
+        "document_detail.html",
+        document=document,
+        back_url=back_url,
+        safe_return_to=safe_return_to,
+    )
 
 
 @document.route("/<doc_id>.pdf")
