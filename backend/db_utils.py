@@ -921,7 +921,7 @@ def get_document(conn: connection, doc_id: str) -> Document:
 
     Returns
     -------
-    document : Docment
+    documents[0] : Docment
         A ``Docment`` with the specified ``doc_id``, or None
     """
     if not conn:
@@ -932,7 +932,6 @@ def get_document(conn: connection, doc_id: str) -> Document:
         return None
 
     return documents[0]
-
 
 
 def get_documents_as_csv(conn: connection, doc_ids: list[str]) -> str:
