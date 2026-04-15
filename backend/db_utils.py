@@ -344,7 +344,12 @@ def get_num_results(conn: connection, query: Query):
             prefix=sql.SQL("SELECT COUNT(*)"),
         )
 
-        count = cur.fetchone()[0]
+        result: tuple = cur.fetchone()
+
+    # set `count` to the number of results if any exist, otherwise 0
+    count: int = 0
+    if result:
+        count = result[0]
 
     conn.commit()
 
@@ -927,6 +932,7 @@ def get_document(conn: connection, doc_id: str) -> Document:
         return None
 
     return documents[0]
+
 
 
 def get_documents_as_csv(conn: connection, doc_ids: list[str]) -> str:

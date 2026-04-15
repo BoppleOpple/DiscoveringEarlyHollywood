@@ -29,6 +29,8 @@ def _valid_id(doc_id: str) -> bool:
 
 
 def _bool_string(s: str) -> bool:
+    if s is None:
+        return False
     return s.lower() == "true"
 
 
@@ -143,7 +145,8 @@ def thumbnail(doc_id):
         )
 
         # clamp requested page
-        page = max(1, min(page, info["Pages"]))
+        if page < 1 or page > info["Pages"]:
+            raise IndexError("Page number not valid")
 
         image: PIL.Image.Image = pdf2image.convert_from_path(
             pdf_path=pdf_path,

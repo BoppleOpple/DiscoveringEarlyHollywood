@@ -5,4 +5,6 @@ numpydoc
 pytest
 pytest-cov
 pytest-mock
+selenium==4.41.0
+Pillow
 -rrequirements.txt

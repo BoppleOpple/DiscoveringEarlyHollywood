@@ -18,6 +18,14 @@ jobs:
     name: precommit
     
     runs-on: ${{matrix.os}}
+    env:
+      SQL_HOST: ${{secrets.SQL_HOST}}
+      SQL_PORT: ${{secrets.SQL_PORT}}
+      SQL_DBNAME: ${{secrets.SQL_DBNAME}}
+      SQL_USER: ${{secrets.SQL_USER}}
+      SQL_PASSWORD: ${{secrets.SQL_PASSWORD}}
+      FLASK_SECRET: ${{secrets.FLASK_SECRET}}
+      DOCUMENT_DIR: ${{secrets.DOCUMENT_DIR}}
 
     strategy:
       matrix:
@@ -36,10 +44,14 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements-dev.txt
+        sudo apt install -y poppler-utils
     - name: Ensure all files pass pre-commit constraints
       run: |
         pre-commit run --all-files
-    - name: Run unit tests
+    - name: Start program
+      run: |
+        python -m backend.app &
+    - name: Run regression tests
       env:
         FLASK_SECRET: test-secret-for-ci
       run: |
