@@ -40,7 +40,7 @@
                         </button>
                     </div>
                     <form action="{{ url_for('document.flag_document', doc_id=document.id) }}" method="POST" class="space-y-3">
-                        <input type="hidden" name="return_to" value="{{ request.args.get('return_to', '') }}">
+                        <input type="hidden" name="return_to" value="{{ safe_return_to }}">
                         <input type="hidden" name="search_id" value="{{ request.args.get('search_id', '') }}">
                         <div>
                             <label for="error_location" class="block text-[#2C2C2C] mb-1">Issue Location</label>
