@@ -2,7 +2,8 @@ import os
 import pytest
 import re
 from dotenv import load_dotenv
-from flask import Flask, Response as TestResponse
+from flask import Flask
+from werkzeug.test import TestResponse
 from pytest_mock import MockerFixture, MockType
 from typing import Callable
 
