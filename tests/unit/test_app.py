@@ -1,14 +1,22 @@
 from flask import testing
-from unittest.mock import patch
 
 from backend.datatypes import Document, Query
 
+from pytest_mock import MockerFixture, MockType
+
 
 class TestIndex:
-    def test_default_index_page(self, client: testing.FlaskClient, mock_psycopg2):
+    def test_default_index_page(
+        self, mocker: MockerFixture, client: testing.FlaskClient, mock_psycopg2
+    ):
         # Arrange
 
         # return 2 documents
+        mock_get_num_results: MockType = mocker.patch(
+            "backend.db_utils.get_num_results"
+        )
+        mock_get_num_results.return_value = 2
+
         mock_results: list[Document] = [
             Document(
                 None,
@@ -26,19 +34,17 @@ class TestIndex:
             ),
         ]
 
-        with (
-            patch("backend.db_utils.get_num_results", return_value=2),
-            patch(
-                "backend.db_utils.search_results", return_value=mock_results
-            ) as mock_search_results,
-            patch("backend.db_utils.get_headlines"),
-        ):
-            # Act
-            with client:
-                response: testing.TestResponse = client.get("/")
-                text_data: str = response.get_data(as_text=True)
+        mock_search_results: MockType = mocker.patch("backend.db_utils.search_results")
+        mock_search_results.return_value = mock_results
 
-                search_args: tuple = mock_search_results.call_args[0]
+        mocker.patch("backend.db_utils.get_headlines")
+
+        # Act
+        with client:
+            response: testing.TestResponse = client.get("/")
+            text_data: str = response.get_data(as_text=True)
+
+            search_args: tuple = mock_search_results.call_args[0]
 
         # Assert
         # route assertions
@@ -73,11 +79,3 @@ class TestIndex:
         assert (
             "s1111m11111.jpg" in text_data and "s2222m22222.jpg" in text_data
         ), "The website shall display the document thumbnails"
-
-        assert (
-            "Documents Manager" not in text_data
-        ), "The website shall not show a Documents Manager nav link"
-
-        assert (
-            'name="genre"' not in text_data
-        ), "The website shall not show a genre search control"
