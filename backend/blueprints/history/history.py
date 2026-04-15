@@ -98,9 +98,5 @@ def replay_search(search_id):
         query_args["year_min"] = search_entry["start_year"]
     if search_entry["end_year"] is not None:
         query_args["year_max"] = search_entry["end_year"]
-    if search_entry["genres"]:
-        first_genre = search_entry["genres"].split(",")[0].strip()
-        if first_genre:
-            query_args["genre"] = first_genre
 
     return redirect(url_for("index", **query_args))

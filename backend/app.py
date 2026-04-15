@@ -22,7 +22,7 @@ from .blueprints.manager import manager as bp_manager
 def _search_signature_from_args() -> str:
     """Stable signature of active filters, excluding page number."""
     keys: list[str] = sorted(
-        k for k in request.args.keys() if k not in {"page", "replay_search_id"}
+        k for k in request.args.keys() if k not in {"page", "replay_search_id", "genre"}
     )
     return "&".join(
         f"{key}={(request.args.get(key) or '').strip()}"
@@ -83,7 +83,6 @@ def create_app(**kwargs) -> Flask:
     @app.route("/")
     def index():
         search = request.args.get("search", "")
-        genre = request.args.get("genre", None)
         year_min: int = request.args.get("year_min", 1912, type=int)
         year_max: int = request.args.get("year_max", 1928, type=int)
         page: int = request.args.get("page", 1, type=int)
@@ -91,7 +90,6 @@ def create_app(**kwargs) -> Flask:
         query: Query = Query(
             actors=[],  # TODO
             tags=[],  # TODO
-            genres=[genre] if genre else [],
             keywords=list(
                 filter(lambda s: s != "", search.split(" ")) if search else []
             ),  # TODO allow searching both titles and transcripts
@@ -155,7 +153,7 @@ def create_app(**kwargs) -> Flask:
                             end_year=year_max if "year_max" in request.args else None,
                             studio=None,  # TODO wire studio filter when available
                             actors=[],
-                            genres=[genre] if genre else [],
+                            genres=[],
                             tags=[],
                             search_text=search,
                         )
@@ -167,7 +165,6 @@ def create_app(**kwargs) -> Flask:
             documents=results,
             headlines=headlines,
             search=search,
-            genre=genre,
             year_min=year_min,
             year_max=year_max,
             page=page,

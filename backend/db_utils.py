@@ -1,6 +1,5 @@
 """A collection of helpers for sending and recieving data to/from the PostgreSQL database."""
 
-from pathlib import Path
 import psycopg2
 import psycopg2.sql as sql
 from psycopg2.extensions import connection, cursor
@@ -427,7 +426,7 @@ def get_headlines(
 
 
 def get_flagged(conn: connection) -> list[Document]:
-    """Return a page of flagged documents. (minimal working version)
+    """Return flagged documents with their attached flags.
 
     Parameters
     ----------
@@ -443,34 +442,19 @@ def get_flagged(conn: connection) -> list[Document]:
     if not conn:
         raise Exception("No SQL connection found")
 
-    sql_query = """
-        SELECT
-            d.id,
-            d.copyright_year,
-            d.studio,
-            d.title
-        FROM documents d
-        JOIN flagged_by f
-          ON f.document_id = d.id
-    """
-
-    documents: list[Document] = []
-
     with conn.cursor() as cur:
-        cur.execute(sql_query)
+        cur.execute(
+            """
+            SELECT DISTINCT document_id
+            FROM flagged_by
+            ORDER BY document_id;
+            """
+        )
+        doc_ids: list[str] = [row[0] for row in cur.fetchall()]
 
-        for row in cur.fetchall():
-            documents.append(
-                Document(
-                    documentDir=Path,
-                    id=row[0],
-                    copyrightYear=row[1],
-                    studio=row[2],
-                    title=row[3],
-                )
-            )
+    conn.commit()
 
-    return documents
+    return get_documents(conn, doc_ids) if doc_ids else []
 
 
 def _clean_csv_value(value: str) -> str:
@@ -564,6 +548,48 @@ def log_view(
             """,
             [user_name, document_id, search_id],
         )
+    conn.commit()
+
+
+def log_flag(
+    conn: connection,
+    *,
+    user_name: str,
+    document_id: str,
+    error_location: str,
+    error_description: str,
+):
+    """Insert one flag for a document."""
+    if not conn:
+        raise Exception("No SQL connection found")
+
+    normalized_location = error_location.strip()
+    normalized_description = error_description.strip()
+
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            INSERT INTO error_locations (location)
+            VALUES (%s)
+            ON CONFLICT (location) DO NOTHING;
+            """,
+            [normalized_location],
+        )
+        cur.execute(
+            """
+            INSERT INTO flagged_by
+                (id, document_id, user_name, error_location, error_description)
+            VALUES
+                (gen_random_uuid(), %s, %s, %s, %s);
+            """,
+            [
+                document_id.lower(),
+                user_name,
+                normalized_location,
+                normalized_description,
+            ],
+        )
+
     conn.commit()
 
 
@@ -895,20 +921,17 @@ def get_document(conn: connection, doc_id: str) -> Document:
 
     Returns
     -------
-    document : Docment
+    documents[0] : Docment
         A ``Docment`` with the specified ``doc_id``, or None
     """
     if not conn:
         raise Exception("No SQL connection found")
 
     documents: list[Document] = get_documents(conn, [doc_id])
-
-    if len(documents) < 1:
+    if not documents:
         return None
 
-    document: Document = get_documents(conn, [doc_id])[0]
-
-    return document
+    return documents[0]
 
 
 def get_documents_as_csv(conn: connection, doc_ids: list[str]) -> str:
