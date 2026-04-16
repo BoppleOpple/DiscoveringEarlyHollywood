@@ -25,7 +25,7 @@ parser.add_argument(
 parser.add_argument(
     "-t",
     "--transcript-directory",
-    default="./data/Hollywood_Copyright_Materials_Base_Transcriptions",
+    default="./data/qwen_ocr",
     type=Path,
 )
 parser.add_argument(
@@ -39,12 +39,12 @@ parser.add_argument(
     "-a",
     "--analysis-directory",
     required=False,
-    default="./data/no_shot_gpt_analysis",
+    default="./data/gemma4-metadata",
     type=Path,
 )
 
 
-def createTables(cursor: psycopg2.extensions.cursor):
+def create_tables(cursor: psycopg2.extensions.cursor):
     """Given a ``psycopg2`` cursor, create all SQL relations.
 
     Parameters
@@ -58,7 +58,7 @@ def createTables(cursor: psycopg2.extensions.cursor):
 
 
 # TODO improve code commenting post-prototype
-def formatLLMAnalysis(analysis: dict) -> dict:
+def format_llm_analysis(analysis: dict) -> dict:
     """Form a ``dict`` from metadata extracted by an LLM.
 
     Parameters
@@ -78,7 +78,7 @@ def formatLLMAnalysis(analysis: dict) -> dict:
 
     Returns
     -------
-    formattedAnalysis : dict
+    formatted_analysis : dict
         A ``dict`` of the form::
 
             {
@@ -87,88 +87,88 @@ def formatLLMAnalysis(analysis: dict) -> dict:
                 "failed": bool
             }
     """
-    formattedAnalysis: dict = {"title": None, "actors": [], "failed": False}
+    formatted_analysis: dict = {"title": None, "actors": [], "failed": False}
     if analysis:
         try:
             responses = analysis["response"].split("```json")
 
-            responseList = []
+            response_list = []
 
             for response in responses:
                 # locate the JSON content
-                minCharacter: int = min(
+                min_character: int = min(
                     response.index("{") if "{" in response else len(response),
                     response.index("[") if "[" in response else len(response),
                 )
-                maxCharacter: int = max(
+                max_character: int = max(
                     response.rindex("}") if "}" in response else 0,
                     response.rindex("]") if "]" in response else 0,
                 )
 
                 # ignore the string if there are no JSON opening or closing brackets
-                if minCharacter == len(response) or maxCharacter == 0:
+                if min_character == len(response) or max_character == 0:
                     continue
 
-                cleanedResponse, n = re.subn(
+                cleaned_response, n = re.subn(
                     r",(?=\s*[\}\]])",
                     "",
-                    response[minCharacter : maxCharacter + 1],  # noqa E203
+                    response[min_character : max_character + 1],  # noqa E203
                 )
 
                 # LLM allows comments in JSON files
-                cleanedResponse, n = re.subn(r"//.*\n", "", cleanedResponse)
+                cleaned_response, n = re.subn(r"//.*\n", "", cleaned_response)
 
                 # account for multiple documents being stored in the same JSON object
-                responseObject = json.loads(cleanedResponse)
-                if type(responseObject) is dict:
-                    if "Films" not in responseObject:
-                        responseList.append(responseObject)
+                response_object = json.loads(cleaned_response)
+                if type(response_object) is dict:
+                    if "Films" not in response_object:
+                        response_list.append(response_object)
                     else:
-                        responseList.extend(responseObject["Films"])
-                elif type(responseObject) is list:
-                    responseList.extend(responseObject)
+                        response_list.extend(response_object["Films"])
+                elif type(response_object) is list:
+                    response_list.extend(response_object)
 
-            if len(responseList) == 1:
-                responseDict = responseList[0]
+            if len(response_list) == 1:
+                response_dict = response_list[0]
                 # parse "Title" field
-                if "Title" in responseDict:
-                    formattedAnalysis["title"] = responseDict["Title"]
+                if "Title" in response_dict:
+                    formatted_analysis["title"] = response_dict["Title"]
                 else:
                     print(
-                        f"Analysis of {analysis["File_Name"]} is missing key 'Title': {responseDict}"  # noqa E501
+                        f"Analysis of {analysis["File_Name"]} is missing key 'Title': {response_dict}"  # noqa E501
                     )
 
                 # parse "Actors" field
-                if "Actors" in responseDict:
-                    actors = responseDict["Actors"]
+                if "Actors" in response_dict:
+                    actors = response_dict["Actors"]
 
                     # no actors can be represented as "N/A", ["N/A"], or []
                     if type(actors) is list:
                         if "N/A" not in actors:
-                            formattedAnalysis["actors"] = actors
+                            formatted_analysis["actors"] = actors
                         else:
-                            formattedAnalysis["actors"] = []
+                            formatted_analysis["actors"] = []
 
                     elif type(actors) is str:
                         if actors != "N/A":
                             # Assume the string contains the actor's name
-                            formattedAnalysis["actors"] = [actors]
+                            formatted_analysis["actors"] = [actors]
                         else:
-                            formattedAnalysis["actors"] = []
+                            formatted_analysis["actors"] = []
             else:
-                formattedAnalysis["failed"] = True
+                formatted_analysis["failed"] = True
                 print(
-                    f"Analysis of {analysis["File_Name"]} includes {len(responseList)} documents (expected 1)"  # noqa E501
+                    f"Analysis of {analysis["File_Name"]} includes {len(response_list)} documents (expected 1)"  # noqa E501
                 )
 
         except json.decoder.JSONDecodeError as e:
-            formattedAnalysis["failed"] = True
+            formatted_analysis["failed"] = True
             print(f"Error while decoding {analysis["File_Name"]}:")
             print(e)
     else:
-        formattedAnalysis["failed"] = True
+        formatted_analysis["failed"] = True
 
-    return formattedAnalysis
+    return formatted_analysis
 
 
 def loadData(args: argparse.Namespace, cursor: psycopg2.extensions.cursor):
@@ -197,25 +197,25 @@ def loadData(args: argparse.Namespace, cursor: psycopg2.extensions.cursor):
 
     # iterate through every document id that contains metadata
     for document_id in tqdm(ids):
-        metadataFile: Path = (
+        metadata_file: Path = (
             args.metadata_directory / f"{document_id}with_added_metadata.json"
         )
-        analysisFile: Path = args.analysis_directory / f"{document_id}.json"
+        analysis_file: Path = args.analysis_directory / f"{document_id}.json"
 
         metadata: dict = None
-        with open(metadataFile, "r") as metadataJson:
-            metadata = json.load(metadataJson)
+        with open(metadata_file, "r") as metadata_json:
+            metadata = json.load(metadata_json)
 
-        transcriptData: list = []
+        transcript_data: list = []
         for page, content in enumerate(metadata["text"]):
-            transcriptData.append((document_id, page, content))
+            transcript_data.append((document_id, page, content))
 
         analysis: dict = None
-        if analysisFile.exists():
-            with open(analysisFile, "r") as analysisJson:
-                analysis = json.load(analysisJson)
+        if analysis_file.exists():
+            with open(analysis_file, "r") as analysis_json:
+                analysis = json.load(analysis_json)
 
-        formattedAnalysis = formatLLMAnalysis(analysis)
+        formatted_analysis = format_llm_analysis(analysis)
 
         # insert document data
         cursor.execute(
@@ -231,20 +231,20 @@ def loadData(args: argparse.Namespace, cursor: psycopg2.extensions.cursor):
                 document_id,
                 metadata["date"],
                 metadata["producer"],
-                formattedAnalysis["title"],
+                formatted_analysis["title"],
                 datetime.datetime.now(),
             ),
         )
 
         # insert actors, if any are present
-        if formattedAnalysis["actors"]:
+        if formatted_analysis["actors"]:
             psycopg2.extras.execute_batch(
                 cursor,
                 "INSERT INTO actors ( \
                     name \
                 ) VALUES (%s) \
                 ON CONFLICT DO NOTHING;",
-                [[actor] for actor in formattedAnalysis["actors"]],
+                [[actor] for actor in formatted_analysis["actors"]],
             )
 
             psycopg2.extras.execute_batch(
@@ -255,11 +255,11 @@ def loadData(args: argparse.Namespace, cursor: psycopg2.extensions.cursor):
                     role \
                 ) VALUES (%s, %s, %s) \
                 ON CONFLICT DO NOTHING;",
-                [(document_id, actor, None) for actor in formattedAnalysis["actors"]],
+                [(document_id, actor, None) for actor in formatted_analysis["actors"]],
             )
 
         # insert transcripts, if any are present
-        if transcriptData:
+        if transcript_data:
             psycopg2.extras.execute_batch(
                 cursor,
                 "INSERT INTO transcripts ( \
@@ -268,7 +268,7 @@ def loadData(args: argparse.Namespace, cursor: psycopg2.extensions.cursor):
                     content \
                 ) VALUES (%s, %s, %s) \
                 ON CONFLICT DO NOTHING;",
-                transcriptData,
+                transcript_data,
             )
 
     cursor.execute("REFRESH MATERIALIZED VIEW text_search_view;")
@@ -279,7 +279,7 @@ def main(argv=None):
     args = parser.parse_args(argv)
     load_dotenv()
 
-    dbConnection: psycopg2.extensions.connection = psycopg2.connect(
+    db_connection: psycopg2.extensions.connection = psycopg2.connect(
         host=os.environ["SQL_HOST"],
         port=os.environ["SQL_PORT"],
         dbname=os.environ["SQL_DBNAME"],
@@ -287,18 +287,18 @@ def main(argv=None):
         password=os.environ["SQL_PASSWORD"],
     )
 
-    with dbConnection.cursor() as cursor:
+    with db_connection.cursor() as cursor:
         try:
-            createTables(cursor)
-            dbConnection.commit()
+            create_tables(cursor)
+            db_connection.commit()
         except Exception:
             print("tables already exist!")
-            dbConnection.rollback()
+            db_connection.rollback()
 
         loadData(args, cursor)
-        dbConnection.commit()
+        db_connection.commit()
 
-    dbConnection.close()
+    db_connection.close()
 
 
 if __name__ == "__main__":
