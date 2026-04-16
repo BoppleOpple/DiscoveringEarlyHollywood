@@ -10,10 +10,6 @@ CREATE TABLE genres (
     genre varchar(50) PRIMARY KEY
 );
 
-CREATE TABLE tags (
-    tag varchar(50) PRIMARY KEY
-);
-
 CREATE TABLE users (
     name varchar(20) PRIMARY KEY,
     email varchar(320) NOT NULL,
@@ -26,7 +22,10 @@ CREATE TABLE documents (
     copyright_year integer,
     studio text,
     title text,
+    producer text,
+    writer text,
     reel_count integer,
+    series text,
     uploaded_by varchar(20),
     uploaded_time timestamp,
     CONSTRAINT fk_uploaded_by FOREIGN KEY (uploaded_by) REFERENCES users(name)
@@ -83,13 +82,22 @@ CREATE TABLE view_history (
     CONSTRAINT fk_view_history_search FOREIGN KEY (search_id) REFERENCES search_history(id) ON DELETE SET NULL
 );
 
-CREATE TABLE has_actor (
+CREATE TABLE has_character (
     document_id varchar(15),
+    character_name text,
     actor_name varchar(100),
-    role varchar(50),
+    character_description text,
     CONSTRAINT fk_document_id FOREIGN KEY (document_id) REFERENCES documents(id),
     CONSTRAINT fk_actor_name FOREIGN KEY (actor_name) REFERENCES actors(name),
-    PRIMARY KEY (document_id, actor_name)
+    PRIMARY KEY (document_id, character_name)
+);
+
+CREATE TABLE has_location (
+    document_id varchar(15),
+    "location" text,
+    "description" text,
+    CONSTRAINT fk_document_id FOREIGN KEY (document_id) REFERENCES documents(id),
+    PRIMARY KEY (document_id, location_name)
 );
 
 CREATE TABLE has_genre (
@@ -100,13 +108,6 @@ CREATE TABLE has_genre (
     PRIMARY KEY (document_id, genre)
 );
 
-CREATE TABLE has_tag (
-    document_id varchar(15),
-    tag varchar(50),
-    CONSTRAINT fk_document_id FOREIGN KEY (document_id) REFERENCES documents(id),
-    CONSTRAINT fk_tag FOREIGN KEY (tag) REFERENCES tags(tag),
-    PRIMARY KEY (document_id, tag)
-);
 
 -- OTHER
 
