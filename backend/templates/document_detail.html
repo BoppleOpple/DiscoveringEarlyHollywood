@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="max-w-7xl mx-auto p-6">
-    <a href="{{ back_url }}" 
+    <a id="document-back-link" name="document-back-link" href="{{ back_url }}" 
        class="inline-flex items-center mb-6 bg-white hover:bg-[#F5F5F0] text-[#2C2C2C] border-2 border-[#E0E0E0] hover:border-[#8B0000] transition-colors py-2 px-4 rounded">
         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
@@ -21,6 +21,8 @@
                         {{ document.title }}
                     </h2>
                     <button
+                        id="document-flag-toggle-btn"
+                        name="document-flag-toggle-btn"
                         type="button"
                         onclick="toggleFlagForm()"
                         class="shrink-0 bg-[#2C2C2C] hover:bg-[#8B0000] text-white py-2 px-4 rounded transition-colors"
@@ -32,6 +34,8 @@
                     <div class="flex items-center justify-between gap-4 mb-3">
                         <h3 class="text-[#2C2C2C] font-medium">Flag This Document</h3>
                         <button
+                            id="document-flag-close-btn"
+                            name="document-flag-close-btn"
                             type="button"
                             onclick="toggleFlagForm()"
                             class="text-sm text-[#666666] hover:text-[#8B0000] transition-colors"
@@ -72,7 +76,7 @@
                             Log in to flag documents for review.
                             {% endif %}
                         </p>
-                        <button type="submit" class="bg-[#2C2C2C] hover:bg-[#8B0000] text-white py-2 px-4 rounded transition-colors">
+                        <button id="document-flag-submit-btn" name="document-flag-submit-btn" type="submit" class="bg-[#2C2C2C] hover:bg-[#8B0000] text-white py-2 px-4 rounded transition-colors">
                             Submit Flag
                         </button>
                     </form>
@@ -89,7 +93,7 @@
             <tr class="text-[#666666] leading-relaxed border-t-2 border-[#E0E0E0]">
                 <td class="pt-2 pb-2">
                     <div class="flex-shrink-0">
-                        <a href="{{ url_for('document.download_pdf', doc_id=document.id, download=False) }}">
+                        <a id="document-preview-pdf-link" name="document-preview-pdf-link" href="{{ url_for('document.download_pdf', doc_id=document.id, download=False) }}">
                             <div class="w-64 min-h-32 bg-[#F5F5F0] border-2 border-[#CCCCCC] rounded-lg flex items-center justify-center overflow-hidden">
                                 <img class="grow" src="{{ url_for('document.thumbnail', doc_id=document.id, page=page+1) }}" alt="Thumbnail could not be loaded">
                                 <!-- <div class="text-center">
@@ -190,12 +194,12 @@
             </div>
             {% endif %}
             <form action="{{ url_for('document.download_pdf', doc_id=document.id) }}" method="GET" class="inline">
-                <button type="submit" class="bg-[#2C2C2C] hover:bg-[#8B0000] text-white py-2 px-4 rounded transition-colors">
+                <button id="document-download-pdf-btn" name="document-download-pdf-btn" type="submit" class="bg-[#2C2C2C] hover:bg-[#8B0000] text-white py-2 px-4 rounded transition-colors">
                     Download Document
                 </button>
             </form>
             <form action="{{ url_for('document.download_csv', doc_id=document.id) }}" method="GET" class="inline">
-                <button type="submit" class="bg-[#2C2C2C] hover:bg-[#8B0000] text-white py-2 px-4 rounded transition-colors">
+                <button id="document-download-metadata-btn" name="document-download-metadata-btn" type="submit" class="bg-[#2C2C2C] hover:bg-[#8B0000] text-white py-2 px-4 rounded transition-colors">
                     Download Metadata
                 </button>
             </form>

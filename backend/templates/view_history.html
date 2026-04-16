@@ -10,7 +10,7 @@
         
         <div class="space-y-3">
             {% for search in searches %}
-            <a href="{{ url_for('history.replay_search', search_id=search.id) }}"
+            <a id="history-replay-search-link-{{ search.id }}" name="history-replay-search-link-{{ search.id }}" href="{{ url_for('history.replay_search', search_id=search.id) }}"
                class="block w-full text-left p-3 bg-white border-2 border-[#E0E0E0] rounded hover:border-[#8B0000] transition-colors group">
                 <div class="flex items-start gap-2">
                     <svg class="w-4 h-4 text-[#2B6CB0] mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -29,7 +29,7 @@
             {% endfor %}
         </div>
 
-        <button class="w-full mt-6 bg-white hover:bg-[#F5F5F0] text-[#2C2C2C] border-2 border-[#E0E0E0] hover:border-[#8B0000] transition-colors py-2 px-4 rounded">
+        <button id="history-clear-searches-btn" name="history-clear-searches-btn" class="w-full mt-6 bg-white hover:bg-[#F5F5F0] text-[#2C2C2C] border-2 border-[#E0E0E0] hover:border-[#8B0000] transition-colors py-2 px-4 rounded">
             Clear Search History
         </button>
     </aside>
@@ -44,14 +44,14 @@
                 </p>
             </div>
             <div class="flex gap-3">
-                <a href="{{ url_for('index') }}" 
+                <a id="history-home-link" name="history-home-link" href="{{ url_for('index') }}" 
                    class="inline-flex items-center bg-white hover:bg-[#F5F5F0] text-[#2C2C2C] border-2 border-[#E0E0E0] hover:border-[#8B0000] transition-colors py-2 px-4 rounded">
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
                     </svg>
                     Home
                 </a>
-                <a href="{{ url_for('history.download_history') }}" 
+                <a id="history-download-link" name="history-download-link" href="{{ url_for('history.download_history') }}" 
                    class="inline-flex items-center bg-[#2C2C2C] hover:bg-[#8B0000] text-white py-2 px-4 rounded transition-colors">
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
@@ -64,7 +64,7 @@
         <div class="space-y-4">
             {% for doc in history %}
             <div class="relative">
-                <a href="{{ url_for('document.document_detail', doc_id=doc.id) }}" 
+                <a id="history-document-link-{{ doc.id }}" name="history-document-link-{{ doc.id }}" href="{{ url_for('document.document_detail', doc_id=doc.id) }}" 
                    class="block w-full bg-white border-2 border-[#E0E0E0] rounded-lg p-4 hover:border-[#8B0000] transition-colors">
                     <div class="flex gap-4">
                         <div class="flex-shrink-0">
