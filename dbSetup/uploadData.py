@@ -10,7 +10,7 @@ import os
 from glob import iglob
 from pathlib import Path
 from dotenv import load_dotenv
-from threading import Thread
+from threading import Thread, Semaphore
 from typing import AnyStr
 from tqdm import tqdm
 
@@ -26,6 +26,13 @@ the Discovering Early Hollywood PostgreSQL database",
 
 parser.add_argument(
     "-d", "--document-directory", default="./data/film_copyright", type=Path
+)
+parser.add_argument(
+    "-o",
+    "--outdir",
+    required=False,
+    default="./out",
+    type=Path,
 )
 parser.add_argument(
     "-t",
@@ -54,6 +61,8 @@ parser.add_argument(
     default=4,
     type=int,
 )
+
+progress_sem: Semaphore = Semaphore()
 
 
 def create_tables(cursor: psycopg2.extensions.cursor):
@@ -156,7 +165,9 @@ def _process_ids(
             with open(analysis_file, "r") as analysis_json:
                 analysis = format_llm_analysis(analysis_json.read(), document_id)
 
-        analysis.keys()
+            if analysis["failed"]:
+                with open(args.outdir / "failed.txt", "a") as f:
+                    f.write(document_id + "\n")
 
         # print(document_id)
         # print(metadata)
@@ -164,8 +175,9 @@ def _process_ids(
         # pprint(analysis)
         # print(formatted_analysis)
         # exit(0)
-        progress.update()
-        progress.display()
+        with progress_sem:
+            progress.update()
+            progress.display()
 
 
 def loadData(args: argparse.Namespace, cursor: psycopg2.extensions.cursor):
@@ -277,6 +289,11 @@ def main(argv=None):
     """Upload data to the database specified in ``.env``."""
     args = parser.parse_args(argv)
     load_dotenv()
+
+    os.makedirs(args.outdir, exist_ok=True)
+
+    if (args.outdir / "failed.txt").exists():
+        os.remove(args.outdir / "failed.txt")
 
     db_connection: psycopg2.extensions.connection = psycopg2.connect(
         host=os.environ["SQL_HOST"],

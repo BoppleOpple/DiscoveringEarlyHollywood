@@ -2,6 +2,7 @@
 img/
 /backend/static/edits
 /temp_edits
+out
 
 .DS_Store
 .env
