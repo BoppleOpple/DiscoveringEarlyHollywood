@@ -349,7 +349,9 @@ class TestDownloadCSV:
         doc_id: str = "s1229l00001"
         csv_data: str = "foobar"
         expected_bytes: bytes = csv_data.encode("utf-8")
+        mock_document: Document = Document(None, id=doc_id, title="Document 1")
 
+        mocker.patch("backend.db_utils.get_document", return_value=mock_document)
         mock_get_documents_as_csv: MockType = mocker.patch(
             "backend.db_utils.get_documents_as_csv"
         )

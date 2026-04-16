@@ -2,7 +2,8 @@ import os
 import pytest
 import re
 from dotenv import load_dotenv
-from flask import Flask, testing
+from flask import Flask
+from werkzeug.test import TestResponse
 from pytest_mock import MockerFixture, MockType
 from typing import Callable
 
@@ -36,12 +37,12 @@ def mock_psycopg2(mocker: MockerFixture):
 
 # Helper for getting a filename from a TestClient respones
 @pytest.fixture()
-def get_filename() -> Callable[[testing.TestResponse], str]:
-    def _get_filename(response: testing.TestResponse) -> str:
+def get_filename() -> Callable[[TestResponse], str]:
+    def _get_filename(response: TestResponse) -> str:
         content_header: str = response.headers.get("Content-Disposition")
 
         filename_match: re.Match = re.search(
-            r"filename=(.*?)(?:;|\n|\z)", content_header
+            r"filename=(.*?)(?:;|\n|\Z)", content_header
         )
         response_filename: str = filename_match.group(1)
 
