@@ -1,16 +1,17 @@
 """A CLI program that uploads LoC data from the local filesystem to a PostgreSQL database."""
 
-import os
 import argparse
 import json
+import numpy as np
+import os
 
 # import datetime
 # import re
 from glob import iglob
 from pathlib import Path
 from dotenv import load_dotenv
-from pprint import pprint
-from typing import Iterator, AnyStr
+from threading import Thread
+from typing import AnyStr
 from tqdm import tqdm
 
 import psycopg2
@@ -45,6 +46,13 @@ parser.add_argument(
     required=False,
     default="./data/gemma4-metadata",
     type=Path,
+)
+parser.add_argument(
+    "-j",
+    "--thread-count",
+    required=False,
+    default=4,
+    type=int,
 )
 
 
@@ -110,6 +118,56 @@ def format_llm_analysis(analysis: str, id: str) -> dict:
     return formatted_analysis
 
 
+def _process_ids(
+    args: argparse.Namespace,
+    cursor: psycopg2.extensions.cursor,
+    ids: list[AnyStr],
+    transcripts: list[AnyStr],
+    progress: tqdm,
+):
+    for document_path in ids:
+        document_id: str = Path(document_path).name
+
+        metadata_file: Path = (
+            args.metadata_directory / f"{document_id}with_added_metadata.json"
+        )
+
+        relevant_transcripts: list[AnyStr] = list(
+            filter(lambda fname: fname.startswith(document_id), transcripts)
+        )
+
+        analysis_file: Path = args.analysis_directory / f"{document_id}.json"
+
+        metadata: dict = None
+        if metadata_file.exists():
+            with open(metadata_file, "r") as metadata_json:
+                metadata = json.load(metadata_json)
+                del metadata["text"]
+
+        transcript_data: list = []
+        for fname in relevant_transcripts:
+            page: int = int(fname[:-4].split("_p")[-1])
+
+            with open(fname, "r") as transcript_file:
+                transcript_data.append((document_id, page, transcript_file.read()))
+
+        analysis: dict = None
+        if analysis_file.exists():
+            with open(analysis_file, "r") as analysis_json:
+                analysis = format_llm_analysis(analysis_json.read(), document_id)
+
+        analysis.keys()
+
+        # print(document_id)
+        # print(metadata)
+        # print(transcript_data)
+        # pprint(analysis)
+        # print(formatted_analysis)
+        # exit(0)
+        progress.update()
+        progress.display()
+
+
 def loadData(args: argparse.Namespace, cursor: psycopg2.extensions.cursor):
     """Format documents in directories specified by ``args`` and uploads them to ``cursor``.
 
@@ -134,46 +192,29 @@ def loadData(args: argparse.Namespace, cursor: psycopg2.extensions.cursor):
     print("parsing movies")
     # ids: list[str] = [fname[:-24] for fname in os.listdir(args.metadata_directory)]
 
-    id_glob: Iterator[AnyStr] = iglob(str(args.document_directory) + "/*")
+    ids: list[AnyStr] = list(iglob(str(args.document_directory) + "/*"))
+    transcripts: list[AnyStr] = list(
+        iglob(str(args.transcript_directory) + "/*_p*.txt")
+    )
 
+    id_pools: np.ndarray[list[AnyStr]] = np.array_split(ids, args.thread_count)
+    threads: list[Thread] = []
     # iterate through every document id that contains metadata
-    for document_path in tqdm(id_glob):
-        document_id: str = Path(document_path).name
 
-        metadata_file: Path = (
-            args.metadata_directory / f"{document_id}with_added_metadata.json"
+    progress_bar: tqdm = tqdm()
+    progress_bar.total = len(ids)
+    progress_bar.smoothing = 0
+
+    for i in range(args.thread_count):
+        thread: Thread = Thread(
+            target=_process_ids,
+            args=[args, cursor, id_pools[i], transcripts, progress_bar],
         )
+        thread.start()
+        threads.append(thread)
 
-        transcript_files: Iterator[AnyStr] = iglob(
-            str(args.transcript_directory) + f"/{document_id}_p*.txt"
-        )
-
-        analysis_file: Path = args.analysis_directory / f"{document_id}.json"
-
-        metadata: dict = None
-        if metadata_file.exists():
-            with open(metadata_file, "r") as metadata_json:
-                metadata = json.load(metadata_json)
-                del metadata["text"]
-
-        transcript_data: list = []
-        for fname in transcript_files:
-            page: int = int(fname[:-4].split("_p")[-1])
-
-            with open(fname, "r") as transcript_file:
-                transcript_data.append((document_id, page, transcript_file.read()))
-
-        analysis: dict = None
-        if analysis_file.exists():
-            with open(analysis_file, "r") as analysis_json:
-                analysis = format_llm_analysis(analysis_json.read(), document_id)
-
-        # print(document_id)
-        # print(metadata)
-        # print(transcript_data)
-        pprint(analysis)
-        # print(formatted_analysis)
-        # exit(0)
+    for thread in threads:
+        thread.join()
 
     #     # insert document data
     #     cursor.execute(
