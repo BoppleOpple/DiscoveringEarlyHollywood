@@ -91,6 +91,8 @@ def create_app(flask_constructor_options: dict = None, **kwargs) -> Flask:
         search = request.args.get("search", "")
         year_min: int = request.args.get("year_min", 1912, type=int)
         year_max: int = request.args.get("year_max", 1928, type=int)
+        reel_min: int = request.args.get("reel_min", None, type=int)
+        reel_max: int = request.args.get("reel_max", None, type=int)
         page: int = request.args.get("page", 1, type=int)
 
         query: Query = Query(
@@ -100,8 +102,8 @@ def create_app(flask_constructor_options: dict = None, **kwargs) -> Flask:
             ),
             document_type=None,  # TODO
             studio=None,  # TODO
-            copyright_year_range=(year_min, year_max),  # TODO allow a start & end value
-            reel_range=(None, None),  # TODO
+            copyright_year_range=(year_min, year_max),
+            reel_range=(reel_min, reel_max),
         )
 
         num_results = db_utils.get_num_results(
@@ -156,6 +158,8 @@ def create_app(flask_constructor_options: dict = None, **kwargs) -> Flask:
                             user_name=user_name,
                             start_year=year_min if "year_min" in request.args else None,
                             end_year=year_max if "year_max" in request.args else None,
+                            min_reels=reel_min,
+                            max_reels=reel_max,
                             studio=None,  # TODO wire studio filter when available
                             actors=[],
                             genres=[],
@@ -172,6 +176,8 @@ def create_app(flask_constructor_options: dict = None, **kwargs) -> Flask:
             search=search,
             year_min=year_min,
             year_max=year_max,
+            reel_min=reel_min,
+            reel_max=reel_max,
             page=page,
             num_results=num_results,
             results_per_page=app.config["RESULTS_PER_PAGE"],

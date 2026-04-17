@@ -167,6 +167,18 @@ def execute_document_query(
             )
         )
 
+    # handle filtering by minimum reel count
+    if query.reel_range[0] is not None:
+        sqlLines.append(
+            sql.SQL("AND reel_count >= {}").format(sql.Literal(query.reel_range[0]))
+        )
+
+    # handle filtering by maximum reel count
+    if query.reel_range[1] is not None:
+        sqlLines.append(
+            sql.SQL("AND reel_count <= {}").format(sql.Literal(query.reel_range[1]))
+        )
+
     # handle filtering by studio/copyright holder
     if query.studio:
         sqlLines.append(sql.SQL("AND studio = {}").format(sql.Literal(query.studio)))
@@ -517,6 +529,8 @@ def _search_label(
     search_text: str | None,
     start_year: int | None,
     end_year: int | None,
+    min_reels: int | None,
+    max_reels: int | None,
     studio: str | None,
     genres: str | None,
 ) -> str:
@@ -527,6 +541,8 @@ def _search_label(
     parts: list[str] = []
     if start_year is not None or end_year is not None:
         parts.append(f"Years: {start_year or '?'}-{end_year or '?'}")
+    if min_reels is not None or max_reels is not None:
+        parts.append(f"Reels: {min_reels or '?'}-{max_reels or '?'}")
     if studio:
         parts.append(f"Studio: {studio}")
     if genres:
@@ -541,6 +557,8 @@ def log_search(
     user_name: str,
     start_year: int | None,
     end_year: int | None,
+    min_reels: int | None,
+    max_reels: int | None,
     studio: str | None,
     actors: list[str] | None,
     genres: list[str] | None,
@@ -551,16 +569,27 @@ def log_search(
     with conn.cursor() as cur:
         cur.execute(
             """
-            INSERT INTO search_history
-                (user_name, "time", start_year, end_year, studio, actors, genres, tags, search_text)
-            VALUES
-                (%s, NOW(), %s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO search_history (
+                user_name,
+                "time",
+                start_year,
+                end_year,
+                min_reels,
+                max_reels,
+                studio,
+                actors,
+                genres,
+                tags,
+                search_text
+            ) VALUES (%s, NOW(), %s, %s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING id;
             """,
             [
                 user_name,
                 start_year,
                 end_year,
+                min_reels,
+                max_reels,
                 studio,
                 _csv(actors),
                 _csv(genres),
@@ -644,7 +673,16 @@ def get_search_history(conn: connection, user_name: str, limit: int = 50) -> lis
     with conn.cursor() as cur:
         cur.execute(
             """
-            SELECT id, "time", search_text, start_year, end_year, studio, genres
+            SELECT
+                id,
+                "time",
+                search_text,
+                start_year,
+                end_year,
+                min_reels,
+                max_reels,
+                studio,
+                genres
             FROM search_history
             WHERE user_name=%s
             ORDER BY "time" DESC
@@ -664,15 +702,19 @@ def get_search_history(conn: connection, user_name: str, limit: int = 50) -> lis
                 search_text=row[2],
                 start_year=row[3],
                 end_year=row[4],
-                studio=row[5],
-                genres=row[6],
+                min_reels=row[5],
+                max_reels=row[6],
+                studio=row[7],
+                genres=row[8],
             ),
             "date": row[1].strftime("%b %d, %Y %I:%M %p"),
             "search_text": row[2],
             "start_year": row[3],
             "end_year": row[4],
-            "studio": row[5],
-            "genres": row[6],
+            "min_reels": row[5],
+            "max_reels": row[6],
+            "studio": row[7],
+            "genres": row[8],
         }
         for row in rows
     ]
@@ -688,7 +730,18 @@ def get_search_history_entry(
     with conn.cursor() as cur:
         cur.execute(
             """
-            SELECT id, "time", search_text, start_year, end_year, studio, actors, genres, tags
+            SELECT
+                id,
+                "time",
+                search_text,
+                start_year,
+                end_year,
+                min_reels,
+                max_reels,
+                studio,
+                actors,
+                genres,
+                tags
             FROM search_history
             WHERE id=%s AND user_name=%s;
             """,
@@ -707,10 +760,12 @@ def get_search_history_entry(
         "search_text": row[2],
         "start_year": row[3],
         "end_year": row[4],
-        "studio": row[5],
-        "actors": row[6],
-        "genres": row[7],
-        "tags": row[8],
+        "min_reels": row[5],
+        "max_reels": row[6],
+        "studio": row[7],
+        "actors": row[8],
+        "genres": row[9],
+        "tags": row[10],
     }
 
 

@@ -47,6 +47,8 @@ CREATE TABLE search_history (
     "time" timestamp NOT NULL DEFAULT NOW(),
     start_year integer,
     end_year integer,
+    min_reels integer,
+    max_reels integer,
     studio text,
     actors text,
     genres text,

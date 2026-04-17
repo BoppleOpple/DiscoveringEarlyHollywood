@@ -112,5 +112,9 @@ def replay_search(search_id):
         query_args["year_min"] = search_entry["start_year"]
     if search_entry["end_year"] is not None:
         query_args["year_max"] = search_entry["end_year"]
+    if search_entry["min_reels"] is not None:
+        query_args["reel_min"] = search_entry["min_reels"]
+    if search_entry["max_reels"] is not None:
+        query_args["reel_max"] = search_entry["max_reels"]
 
     return redirect(url_for("index", **query_args))
