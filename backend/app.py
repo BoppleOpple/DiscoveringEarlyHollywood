@@ -36,8 +36,10 @@ def _print_kwargs(**kwargs):
     print(kwargs)
 
 
-def create_app(**kwargs) -> Flask:
-    app: Flask = Flask(__name__)
+def create_app(flask_constructor_options: dict = None, **kwargs) -> Flask:
+    if flask_constructor_options is None:
+        flask_constructor_options = {}
+    app: Flask = Flask(__name__, subdomain_matching=True, **flask_constructor_options)
 
     app.config.update(**kwargs)
 

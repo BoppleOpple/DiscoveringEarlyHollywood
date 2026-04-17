@@ -229,7 +229,6 @@ def execute_document_query(
     cursor.execute(SQLQuery)
 
 
-# TODO convert query params to a `query` object
 def search_results(
     conn: connection, query: Query, page: int = 1, resultsPerPage: int = 50
 ) -> list[Document]:
@@ -260,59 +259,66 @@ def search_results(
         raise Exception("No SQL connection found")
 
     documents: list = []
-    cur: cursor = None
-    with conn.cursor() as cur:
-        # gather only the attributes needed for the results page
 
-        execute_document_query(
-            cur,
-            query,
-            suffix=sql.Composed(
-                [
-                    sql.SQL("LIMIT "),
-                    sql.Literal(resultsPerPage),
-                    sql.SQL("\nOFFSET "),
-                    sql.Literal(resultsPerPage * (page - 1)),
-                    sql.SQL(";"),
-                ]
-            ),
-            rankPages=True,
-        )
+    try:
+        cur: cursor = None
+        with conn.cursor() as cur:
+            # gather only the attributes needed for the results page
 
-        documents: list[Document] = [
-            Document(
-                None,  # TODO
-                id=documentQuery[0],
-                studio=documentQuery[2],
-                title=documentQuery[3],
-                copyrightYear=documentQuery[1],
-            )
-            for documentQuery in cur.fetchall()
-        ]
-
-        for document in documents:
-            cur.execute(
-                "SELECT actor_name \
-                FROM has_actor \
-                WHERE document_id=%s;",
-                [document.id],
+            execute_document_query(
+                cur,
+                query,
+                suffix=sql.Composed(
+                    [
+                        sql.SQL("LIMIT "),
+                        sql.Literal(resultsPerPage),
+                        sql.SQL("\nOFFSET "),
+                        sql.Literal(resultsPerPage * (page - 1)),
+                        sql.SQL(";"),
+                    ]
+                ),
+                rankPages=True,
             )
 
-            actorQuery = cur.fetchall()
+            documents: list[Document] = [
+                Document(
+                    None,  # TODO
+                    id=documentQuery[0],
+                    studio=documentQuery[2],
+                    title=documentQuery[3],
+                    copyrightYear=documentQuery[1],
+                )
+                for documentQuery in cur.fetchall()
+            ]
 
-            document.actors = [result[0] for result in actorQuery]
+            for document in documents:
+                cur.execute(
+                    "SELECT actor_name \
+                    FROM has_actor \
+                    WHERE document_id=%s;",
+                    [document.id],
+                )
 
-            cur.execute(
-                "SELECT page_number, content \
-                FROM transcripts \
-                WHERE document_id=%s \
-                ORDER BY page_number;",
-                [document.id],
-            )
+                actorQuery = cur.fetchall()
 
-            document.transcripts = cur.fetchall()
+                document.actors = [result[0] for result in actorQuery]
 
-    conn.commit()
+                cur.execute(
+                    "SELECT page_number, content \
+                    FROM transcripts \
+                    WHERE document_id=%s \
+                    ORDER BY page_number;",
+                    [document.id],
+                )
+
+                document.transcripts = cur.fetchall()
+
+        conn.commit()
+    except (
+        psycopg2.errors.ObjectNotInPrerequisiteState,
+        psycopg2.errors.InFailedSqlTransaction,
+    ) as e:
+        print(e)
 
     return documents
 
@@ -333,25 +339,28 @@ def get_num_results(conn: connection, query: Query):
     count : int
         The number of relevant results
     """
+    count: int = 0
     if not conn:
         raise Exception("No SQL connection found")
 
-    cur: cursor = None
-    with conn.cursor() as cur:
-        execute_document_query(
-            cur,
-            query,
-            prefix=sql.SQL("SELECT COUNT(*)"),
-        )
+    try:
+        cur: cursor = None
+        with conn.cursor() as cur:
+            execute_document_query(
+                cur,
+                query,
+                prefix=sql.SQL("SELECT COUNT(*)"),
+            )
 
-        result: tuple = cur.fetchone()
+            result: tuple = cur.fetchone()
 
-    # set `count` to the number of results if any exist, otherwise 0
-    count: int = 0
-    if result:
-        count = result[0]
+        # set `count` to the number of results if any exist, otherwise 0
+        if result:
+            count = result[0]
 
-    conn.commit()
+        conn.commit()
+    except psycopg2.errors.ObjectNotInPrerequisiteState as e:
+        print(e)
 
     return count
 
