@@ -29,9 +29,9 @@
             {% endfor %}
         </div>
 
-        <button class="w-full mt-6 bg-white hover:bg-[#F5F5F0] text-[#2C2C2C] border-2 border-[#E0E0E0] hover:border-[#8B0000] transition-colors py-2 px-4 rounded">
-            Clear Search History
-        </button>
+        <a href="{{ url_for('history.clear_history') }}" class="block w-full mt-6 bg-white hover:bg-[#F5F5F0] text-[#2C2C2C] text-center border-2 border-[#E0E0E0] hover:border-[#8B0000] transition-colors py-2 px-4 rounded">
+            Clear History
+        </a>
     </aside>
 
     <!-- Main Content - Viewing History -->

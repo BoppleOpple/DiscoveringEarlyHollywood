@@ -711,6 +711,20 @@ def get_search_history_entry(
     }
 
 
+def clear_search_history(conn: connection, user_name: str):
+    """Delete all search history rows associated with a given user."""
+    if not conn:
+        raise Exception("No SQL connection found")
+
+    with conn.cursor() as cur:
+        cur.execute(
+            "DELETE FROM search_history WHERE user_name=%s;",
+            [user_name],
+        )
+
+    conn.commit()
+
+
 def get_view_history(conn: connection, user_name: str, limit: int = 200) -> list[dict]:
     """Return viewed documents with optional search attribution."""
     if not conn:
@@ -787,6 +801,20 @@ def get_viewed_document_ids(conn: connection, user_name: str) -> set[str]:
 
     conn.commit()
     return {row[0] for row in rows}
+
+
+def clear_view_history(conn: connection, user_name: str):
+    """Delete all view history rows associated with a given user."""
+    if not conn:
+        raise Exception("No SQL connection found")
+
+    with conn.cursor() as cur:
+        cur.execute(
+            "DELETE FROM view_history WHERE user_name=%s;",
+            [user_name],
+        )
+
+    conn.commit()
 
 
 def get_documents(conn: connection, doc_ids: list[str]) -> str:

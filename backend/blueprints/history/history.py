@@ -76,6 +76,20 @@ def download_history():
     )
 
 
+@history.route("/clear")
+def clear_history():
+    user_name = session.get("user")
+    if not user_name:
+        flash("Log in to clear your history.", "error")
+        return redirect(url_for("index"))
+
+    db_utils.clear_search_history(db_utils.get_db_connection(), user_name)
+    db_utils.clear_view_history(db_utils.get_db_connection(), user_name)
+
+    flash("Your search history has been cleared!.", "success")
+    return redirect(url_for("index"))
+
+
 @history.route("/history/replay/<int:search_id>")
 def replay_search(search_id):
     user_name = session.get("user")
