@@ -1,11 +1,11 @@
 """A CLI program that uploads LoC data from the local filesystem to a PostgreSQL database."""
 
 import argparse
+import datetime
 import json
 import numpy as np
 import os
 
-# import datetime
 # import re
 from glob import iglob
 from pathlib import Path
@@ -61,8 +61,22 @@ parser.add_argument(
     default=4,
     type=int,
 )
+parser.add_argument("--wipe", required=False, action="store_true")
 
 progress_sem: Semaphore = Semaphore()
+
+
+def wipe(cursor: psycopg2.extensions.cursor):
+    """Given a ``psycopg2`` cursor, delete all SQL relations.
+
+    Parameters
+    ----------
+    cursor : psycopg2.extensions.cursor
+        The ``psycopg2`` ``cursor`` object with which the query is performed
+    """
+    print("Removing relations from database")
+    with open("dbSetup/dropAll.sql", "r") as f:
+        cursor.execute(f.read())
 
 
 def create_tables(cursor: psycopg2.extensions.cursor):
@@ -74,11 +88,20 @@ def create_tables(cursor: psycopg2.extensions.cursor):
         The ``psycopg2`` ``cursor`` object with which the query is performed
     """
     print("Adding relations to database")
-    with open("tableDefinitions.sql", "r") as f:
+    with open("dbSetup/tableDefinitions.sql", "r") as f:
         cursor.execute(f.read())
 
 
-# TODO improve code commenting post-prototype
+def string_is_none(s: str | None) -> bool:
+    # if s is not a string (i.e. dict, list, None) count it as None
+    if not isinstance(s, str):
+        return True
+    elif s.lower() in ["null", "none", "n/a"]:
+        return True
+    else:
+        return False
+
+
 def format_llm_analysis(analysis: str, id: str) -> dict:
     """Form a ``dict`` from metadata extracted by an LLM.
 
@@ -113,9 +136,96 @@ def format_llm_analysis(analysis: str, id: str) -> dict:
         try:
             analysis_obj: dict | list | None = json.loads(analysis)
 
-            for key in formatted_analysis.keys():
-                if key in analysis_obj:
-                    formatted_analysis[key] = analysis_obj[key]
+            if "title" in analysis_obj:
+                if not string_is_none(analysis_obj["title"]):
+                    formatted_analysis["title"] = analysis_obj["title"]
+
+            if "producer" in analysis_obj:
+                if not string_is_none(analysis_obj["producer"]):
+                    formatted_analysis["producer"] = analysis_obj["producer"]
+
+            if "writer" in analysis_obj:
+                if not string_is_none(analysis_obj["writer"]):
+                    formatted_analysis["writer"] = analysis_obj["writer"]
+
+            if "production_company" in analysis_obj:
+                if not string_is_none(analysis_obj["production_company"]):
+                    formatted_analysis["production_company"] = analysis_obj[
+                        "production_company"
+                    ]
+
+            if "reels" in analysis_obj:
+                try:
+                    formatted_analysis["reels"] = int(analysis_obj["reels"])
+                except TypeError:
+                    formatted_analysis["reels"] = None
+
+            if "series" in analysis_obj:
+                if not string_is_none(analysis_obj["series"]):
+                    formatted_analysis["series"] = analysis_obj["series"]
+
+            if "genres" in analysis_obj:
+                formatted_analysis["genres"] = analysis_obj["genres"]
+
+            # "characters" is a list of dicts
+            if "characters" in analysis_obj:
+                # these are the fields that *should* be present (but are not necessarily)
+                expected_fields: list[str] = [
+                    "character_name",
+                    "character_description",
+                    "actor",
+                ]
+
+                # for every dict in the JSON list
+                for location in analysis_obj["characters"]:
+                    # assume it is invalid until it contains valid data
+                    valid: bool = False
+                    for field in expected_fields:
+                        if field in location and not string_is_none(location[field]):
+                            valid = True
+                            break
+
+                    # if it contained valid data, create an entry
+                    if valid:
+                        formatted_analysis["characters"].append({})
+
+                        for field in expected_fields:
+                            if field in location and not string_is_none(
+                                location[field]
+                            ):
+                                formatted_analysis["characters"][-1][field] = location[
+                                    field
+                                ]
+                            else:
+                                formatted_analysis["characters"][-1][field] = None
+
+            # "locations" is a list of dicts
+            if "locations" in analysis_obj:
+                # these are the fields that *should* be present (but are not necessarily)
+                expected_fields: list[str] = ["location_name", "location_description"]
+
+                # for every dict in the JSON list
+                for location in analysis_obj["locations"]:
+                    # assume it is invalid until it contains valid data
+                    valid: bool = False
+                    for field in expected_fields:
+                        if field in location and not string_is_none(location[field]):
+                            valid = True
+                            break
+
+                    # if it contained valid data, create an entry
+                    if valid:
+                        formatted_analysis["locations"].append({})
+
+                        for field in expected_fields:
+                            if field in location and not string_is_none(
+                                location[field]
+                            ):
+                                formatted_analysis["locations"][-1][field] = location[
+                                    field
+                                ]
+                            else:
+                                formatted_analysis["locations"][-1][field] = None
 
         except json.decoder.JSONDecodeError as e:
             formatted_analysis["failed"] = True
@@ -142,7 +252,10 @@ def _process_ids(
         )
 
         relevant_transcripts: list[AnyStr] = list(
-            filter(lambda fname: fname.startswith(document_id), transcripts)
+            filter(
+                lambda filepath: Path(filepath).name.startswith(document_id),
+                transcripts,
+            )
         )
 
         analysis_file: Path = args.analysis_directory / f"{document_id}.json"
@@ -152,6 +265,11 @@ def _process_ids(
             with open(metadata_file, "r") as metadata_json:
                 metadata = json.load(metadata_json)
                 del metadata["text"]
+        else:
+            metadata = {
+                "date": None,
+                "producer": [None],
+            }
 
         transcript_data: list = []
         for fname in relevant_transcripts:
@@ -164,17 +282,137 @@ def _process_ids(
         if analysis_file.exists():
             with open(analysis_file, "r") as analysis_json:
                 analysis = format_llm_analysis(analysis_json.read(), document_id)
+        else:
+            analysis = format_llm_analysis(None, document_id)
 
-            if analysis["failed"]:
-                with open(args.outdir / "failed.txt", "a") as f:
-                    f.write(document_id + "\n")
+        if analysis["failed"]:
+            with open(args.outdir / "failed.txt", "a") as f:
+                f.write(document_id + "\n")
 
-        # print(document_id)
-        # print(metadata)
-        # print(transcript_data)
-        # pprint(analysis)
-        # print(formatted_analysis)
-        # exit(0)
+        # insert document data
+        cursor.execute(
+            "INSERT INTO documents ( \
+                id, \
+                copyright_year, \
+                studio, \
+                title, \
+                producer, \
+                writer, \
+                reel_count, \
+                series, \
+                uploaded_by, \
+                uploaded_time \
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) \
+            ON CONFLICT DO NOTHING;",
+            (
+                document_id,
+                metadata["date"],
+                metadata["producer"][0],
+                analysis["title"],
+                analysis["producer"],
+                analysis["writer"],
+                analysis["reels"],
+                analysis["series"],
+                None,
+                datetime.datetime.now(),
+            ),
+        )
+
+        # insert characters, if any are present
+        if analysis["characters"]:
+            psycopg2.extras.execute_batch(
+                cursor,
+                "INSERT INTO actors ( \
+                    name \
+                ) VALUES (%s) \
+                ON CONFLICT DO NOTHING;",
+                [
+                    [character["actor"]]
+                    for character in analysis["characters"]
+                    if character["actor"] is not None
+                ],
+            )
+
+            psycopg2.extras.execute_batch(
+                cursor,
+                "INSERT INTO has_character ( \
+                    document_id, \
+                    actor_name, \
+                    character_name, \
+                    character_description \
+                ) VALUES (%s, %s, %s, %s) \
+                ON CONFLICT DO NOTHING;",
+                [
+                    (
+                        document_id,
+                        character["actor"],
+                        character["character_name"],
+                        character["character_description"],
+                    )
+                    for character in analysis["characters"]
+                ],
+            )
+
+        # insert genres, if any are present
+        if analysis["genres"]:
+            psycopg2.extras.execute_batch(
+                cursor,
+                "INSERT INTO genres ( \
+                    genre \
+                ) VALUES (%s) \
+                ON CONFLICT DO NOTHING;",
+                [[genre] for genre in analysis["genres"]],
+            )
+
+            psycopg2.extras.execute_batch(
+                cursor,
+                "INSERT INTO has_genre ( \
+                    document_id, \
+                    genre \
+                ) VALUES (%s, %s) \
+                ON CONFLICT DO NOTHING;",
+                [
+                    (
+                        document_id,
+                        genre,
+                    )
+                    for genre in analysis["genres"]
+                ],
+            )
+
+        # insert locations, if any are present
+        if analysis["locations"]:
+            psycopg2.extras.execute_batch(
+                cursor,
+                "INSERT INTO has_location ( \
+                    document_id, \
+                    location, \
+                    description \
+                ) VALUES (%s, %s, %s) \
+                ON CONFLICT DO NOTHING;",
+                [
+                    (
+                        document_id,
+                        location["location_name"],
+                        location["location_description"],
+                    )
+                    for location in analysis["locations"]
+                ],
+            )
+
+        # insert transcripts, if any are present
+        if transcript_data:
+            psycopg2.extras.execute_batch(
+                cursor,
+                "INSERT INTO transcripts ( \
+                    document_id, \
+                    page_number, \
+                    content \
+                ) VALUES (%s, %s, %s) \
+                ON CONFLICT DO NOTHING;",
+                transcript_data,
+            )
+
         with progress_sem:
             progress.update()
             progress.display()
@@ -228,67 +466,25 @@ def loadData(args: argparse.Namespace, cursor: psycopg2.extensions.cursor):
     for thread in threads:
         thread.join()
 
-    #     # insert document data
-    #     cursor.execute(
-    #         "INSERT INTO documents ( \
-    #             id, \
-    #             copyright_year, \
-    #             studio, \
-    #             title, \
-    #             uploaded_time \
-    #         ) VALUES (%s, %s, %s, %s, %s) \
-    #         ON CONFLICT DO NOTHING;",
-    #         (
-    #             document_id,
-    #             metadata["date"],
-    #             metadata["producer"],
-    #             formatted_analysis["title"],
-    #             datetime.datetime.now(),
-    #         ),
-    #     )
-
-    #     # insert actors, if any are present
-    #     if formatted_analysis["actors"]:
-    #         psycopg2.extras.execute_batch(
-    #             cursor,
-    #             "INSERT INTO actors ( \
-    #                 name \
-    #             ) VALUES (%s) \
-    #             ON CONFLICT DO NOTHING;",
-    #             [[actor] for actor in formatted_analysis["actors"]],
-    #         )
-
-    #         psycopg2.extras.execute_batch(
-    #             cursor,
-    #             "INSERT INTO has_actor ( \
-    #                 document_id, \
-    #                 actor_name, \
-    #                 role \
-    #             ) VALUES (%s, %s, %s) \
-    #             ON CONFLICT DO NOTHING;",
-    #             [(document_id, actor, None) for actor in formatted_analysis["actors"]],
-    #         )
-
-    #     # insert transcripts, if any are present
-    #     if transcript_data:
-    #         psycopg2.extras.execute_batch(
-    #             cursor,
-    #             "INSERT INTO transcripts ( \
-    #                 document_id, \
-    #                 page_number, \
-    #                 content \
-    #             ) VALUES (%s, %s, %s) \
-    #             ON CONFLICT DO NOTHING;",
-    #             transcript_data,
-    #         )
-
-    # cursor.execute("REFRESH MATERIALIZED VIEW text_search_view;")
+    cursor.execute("REFRESH MATERIALIZED VIEW text_search_view;")
 
 
 def main(argv=None):
     """Upload data to the database specified in ``.env``."""
     args = parser.parse_args(argv)
     load_dotenv()
+
+    if args.wipe:
+        print(
+            "WARNING: The `--wipe` flag has been passed. This will erase all tables and data"
+        )
+        print("from the database before reinstating the schema and uploading data.")
+        print("Are you sure you want to continue? [y/N]")
+        response: str = input()
+
+        if not response.lower().startswith("y"):
+            print("Exiting...")
+            exit(0)
 
     os.makedirs(args.outdir, exist_ok=True)
 
@@ -304,12 +500,16 @@ def main(argv=None):
     )
 
     with db_connection.cursor() as cursor:
-        # try:
-        #     create_tables(cursor)
-        #     db_connection.commit()
-        # except Exception:
-        #     print("tables already exist!")
-        #     db_connection.rollback()
+        if args.wipe:
+            wipe(cursor)
+            db_connection.commit()
+
+        try:
+            create_tables(cursor)
+            db_connection.commit()
+        except Exception as e:
+            print(e)
+            db_connection.rollback()
 
         loadData(args, cursor)
         db_connection.commit()

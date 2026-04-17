@@ -3,7 +3,7 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 -- ENTITY SETS
 
 CREATE TABLE actors (
-    name varchar(100) PRIMARY KEY
+    name text PRIMARY KEY
 );
 
 CREATE TABLE genres (
@@ -83,21 +83,21 @@ CREATE TABLE view_history (
 );
 
 CREATE TABLE has_character (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     document_id varchar(15),
     character_name text,
-    actor_name varchar(100),
+    actor_name text,
     character_description text,
     CONSTRAINT fk_document_id FOREIGN KEY (document_id) REFERENCES documents(id),
-    CONSTRAINT fk_actor_name FOREIGN KEY (actor_name) REFERENCES actors(name),
-    PRIMARY KEY (document_id, character_name)
+    CONSTRAINT fk_actor_name FOREIGN KEY (actor_name) REFERENCES actors(name)
 );
 
 CREATE TABLE has_location (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     document_id varchar(15),
     "location" text,
     "description" text,
-    CONSTRAINT fk_document_id FOREIGN KEY (document_id) REFERENCES documents(id),
-    PRIMARY KEY (document_id, location_name)
+    CONSTRAINT fk_document_id FOREIGN KEY (document_id) REFERENCES documents(id)
 );
 
 CREATE TABLE has_genre (
@@ -114,6 +114,9 @@ CREATE TABLE has_genre (
 CREATE INDEX idx_studio ON documents(studio);
 CREATE INDEX idx_copyright_year ON documents(copyright_year);
 CREATE INDEX idx_title ON documents(title);
+CREATE INDEX idx_actor ON has_character(actor_name);
+CREATE INDEX idx_has_character_document_id ON has_character(document_id);
+CREATE INDEX idx_has_location_document_id ON has_location(document_id);
 CREATE INDEX idx_search_history_user_time ON search_history(user_name, "time" DESC);
 CREATE INDEX idx_view_history_user_time ON view_history(user_name, viewed_at DESC);
 CREATE INDEX idx_view_history_search_id ON view_history(search_id);
@@ -133,5 +136,5 @@ CREATE MATERIALIZED VIEW text_search_view AS (
         setweight(to_tsvector(coalesce(text_content_view.content,'')), 'B') AS text_vector
     FROM documents, text_content_view
     WHERE documents.id = text_content_view.document_id
-    GROUP BY id
+    GROUP BY id, text_content_view.content
 ) WITH NO DATA;
