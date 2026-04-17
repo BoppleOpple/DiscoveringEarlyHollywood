@@ -49,9 +49,9 @@
                                     {% endif %}
                                 </p>
                                 <div class="flex gap-4">
-                                    <span class="text-[#2B6CB0]">{{ doc.copyrightYear }}</span>
+                                    <span class="text-[#2B6CB0]">{{ doc.copyright_year }}</span>
                                     <span class="text-[#666666]">•</span>
-                                    <span class="text-[#666666]">{{ doc.documentType or 'Document' }}</span>
+                                    <span class="text-[#666666]">{{ doc.document_type or 'Document' }}</span>
                                 </div>
                             </a>
                             <button onclick="toggleFlags('{{ doc.id }}')" 

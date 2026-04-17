@@ -19,18 +19,16 @@ class TestIndex:
 
         mock_results: list[Document] = [
             Document(
-                None,
                 id="s1111m11111",
                 studio="studio_1",
                 title="Document 1",
-                copyrightYear=1111,
+                copyright_year=1111,
             ),
             Document(
-                None,
                 id="s2222m22222",
                 studio="studio_2",
                 title="Document 2",
-                copyrightYear=2222,
+                copyright_year=2222,
             ),
         ]
 

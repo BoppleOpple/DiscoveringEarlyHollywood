@@ -56,7 +56,7 @@ def download_history():
             [
                 doc["title"],
                 doc["year"],
-                doc["documentType"],
+                doc["document_type"],
                 doc["description"],
                 doc["viewedDate"],
                 doc["searchText"] or "",

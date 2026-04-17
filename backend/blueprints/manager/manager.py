@@ -15,9 +15,9 @@ def documents_manager():
         keywords=list(
             filter(lambda s: s != "", search.split(" ")) if search else []
         ),  # TODO allow searching both titles and transcripts
-        documentType=None,  # TODO
+        document_type=None,  # TODO
         studio=None,  # TODO
-        durationRange=(None, None),  # TODO
+        duration_range=(None, None),  # TODO
     )
 
     docs = db_utils.search_results(db_utils.get_db_connection(), query)

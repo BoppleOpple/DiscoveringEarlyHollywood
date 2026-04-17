@@ -150,18 +150,18 @@ def execute_document_query(
         )
 
     # handle filtering by minimum year
-    if query.copyrightYearRange[0] is not None:
+    if query.copyright_year_range[0] is not None:
         sqlLines.append(
             sql.SQL("AND copyright_year >= {}").format(
-                sql.Literal(query.copyrightYearRange[0])
+                sql.Literal(query.copyright_year_range[0])
             )
         )
 
     # handle filtering by maximum year
-    if query.copyrightYearRange[1] is not None:
+    if query.copyright_year_range[1] is not None:
         sqlLines.append(
             sql.SQL("AND copyright_year <= {}").format(
-                sql.Literal(query.copyrightYearRange[1])
+                sql.Literal(query.copyright_year_range[1])
             )
         )
 
@@ -170,9 +170,9 @@ def execute_document_query(
         sqlLines.append(sql.SQL("AND studio = {}").format(sql.Literal(query.studio)))
 
     # handle filtering by document upload time
-    if query.queryTime:
+    if query.query_time:
         sqlLines.append(
-            sql.SQL("AND uploaded_time <= {}").format(sql.Literal(query.queryTime))
+            sql.SQL("AND uploaded_time <= {}").format(sql.Literal(query.query_time))
         )
 
     # handle filtering by actors (list of required actors)
@@ -285,7 +285,7 @@ def search_results(
                     id=documentQuery[0],
                     studio=documentQuery[2],
                     title=documentQuery[3],
-                    copyrightYear=documentQuery[1],
+                    copyright_year=documentQuery[1],
                 )
                 for documentQuery in cur.fetchall()
             ]
@@ -727,7 +727,7 @@ def get_view_history(conn: connection, user_name: str, limit: int = 200) -> list
                 "title": row[1],
                 "year": row[2],
                 "description": description,
-                "documentType": "Document",
+                "document_type": "Document",
                 "viewedDate": row[4].strftime("%b %d, %Y %I:%M %p"),
                 "viewedAt": row[4],
                 "searchText": search_text,
@@ -860,11 +860,11 @@ def get_documents(conn: connection, doc_ids: list[str]) -> str:
             id=id,
             studio=studio,
             title=title,
-            documentType=None,  # TODO
-            copyrightYear=copyright_year,
-            reelCount=reel_count,
-            uploadedTime=uploaded_time,
-            uploadedBy=uploaded_by,
+            document_type=None,  # TODO
+            copyright_year=copyright_year,
+            reel_count=reel_count,
+            uploaded_time=uploaded_time,
+            uploaded_by=uploaded_by,
         )
 
     # include transcript data
@@ -984,12 +984,12 @@ def get_documents_as_csv(conn: connection, doc_ids: list[str]) -> str:
             _csv(
                 [
                     _clean_csv_value(doc.id),
-                    _clean_csv_value(str(doc.copyrightYear)),
+                    _clean_csv_value(str(doc.copyright_year)),
                     _clean_csv_value(doc.studio),
                     _clean_csv_value(doc.title),
-                    _clean_csv_value(str(doc.reelCount)),
-                    _clean_csv_value(doc.uploadedBy),
-                    _clean_csv_value(str(doc.uploadedTime)),
+                    _clean_csv_value(str(doc.reel_count)),
+                    _clean_csv_value(doc.uploaded_by),
+                    _clean_csv_value(str(doc.uploaded_time)),
                     _clean_csv_value(doc.content),
                     _clean_csv_value(";".join(doc.actors)),
                     _clean_csv_value(";".join(doc.genres)),

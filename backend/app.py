@@ -95,10 +95,10 @@ def create_app(flask_constructor_options: dict = None, **kwargs) -> Flask:
             keywords=list(
                 filter(lambda s: s != "", search.split(" ")) if search else []
             ),  # TODO allow searching both titles and transcripts
-            documentType=None,  # TODO
+            document_type=None,  # TODO
             studio=None,  # TODO
-            copyrightYearRange=(year_min, year_max),  # TODO allow a start & end value
-            durationRange=(None, None),  # TODO
+            copyright_year_range=(year_min, year_max),  # TODO allow a start & end value
+            duration_range=(None, None),  # TODO
         )
 
         num_results = db_utils.get_num_results(

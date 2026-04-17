@@ -69,9 +69,9 @@ class TestExecuteDocumentQuery:
         # Assert
         assert "SELECT id, copyright_year, studio, title" in str(executedQuery)
 
-    def test_copyrightYearRangeQuery_executesCopyrightYearRangeQuery(self):
+    def test_copyright_year_rangeQuery_executesCopyrightYearRangeQuery(self):
         # Arrange
-        inputQuery = Query(copyrightYearRange=(2024, 2026))
+        inputQuery = Query(copyright_year_range=(2024, 2026))
         mockCursor = MagicMock()
 
         # Act
@@ -174,7 +174,7 @@ class TestExecuteDocumentQuery:
     def test_allInputsQuery_executesAllInputsQuery(self):
         # Arrange
         inputQuery = Query(
-            copyrightYearRange=(2024, 2026),
+            copyright_year_range=(2024, 2026),
             studio="Universal",
             actors=["Walter Goggins", "Ella Purnell"],
             tags=["TestTag"],
