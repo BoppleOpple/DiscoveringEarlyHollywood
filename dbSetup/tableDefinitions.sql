@@ -26,6 +26,7 @@ CREATE TABLE documents (
     writer text,
     reel_count integer,
     series text,
+    document_type text,
     uploaded_by varchar(20),
     uploaded_time timestamp,
     CONSTRAINT fk_uploaded_by FOREIGN KEY (uploaded_by) REFERENCES users(name)

@@ -55,6 +55,13 @@ parser.add_argument(
     type=Path,
 )
 parser.add_argument(
+    "-c",
+    "--classifications-csv",
+    required=False,
+    default="./data/classifications.csv",
+    type=Path,
+)
+parser.add_argument(
     "-j",
     "--thread-count",
     required=False,
@@ -513,6 +520,24 @@ def main(argv=None):
 
         loadData(args, cursor)
         db_connection.commit()
+
+        if args.classifications_csv.exists():
+            with open(args.classifications_csv, "r") as csv:
+                data: list[tuple] = [
+                    tuple(line[:-1].split(","))
+                    for line in csv.readlines()[1:]
+                    if "," in line
+                ]
+
+            psycopg2.extras.execute_batch(
+                cursor,
+                "UPDATE documents \
+                SET document_type = %s \
+                WHERE id = %s;",
+                [(row[1], row[0]) for row in data],
+            )
+
+            db_connection.commit()
 
     db_connection.close()
 
