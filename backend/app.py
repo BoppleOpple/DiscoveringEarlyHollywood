@@ -91,7 +91,6 @@ def create_app(flask_constructor_options: dict = None, **kwargs) -> Flask:
 
         query: Query = Query(
             actors=[],  # TODO
-            tags=[],  # TODO
             keywords=list(
                 filter(lambda s: s != "", search.split(" ")) if search else []
             ),  # TODO allow searching both titles and transcripts

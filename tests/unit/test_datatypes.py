@@ -69,28 +69,6 @@ class TestQuery:
         # Assert
         assert resultQuery.actors == expectedQuery.actors
 
-    def test_set_tags(self):
-        # Arrange
-        expectedQuery = Query(tags=["New", "Old"])
-        resultQuery = Query()
-
-        # Act
-        resultQuery.set_tags(["New", "Old"])
-
-        # Assert
-        assert resultQuery.tags == expectedQuery.tags
-
-    def test_add_tags(self):
-        # Arrange
-        expectedQuery = Query(tags=["Old"])
-        resultQuery = Query()
-
-        # Act
-        resultQuery.add_tag("Old")
-
-        # Assert
-        assert resultQuery.tags == expectedQuery.tags
-
     def test_set_genres(self):
         # Arrange
         expectedQuery = Query(genres=["comedy", "drama"])
@@ -277,20 +255,22 @@ class TestDocument:
         assert doc.metadata.actors == expectedActors
         assert doc.actors == expectedActors
 
-    def test_tags(self):
+    def test_locations(self):
         # Arrange
-        constructorTags = ["influential"]
-        expectedTags = ["serial"]
+        constructorLocations = [
+            {"name": "courtyard", "description": "where the film begins"}
+        ]
+        expectedLocations = [{"name": "crypt", "description": "where the film ends"}]
         doc = Document(
-            tags=constructorTags,
+            locations=constructorLocations,
         )
 
         # Act
-        doc.tags = expectedTags
+        doc.locations = expectedLocations
 
         # Assert
-        assert doc.metadata.tags == expectedTags
-        assert doc.tags == expectedTags
+        assert doc.metadata.locations == expectedLocations
+        assert doc.locations == expectedLocations
 
     def test_genres(self):
         # Arrange

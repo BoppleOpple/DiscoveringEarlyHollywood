@@ -185,16 +185,6 @@ def execute_document_query(
             )
         )
 
-    # handle filtering by tags (list of required tags)
-    if query.tags:
-        sqlLines.append(
-            sql.SQL("AND id in ( {} )").format(
-                relation_from_id_to_all_values(
-                    "document_id", "tag", "has_tag", query.tags
-                )
-            )
-        )
-
     # handle filtering by genres (list of required genres)
     if query.genres:
         sqlLines.append(

@@ -22,7 +22,10 @@ def example_document() -> Document:
         uploaded_time=datetime.now(),
         uploaded_by="admin_user",
         actors=["Kayla Morris", "Greg Morris"],
-        tags=["foo", "bar"],
+        locations=[
+            {"name": "mansion", "description": "the Morris home"},
+            {"name": "mdocksn", "description": None},
+        ],
         genres=["drama", "horror"],
         transcripts=[(1, "S1234L56789"), (2, "document body"), (3, "copyright page")],
         flags=[

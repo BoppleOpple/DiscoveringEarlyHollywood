@@ -55,8 +55,8 @@ class Metadata:
     actors: list[str], default = []
         The list of actors associated with this document
 
-    tags: list[str], default = []
-        The list of tags associated with this document
+    locations: list[str], default = []
+        The list of locations (settings) associated with this document
 
     genres: list[str], default = []
         The list of genres associated with this document
@@ -90,8 +90,8 @@ class Metadata:
     actors: list[str], default = []
         The list of actors associated with this document
 
-    tags: list[str], default = []
-        The list of tags associated with this document
+    locations: list[str], default = []
+        The list of locations (settings) associated with this document
 
     genres: list[str], default = []
         The list of genres associated with this document
@@ -110,7 +110,7 @@ class Metadata:
     uploaded_by: str = None
 
     actors: list[str] = []
-    tags: list[str] = []
+    locations: list[str] = []
     genres: list[str] = []
 
     def __init__(
@@ -124,7 +124,7 @@ class Metadata:
         uploaded_time: datetime.datetime = None,
         uploaded_by: str = None,
         actors: list[str] = [],
-        tags: list[str] = [],
+        locations: list[str] = [],
         genres: list[str] = [],
     ):
         self.id = id
@@ -136,7 +136,7 @@ class Metadata:
         self.uploaded_time = uploaded_time
         self.uploaded_by = uploaded_by
         self.actors = actors
-        self.tags = tags
+        self.locations = locations
         self.genres = genres
 
 
@@ -170,8 +170,8 @@ class Document:
     actors: list[str], default = []
         The list of actors associated with this document
 
-    tags: list[str], default = []
-        The list of tags associated with this document
+    locations: list[str], default = []
+        The list of locations (settings) associated with this document
 
     genres: list[str], default = []
         The list of genres associated with this document
@@ -214,7 +214,7 @@ class Document:
         uploaded_time: datetime.datetime = None,
         uploaded_by: str = None,
         actors: list[str] = [],
-        tags: list[str] = [],
+        locations: list[str] = [],
         genres: list[str] = [],
         transcripts: list[tuple[int, str]] = [],
         flags: list[Flag] = [],
@@ -229,7 +229,7 @@ class Document:
             uploaded_time,
             uploaded_by,
             actors,
-            tags,
+            locations,
             genres,
         )
         # TODO load images automatically
@@ -311,12 +311,12 @@ class Document:
         self.metadata.actors = value
 
     @property
-    def tags(self) -> list[str]:
-        return self.metadata.tags if self.metadata else None
+    def locations(self) -> list[str]:
+        return self.metadata.locations if self.metadata else None
 
-    @tags.setter
-    def tags(self, value: list[str]):
-        self.metadata.tags = value
+    @locations.setter
+    def locations(self, value: list[str]):
+        self.metadata.locations = value
 
     @property
     def genres(self) -> list[str]:
@@ -339,9 +339,6 @@ class Query:
     ----------
     actors: list[str], default = []
         The list of actors that must be present in matched documents
-
-    tags: list[str], default = []
-        The list of tags that must be present in matched documents
 
     genres: list[str], default = []
         The list of genres that must be present in matched documents
@@ -368,9 +365,6 @@ class Query:
 
     actors: list[str]
         The list of actors that must be present in matched documents
-
-    tags: list[str]
-        The list of tags that must be present in matched documents
 
     genres: list[str]
         The list of genres that must be present in matched documents
@@ -408,12 +402,6 @@ class Query:
     add_actor(actor: str)
         Adds an actor that must be present to the query
 
-    set_tags(tags: list[str])
-        Sets the tags that must be present in the query
-
-    add_tag(tag: str)
-        Adds an tag that must be present to the query
-
     set_genres(genres: list[str])
         Sets the genres that must be present in the query
 
@@ -435,7 +423,6 @@ class Query:
 
     viewed_documents: list[str] = []
     actors: list[str] = []
-    tags: list[str] = []
     genres: list[str] = []
     keywords: list[str] = []
 
@@ -450,7 +437,6 @@ class Query:
     def __init__(
         self,
         actors: list[str] = [],
-        tags: list[str] = [],
         genres: list[str] = [],
         keywords: list[str] = [],
         document_type: str = None,
@@ -459,7 +445,6 @@ class Query:
         duration_range: tuple[int, int] = (None, None),
     ):
         self.set_actors(actors)
-        self.set_tags(tags)
         self.set_genres(genres)
         self.set_keywords(keywords)
         self.set_document_type(document_type)
@@ -488,16 +473,6 @@ class Query:
     def add_actor(self, actor: str) -> Self:
         """Adds an actor that must be present to the query"""
         self.actors.append(actor)
-        return self
-
-    def set_tags(self, tags: list[str]) -> Self:
-        """Sets the tags that must be present in the query"""
-        self.tags = tags if tags else []
-        return self
-
-    def add_tag(self, tag: str) -> Self:
-        """Adds an tag that must be present to the query"""
-        self.tags.append(tag)
         return self
 
     def set_genres(self, genres: list[str]) -> Self:

@@ -130,26 +130,6 @@ class TestExecuteDocumentQuery:
         for segment in expectedSegments:
             assert segment in str(executedQuery)
 
-    def test_tagsInputQuery_executesTagsInputQuery(self):
-        # Arrange
-        inputQuery = Query(tags=["TestTag"])
-
-        mockCursor = MagicMock()
-
-        # Act
-        execute_document_query(mockCursor, query=inputQuery)
-        executedQuery: sql.SQL = mockCursor.execute.call_args[0][0]
-
-        # Assert
-        expectedSegments = [
-            "SELECT id, copyright_year, studio, title",
-            "AND id in ",
-            "TestTag",
-        ]
-
-        for segment in expectedSegments:
-            assert segment in str(executedQuery)
-
     def test_genresInputQuery_executesGenresInputQuery(self):
         # Arrange
         inputQuery = Query(genres=["Horror", "Comedy"])
@@ -177,7 +157,6 @@ class TestExecuteDocumentQuery:
             copyright_year_range=(2024, 2026),
             studio="Universal",
             actors=["Walter Goggins", "Ella Purnell"],
-            tags=["TestTag"],
             genres=["Horror", "Comedy"],
         )
 
@@ -199,7 +178,6 @@ class TestExecuteDocumentQuery:
             "AND id in ",
             "Walter Goggins",
             "Ella Purnell",
-            "TestTag",
             "Horror",
             "Comedy",
         ]
