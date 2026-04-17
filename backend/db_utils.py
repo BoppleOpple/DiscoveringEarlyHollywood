@@ -107,7 +107,9 @@ HAVING COUNT(distinct document_id) >= 2")
 def execute_document_query(
     cursor: cursor,
     query: Query,
-    prefix: sql.SQL = sql.SQL("SELECT id, copyright_year, studio, title"),
+    prefix: sql.SQL = sql.SQL(
+        "SELECT id, copyright_year, studio, title, document_type"
+    ),
     suffix: sql.SQL = sql.SQL(";"),
     rankPages: bool = False,
 ):
@@ -276,6 +278,7 @@ def search_results(
                     studio=documentQuery[2],
                     title=documentQuery[3],
                     copyright_year=documentQuery[1],
+                    document_type=documentQuery[4],
                 )
                 for documentQuery in cur.fetchall()
             ]
