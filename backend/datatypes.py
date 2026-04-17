@@ -52,7 +52,7 @@ class Metadata:
     uploaded_by: str, default = None
         The uploader of the related document
 
-    actors: list[str], default = []
+    actors: list[dict[str, str]], default = []
         The list of actors associated with this document
 
     locations: list[str], default = []
@@ -87,7 +87,7 @@ class Metadata:
     uploaded_by: str
         The uploader of the related document
 
-    actors: list[str], default = []
+    actors: list[dict[str, str]], default = []
         The list of actors associated with this document
 
     locations: list[str], default = []
@@ -109,7 +109,7 @@ class Metadata:
 
     uploaded_by: str = None
 
-    actors: list[str] = []
+    actors: list[dict[str, str]] = []
     locations: list[str] = []
     genres: list[str] = []
 
@@ -123,7 +123,7 @@ class Metadata:
         reel_count: int = None,
         uploaded_time: datetime.datetime = None,
         uploaded_by: str = None,
-        actors: list[str] = [],
+        actors: list[dict[str, str]] = [],
         locations: list[str] = [],
         genres: list[str] = [],
     ):
@@ -167,7 +167,7 @@ class Document:
     uploaded_by: str, default = None
         The uploader of the related document
 
-    actors: list[str], default = []
+    actors: list[dict[str, str]], default = []
         The list of actors associated with this document
 
     locations: list[str], default = []
@@ -209,7 +209,7 @@ class Document:
         reel_count: int = None,
         uploaded_time: datetime.datetime = None,
         uploaded_by: str = None,
-        actors: list[str] = [],
+        actors: list[dict[str, str]] = [],
         locations: list[str] = [],
         genres: list[str] = [],
         transcripts: list[tuple[int, str]] = [],
@@ -297,11 +297,11 @@ class Document:
         self.metadata.uploaded_by = value
 
     @property
-    def actors(self) -> list[str]:
+    def actors(self) -> list[dict[str, str]]:
         return self.metadata.actors if self.metadata else None
 
     @actors.setter
-    def actors(self, value: list[str]):
+    def actors(self, value: list[dict[str, str]]):
         self.metadata.actors = value
 
     @property

@@ -242,8 +242,25 @@ class TestDocument:
 
     def test_actors(self):
         # Arrange
-        constructorActors = ["Charlie Chaplin"]
-        expectedActors = ["Walter Goggins", "Brad Pitt"]
+        constructorActors = [
+            {
+                "actor_name": "Charlie Chaplin",
+                "character_name": "Adolf Hitler",
+                "character_description": "german dictator",
+            }
+        ]
+        expectedActors = [
+            {
+                "actor_name": "Walter Goggins",
+                "character_name": None,
+                "character_description": "a wealthy man",
+            },
+            {
+                "actor_name": "Brad Pitt",
+                "character_name": "Jason",
+                "character_description": None,
+            },
+        ]
         doc = Document(
             actors=constructorActors,
         )

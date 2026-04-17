@@ -904,7 +904,14 @@ def get_documents(conn: connection, doc_ids: list[str]) -> str:
 
     with conn.cursor() as cur:
         cur.execute(
-            "SELECT id, copyright_year, studio, title, reel_count, uploaded_by, uploaded_time \
+            "SELECT \
+                id, \
+                copyright_year, \
+                studio, title, \
+                reel_count, \
+                document_type, \
+                uploaded_by, \
+                uploaded_time \
             FROM documents \
             WHERE id IN %s;",
             [cleaned_ids],
@@ -971,14 +978,15 @@ def get_documents(conn: connection, doc_ids: list[str]) -> str:
         studio: str = document_row[2]
         title: str = document_row[3]
         reel_count: int = int(document_row[4]) if document_row[4] is not None else None
-        uploaded_by: str = document_row[5]
-        uploaded_time: str = document_row[6]
+        document_type: str = document_row[5]
+        uploaded_by: str = document_row[6]
+        uploaded_time: str = document_row[7]
 
         documents[id] = Document(
             id=id,
             studio=studio,
             title=title,
-            document_type=None,  # TODO
+            document_type=document_type,
             copyright_year=copyright_year,
             reel_count=reel_count,
             uploaded_time=uploaded_time,
@@ -1003,8 +1011,16 @@ def get_documents(conn: connection, doc_ids: list[str]) -> str:
     for actor_row in actor_data:
         id: str = actor_row[0]
         name: str = actor_row[1]
+        character_name: str = actor_row[2]
+        character_description: str = actor_row[3]
 
-        documents[id].actors.append(name)
+        documents[id].actors.append(
+            {
+                "actor_name": name,
+                "character_name": character_name,
+                "character_description": character_description,
+            }
+        )
 
     # include genre data
     for genre_row in genre_data:

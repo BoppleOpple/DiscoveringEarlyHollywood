@@ -108,7 +108,7 @@
                         </a>
                     </div>
                 </td>
-                <td class="pt-2 pb-2">{{ text }}</td>
+                <td class="pt-2 pb-2 p-3">{{ text }}</td>
             </tr>
             {% endfor %}
         </table>
@@ -147,12 +147,23 @@
             </div>
 
             <div>
-                <h4 class="text-[#2C2C2C] font-medium mb-3">Cast</h4>
-                <div class="space-y-1">
-                    {% for actor in document.actors %}
-                    <p class="text-[#2C2C2C]">{{ actor }}</p>
-                    {% endfor %}
-                </div>
+                <table class="w-full">
+                    <thead class="border-b-4">
+                        <tr>
+                            <th>Actor</th>
+                            <th>Role</th>
+                        </tr>
+                    </thead>
+
+                    <tbody class="divide-y-2">
+                        {% for actor in document.actors %}
+                        <tr class="text-[#2C2C2C]">
+                            <td>{{ actor["actor_name"] if actor["actor_name"] else "Unspecified" }}</td>
+                            <td>{{ actor["character_name"] if actor["character_name"] else "" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
 
             <div class="col-span-2 mt-4">

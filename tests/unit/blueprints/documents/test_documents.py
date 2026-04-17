@@ -21,7 +21,18 @@ def example_document() -> Document:
         reel_count=4,
         uploaded_time=datetime.now(),
         uploaded_by="admin_user",
-        actors=["Kayla Morris", "Greg Morris"],
+        actors=[
+            {
+                "actor_name": "Grace Mason",
+                "character_name": "Kayla Morris",
+                "character_description": "wealthy wife of Greg",
+            },
+            {
+                "actor_name": "Tom Scott",
+                "character_name": "Greg Morris",
+                "character_description": None,
+            },
+        ],
         locations=[
             {"name": "mansion", "description": "the Morris home"},
             {"name": "mdocksn", "description": None},
