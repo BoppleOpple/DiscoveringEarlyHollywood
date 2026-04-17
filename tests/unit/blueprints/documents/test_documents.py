@@ -178,7 +178,11 @@ class TestDocumentDetail:
             assert genre in response.text
 
         for actor in example_document.actors:
-            assert actor in response.text
+            if actor["actor_name"]:
+                assert actor["actor_name"] in response.text
+
+            if actor["character_name"]:
+                assert actor["character_name"] in response.text
 
         for page, text in example_document.transcripts:
             assert text in response.text

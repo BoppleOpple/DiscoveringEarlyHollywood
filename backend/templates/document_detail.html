@@ -121,7 +121,7 @@
                 <div class="space-y-2">
                     <div class="flex">
                         <span class="text-[#666666] w-24">Year:</span>
-                        <span class="text-[#2C2C2C]">{{ document.copyright_year }}</span>
+                        <a href="{{ url_for('index', year_min=document.copyright_year, year_max=document.copyright_year) }}" class="text-[#2c2caa] underline">{{ document.copyright_year }}</a>
                     </div>
                     <div class="flex">
                         <span class="text-[#666666] w-24">Studio:</span>
@@ -137,7 +137,7 @@
                     </div> -->
                     <div class="flex">
                         <span class="text-[#666666] w-24">Reels:</span>
-                        <span class="text-[#2C2C2C]">{{ document.reel_count }}</span>
+                        <a href="{{ url_for('index', reel_min=document.reel_count, reel_max=document.reel_count) }}" class="text-[#2c2caa] underline">{{ document.reel_count }}</a>
                     </div>
                     <div class="flex">
                         <span class="text-[#666666] w-24">Uploaded:</span>
@@ -174,10 +174,11 @@
                     <div class="flex">
                         <span class="text-[#666666] w-32">Document Type:</span>
                         <span class="text-[#2C2C2C]">{{ document.document_type }}</span>
+                        <!-- <a href="{{ url_for('index', document_type=document_type) }}" class="text-[#2C2C2C]">{{ document.document_type }}</a> -->
                     </div>
                     <div class="flex">
                         <span class="text-[#666666] w-32">Registration Date:</span>
-                        <span class="text-[#2C2C2C]">{{ document.copyright_year }}</span>
+                        <a href="{{ url_for('index', year_min=document.copyright_year, year_max=document.copyright_year) }}" class="text-[#2c2caa] underline">{{ document.copyright_year }}</a>
                     </div>
                 </div>
             </div>
