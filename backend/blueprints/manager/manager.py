@@ -17,7 +17,7 @@ def documents_manager():
         ),  # TODO allow searching both titles and transcripts
         document_type=None,  # TODO
         studio=None,  # TODO
-        duration_range=(None, None),  # TODO
+        reel_range=(None, None),  # TODO
     )
 
     docs = db_utils.search_results(db_utils.get_db_connection(), query)

@@ -7,9 +7,11 @@ from flask import (
     url_for,
     session,
     g,
+    send_file,
 )
 import psycopg2
 from dotenv import load_dotenv
+from io import BytesIO
 
 from . import db_utils
 from .datatypes import Document, Query
@@ -93,11 +95,11 @@ def create_app(flask_constructor_options: dict = None, **kwargs) -> Flask:
             actors=[],  # TODO
             keywords=list(
                 filter(lambda s: s != "", search.split(" ")) if search else []
-            ),  # TODO allow searching both titles and transcripts
+            ),
             document_type=None,  # TODO
             studio=None,  # TODO
             copyright_year_range=(year_min, year_max),  # TODO allow a start & end value
-            duration_range=(None, None),  # TODO
+            reel_range=(None, None),  # TODO
         )
 
         num_results = db_utils.get_num_results(
@@ -180,6 +182,40 @@ def create_app(flask_constructor_options: dict = None, **kwargs) -> Flask:
     def flagged_documents():
         flagged = db_utils.get_flagged(db_utils.get_db_connection())
         return render_template("flagged_documents.html", documents=flagged)
+
+    @app.route("/download_query")
+    def download_query_as_csv():
+        search: str = request.args.get("search", "")
+        year_min: int = request.args.get("year_min", 1912, type=int)
+        year_max: int = request.args.get("year_max", 1928, type=int)
+
+        query: Query = Query(
+            actors=[],  # TODO
+            keywords=list(
+                filter(lambda s: s != "", search.split(" ")) if search else []
+            ),
+            document_type=None,  # TODO
+            studio=None,  # TODO
+            copyright_year_range=(year_min, year_max),  # TODO allow a start & end value
+            reel_range=(None, None),  # TODO
+        )
+
+        ids: list[str] = db_utils.get_search_result_ids(
+            db_utils.get_db_connection(), query
+        )
+
+        csv_body: str = db_utils.get_documents_as_csv(db_utils.get_db_connection(), ids)
+
+        print(search)
+
+        return "Not Implemented", 200
+
+        return send_file(
+            BytesIO(csv_body.encode("utf-8")),
+            mimetype="text/csv",
+            as_attachment=True,
+            download_name="query.csv",
+        )
 
     return app
 

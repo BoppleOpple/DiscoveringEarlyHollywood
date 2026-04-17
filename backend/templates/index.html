@@ -60,13 +60,18 @@
 
     <!-- Main Content - Document List -->
     <main class="flex-1 p-6">
-        <div class="mb-6">
-            <h2 class="text-[#2C2C2C] text-xl font-medium">
-                Copyright Documents from Early Hollywood
-            </h2>
-            <p class="text-[#666666] mt-1">
-                {{ num_results }} documents found
-            </p>
+        <div class="mb-6 w-full flex justify-between">
+            <div>
+                <h2 class="text-[#2C2C2C] text-xl font-medium">
+                    Copyright Documents from Early Hollywood
+                </h2>
+                <p class="text-[#666666] mt-1">
+                    {{ num_results }} documents found
+                </p>
+            </div>
+            <a href="{{ url_for('download_query_as_csv', **request.args) }}" class="w-fit h-fit bg-[#2C2C2C] hover:bg-[#8B0000] text-white py-2 px-4 rounded transition-colors">
+                Download as CSV
+            </a>
         </div>
 
         <div class="space-y-4">

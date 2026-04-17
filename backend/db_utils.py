@@ -354,6 +354,48 @@ def get_num_results(conn: connection, query: Query):
     return count
 
 
+# TODO combine with `search_results` instead of performing 2 queries
+def get_search_result_ids(conn: connection, query: Query) -> list[str]:
+    """Fetch the ids of every document matching a given query.
+
+    Parameters
+    ----------
+    conn : :obj:`psycopg2.extensions.connection`
+        A ``psycopg2`` connection to perform queries with
+    query : :obj:`Query`
+        A ``Query`` object specifying the search parameters
+
+    Returns
+    -------
+    ids : list[str]
+        The ids of relevant documents
+    """
+    ids: list[str] = []
+    if not conn:
+        raise Exception("No SQL connection found")
+
+    try:
+        cur: cursor = None
+        with conn.cursor() as cur:
+            execute_document_query(
+                cur,
+                query,
+                prefix=sql.SQL("SELECT id"),
+            )
+
+            result: tuple = cur.fetchone()
+
+        # set `count` to the number of results if any exist, otherwise 0
+        if result:
+            ids = list(result)
+
+        conn.commit()
+    except psycopg2.errors.ObjectNotInPrerequisiteState as e:
+        print(e)
+
+    return ids
+
+
 def get_headlines(
     conn: connection, documents: list[Document], query: Query, max_length: int = 400
 ) -> dict[str, str]:

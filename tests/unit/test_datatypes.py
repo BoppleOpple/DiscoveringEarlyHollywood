@@ -36,16 +36,16 @@ class TestQuery:
         # Assert
         assert resultQuery.copyright_year_range == expectedQuery.copyright_year_range
 
-    def test_set_duration_range(self):
+    def test_set_reel_range(self):
         # Arrange
-        expectedQuery = Query(duration_range=(5, 10))
+        expectedQuery = Query(reel_range=(5, 10))
         resultQuery = Query()
 
         # Act
-        resultQuery.set_duration_range(5, 10)
+        resultQuery.set_reel_range(5, 10)
 
         # Assert
-        assert resultQuery.duration_range == expectedQuery.duration_range
+        assert resultQuery.reel_range == expectedQuery.reel_range
 
     def test_set_actors(self):
         # Arrange

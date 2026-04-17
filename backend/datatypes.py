@@ -355,7 +355,7 @@ class Query:
     copyright_year_range: tuple[int, int], default = (None, None)
         The range of acceptable copyright years
 
-    duration_range: tuple[int, int], default = (None, None)
+    reel_range: tuple[int, int], default = (None, None)
         The range of acceptable durations (in reels)
 
     Attributes
@@ -381,7 +381,7 @@ class Query:
     copyright_year_range: tuple[int, int]
         The range of acceptable copyright years
 
-    duration_range: tuple[int, int]
+    reel_range: tuple[int, int]
         The range of acceptable durations (in reels)
 
     query_time: datetime.datetime
@@ -393,7 +393,7 @@ class Query:
     set_copyright_year_range(start: int, end: int)
         Sets the year range of the query
 
-    set_duration_range(start: int, end: int)
+    set_reel_range(start: int, end: int)
         Sets the duration range of the query
 
     set_actors(actors: list[str])
@@ -430,7 +430,7 @@ class Query:
     studio: str = None
 
     copyright_year_range: tuple[int, int] = (None, None)
-    duration_range: tuple[int, int] = (None, None)
+    reel_range: tuple[int, int] = (None, None)
 
     query_time: datetime.datetime = None
 
@@ -442,7 +442,7 @@ class Query:
         document_type: str = None,
         studio: str = None,
         copyright_year_range: tuple[int, int] = (None, None),
-        duration_range: tuple[int, int] = (None, None),
+        reel_range: tuple[int, int] = (None, None),
     ):
         self.set_actors(actors)
         self.set_genres(genres)
@@ -450,7 +450,7 @@ class Query:
         self.set_document_type(document_type)
         self.set_studio(studio)
         self.set_copyright_year_range(copyright_year_range[0], copyright_year_range[1])
-        self.set_duration_range(duration_range[0], duration_range[1])
+        self.set_reel_range(reel_range[0], reel_range[1])
 
         self.viewed_documents = []
         self.query_time = datetime.datetime.now()
@@ -460,9 +460,9 @@ class Query:
         self.copyright_year_range = (start, end)
         return self
 
-    def set_duration_range(self, start: int, end: int) -> Self:
+    def set_reel_range(self, start: int, end: int) -> Self:
         """Sets the duration range of the query"""
-        self.duration_range = (start, end)
+        self.reel_range = (start, end)
         return self
 
     def set_actors(self, actors: list[str]) -> Self:
