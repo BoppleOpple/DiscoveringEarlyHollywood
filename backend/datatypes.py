@@ -1,12 +1,7 @@
 """A collection of classes and types for storing document, query, and user data"""
 
 import datetime
-from pathlib import Path
 from typing import Any, Self, Union
-
-# removing this for now, i think this should be handled by the db anyway
-# class User:
-#     name: str = None
 
 
 class Flag:
@@ -151,9 +146,6 @@ class Document:
 
     Parameters
     ----------
-    documentDir: Path
-        Te path to the directory containing document PDFs
-
     id: str, default = None
         The id of the related document
 
@@ -213,7 +205,6 @@ class Document:
 
     def __init__(
         self,
-        documentDir: Path,
         id: str = None,
         studio: str = None,
         title: str = None,

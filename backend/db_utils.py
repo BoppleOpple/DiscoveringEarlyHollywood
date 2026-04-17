@@ -282,7 +282,6 @@ def search_results(
 
             documents: list[Document] = [
                 Document(
-                    None,  # TODO
                     id=documentQuery[0],
                     studio=documentQuery[2],
                     title=documentQuery[3],
@@ -858,7 +857,6 @@ def get_documents(conn: connection, doc_ids: list[str]) -> str:
         uploaded_time: str = document_row[6]
 
         documents[id] = Document(
-            None,  # TODO
             id=id,
             studio=studio,
             title=title,
