@@ -1,7 +1,7 @@
 """A collection of classes and types for storing document, query, and user data"""
 
 import datetime
-from typing import Any, Self, Union
+from typing import Self, Union
 
 
 class Flag:
@@ -184,9 +184,6 @@ class Document:
 
     Attributes
     ----------
-    images: list[Any]
-        Not yet implemented
-
     transcripts: list[tuple[int, str]]
         A list of the text of each page, in order
 
@@ -197,7 +194,6 @@ class Document:
         A `Metadata` object containing all additional data associated with this document
     """
 
-    images: list[Any] = None
     transcripts: list[tuple[int, str]] = []
     flags: Union[list[Flag], None] = None
 
@@ -232,8 +228,6 @@ class Document:
             locations,
             genres,
         )
-        # TODO load images automatically
-        self.images = None
 
         self.transcripts = transcripts if transcripts else []
         self.flags = flags if flags else []

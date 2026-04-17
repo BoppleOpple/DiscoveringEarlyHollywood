@@ -8,6 +8,8 @@ from flask import (
     session,
     g,
     send_file,
+    flash,
+    redirect,
 )
 import psycopg2
 from dotenv import load_dotenv
@@ -204,11 +206,14 @@ def create_app(flask_constructor_options: dict = None, **kwargs) -> Flask:
             db_utils.get_db_connection(), query
         )
 
+        if len(ids) > app.config["MAX_CSV_ROWS"]:
+            flash(
+                f"Query is too large to download. The maximum number of documents is {app.config["MAX_CSV_ROWS"]}",  # noqa: E501
+                "error",
+            )
+            return redirect(url_for("index", **request.args))
+
         csv_body: str = db_utils.get_documents_as_csv(db_utils.get_db_connection(), ids)
-
-        print(search)
-
-        return "Not Implemented", 200
 
         return send_file(
             BytesIO(csv_body.encode("utf-8")),
@@ -235,6 +240,9 @@ if __name__ == "__main__":
             os.environ["POPPLER_PATH"] if "POPPLER_PATH" in os.environ else None
         ),
         RESULTS_PER_PAGE=20,
+        MAX_CSV_ROWS=(
+            int(os.environ["MAX_CSV_ROWS"]) if "MAX_CSV_ROWS" in os.environ else 500
+        ),
     )
 
     app.run(debug=True, port=5000)

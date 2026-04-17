@@ -180,7 +180,7 @@ def execute_document_query(
         sqlLines.append(
             sql.SQL("AND id in ( {} )").format(
                 relation_from_id_to_all_values(
-                    "document_id", "actor_name", "has_actor", query.actors
+                    "document_id", "actor_name", "has_character", query.actors
                 )
             )
         )
@@ -283,7 +283,7 @@ def search_results(
             for document in documents:
                 cur.execute(
                     "SELECT actor_name \
-                    FROM has_actor \
+                    FROM has_character \
                     WHERE document_id=%s;",
                     [document.id],
                 )
@@ -383,11 +383,11 @@ def get_search_result_ids(conn: connection, query: Query) -> list[str]:
                 prefix=sql.SQL("SELECT id"),
             )
 
-            result: tuple = cur.fetchone()
+            result: tuple = cur.fetchall()
 
         # set `count` to the number of results if any exist, otherwise 0
         if result:
-            ids = list(result)
+            ids = [row[0] for row in result]
 
         conn.commit()
     except psycopg2.errors.ObjectNotInPrerequisiteState as e:
@@ -810,7 +810,7 @@ def get_documents(conn: connection, doc_ids: list[str]) -> str:
     transcript_data: list[tuple] = None
     actor_data: list[tuple] = None
     genre_data: list[tuple] = None
-    tag_data: list[tuple] = None
+    location_data: list[tuple] = None
     flag_data: list[tuple] = None
     cur: cursor = None
 
@@ -837,8 +837,8 @@ def get_documents(conn: connection, doc_ids: list[str]) -> str:
         transcript_data = cur.fetchall()
 
         cur.execute(
-            "SELECT document_id, actor_name \
-            FROM has_actor \
+            "SELECT document_id, actor_name, character_name, character_description \
+            FROM has_character \
             WHERE document_id IN %s;",
             [cleaned_ids],
         )
@@ -855,13 +855,13 @@ def get_documents(conn: connection, doc_ids: list[str]) -> str:
         genre_data = cur.fetchall()
 
         cur.execute(
-            "SELECT document_id, tag \
-            FROM has_tag \
+            "SELECT document_id, location, description \
+            FROM has_location \
             WHERE document_id IN %s;",
             [cleaned_ids],
         )
 
-        tag_data = cur.fetchall()
+        location_data = cur.fetchall()
 
         cur.execute(
             "SELECT document_id, user_name, error_location, error_description \
@@ -897,6 +897,10 @@ def get_documents(conn: connection, doc_ids: list[str]) -> str:
             reel_count=reel_count,
             uploaded_time=uploaded_time,
             uploaded_by=uploaded_by,
+            transcripts=[],
+            actors=[],
+            genres=[],
+            locations=[],
         )
 
     # include transcript data
@@ -923,12 +927,13 @@ def get_documents(conn: connection, doc_ids: list[str]) -> str:
 
         documents[id].genres.append(genre)
 
-    # include tag data
-    for tag_row in tag_data:
-        id: str = tag_row[0]
-        tag: str = tag_row[1]
+    # include location data
+    for location_row in location_data:
+        id: str = location_row[0]
+        name: str = location_row[1]
+        description: str = location_row[2]
 
-        documents[id].tags.append(tag)
+        documents[id].locations.append({"name": name, "description": description})
 
     # include flag data
     for flag_row in flag_data:
@@ -1005,7 +1010,7 @@ def get_documents_as_csv(conn: connection, doc_ids: list[str]) -> str:
                 "transcript",
                 "actors",
                 "genres",
-                "tags",
+                "locations",
             ]
         )
         + "\n"
@@ -1023,9 +1028,19 @@ def get_documents_as_csv(conn: connection, doc_ids: list[str]) -> str:
                     _clean_csv_value(doc.uploaded_by),
                     _clean_csv_value(str(doc.uploaded_time)),
                     _clean_csv_value(doc.content),
-                    _clean_csv_value(";".join(doc.actors)),
+                    _clean_csv_value(
+                        ";".join([actor for actor in doc.actors if actor])
+                    ),
                     _clean_csv_value(";".join(doc.genres)),
-                    _clean_csv_value(";".join(doc.tags)),
+                    _clean_csv_value(
+                        ";".join(
+                            [
+                                location["name"]
+                                for location in doc.locations
+                                if location["name"]
+                            ]
+                        )
+                    ),
                 ]
             )
             + "\n"
