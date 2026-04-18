@@ -5,7 +5,7 @@
 {% block content %}
 <div class="min-h-screen p-6 max-w-7xl mx-auto">
     <div class="mb-6">
-        <a href="{{ url_for('index') }}" 
+        <a id="flagged-documents-back-link" name="flagged-documents-back-link" href="{{ url_for('index') }}" 
            class="inline-block mb-4 border-2 border-[#8B0000] text-[#8B0000] hover:bg-[#8B0000] hover:text-white py-2 px-4 rounded transition-colors">
             ← Back to Search
         </a>
@@ -36,7 +36,7 @@
                     </div>
                     <div class="flex-1">
                         <div class="flex items-start justify-between">
-                            <a href="{{ url_for('document.document_detail', doc_id=doc.id) }}" 
+                            <a id="flagged-document-link-{{ doc.id }}" name="flagged-document-link-{{ doc.id }}" href="{{ url_for('document.document_detail', doc_id=doc.id) }}" 
                                class="text-left flex-1 group">
                                 <h3 class="text-[#800080] text-lg font-medium mb-2 group-hover:underline">
                                     {{ doc.title }}
@@ -54,7 +54,7 @@
                                     <span class="text-[#666666]">{{ doc.document_type or 'Document' }}</span>
                                 </div>
                             </a>
-                            <button onclick="toggleFlags('{{ doc.id }}')" 
+                            <button id="flagged-document-toggle-btn-{{ doc.id }}" name="flagged-document-toggle-btn-{{ doc.id }}" onclick="toggleFlags('{{ doc.id }}')" 
                                     class="ml-4 flex items-center gap-2 px-4 py-2 bg-[#8B0000] text-white rounded hover:bg-[#A52A2A] transition-colors">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"/>
