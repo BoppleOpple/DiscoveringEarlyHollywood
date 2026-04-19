@@ -162,8 +162,14 @@
                     <tbody class="divide-y-2">
                         {% for actor in document.actors %}
                         <tr class="text-[#2C2C2C]">
-                            <td>{{ actor["actor_name"] if actor["actor_name"] else "Unspecified" }}</td>
-                            <td>{{ actor["character_name"] if actor["character_name"] else "" }}</td>
+                            <td class="actor_name_cell">
+                                {% if actor["actor_name"] %}
+                                    <a href="{{ url_for('index', search=actor['actor_name']|tojson ) }}" class="text-[#2c2caa] underline">{{ actor["actor_name"] if actor["actor_name"] }}</a>
+                                {% else %}
+                                    Unspecified
+                                {% endif %}
+                            </td>
+                            <td class="character_name_cell">{{ actor["character_name"] if actor["character_name"] else "" }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
