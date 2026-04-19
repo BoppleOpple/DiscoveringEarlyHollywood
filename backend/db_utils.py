@@ -565,7 +565,7 @@ def find_matching_search(
     tags: list[str] | None,
     search_text: str | None,
 ) -> int | None:
-    """Insert one row into ``search_history`` and return its ``id``."""
+    """Find a row in the ``search_history`` table patching the provided query parameters."""
 
     query_parts: list[sql.SQL] = [
         sql.SQL(
