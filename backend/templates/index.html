@@ -38,6 +38,19 @@
                 </div>
             </div>
 
+            <div>
+                <label class="text-[#2C2C2C] block mb-2">
+                    Reel Range
+                </label>
+                <div class="flex">
+                    <input type="number" name="reel_min" min="0" value="{{ reel_min }}" 
+                           class="w-full accent-[#8B0000] mr-2 rounded-lg px-2" placeholder="min">
+                    <span class="text-[#666666] float-right">to</span>
+                    <input type="number" name="reel_max" min="0" value="{{ reel_max }}" 
+                           class="w-full accent-[#8B0000] ml-2 rounded-lg px-2" placeholder="max">
+                </div>
+            </div>
+
             <!-- <div>
                 <label class="text-[#2C2C2C] block mb-2">
                     Genre
@@ -61,13 +74,18 @@
 
     <!-- Main Content - Document List -->
     <main class="flex-1 p-6">
-        <div class="mb-6">
-            <h2 class="text-[#2C2C2C] text-xl font-medium">
-                Copyright Documents from Early Hollywood
-            </h2>
-            <p class="text-[#666666] mt-1">
-                {{ num_results }} documents found
-            </p>
+        <div class="mb-6 w-full flex justify-between">
+            <div>
+                <h2 class="text-[#2C2C2C] text-xl font-medium">
+                    Copyright Documents from Early Hollywood
+                </h2>
+                <p class="text-[#666666] mt-1">
+                    {{ num_results }} documents found
+                </p>
+            </div>
+            <a href="{{ url_for('download_query_as_csv', **request.args) }}" class="w-fit h-fit bg-[#2C2C2C] hover:bg-[#8B0000] text-white py-2 px-4 rounded transition-colors">
+                Download as CSV
+            </a>
         </div>
 
         <div class="space-y-4">
@@ -99,9 +117,9 @@
                         <p class="text-[#666666] mb-3">No transcript available.</p>
                         {% endif %}
                         <div class="flex gap-4">
-                            <span class="text-[#2B6CB0]">{{ doc.copyrightYear }}</span>
+                            <span class="text-[#2B6CB0]">{{ doc.copyright_year }}</span>
                             <span class="text-[#666666]">•</span>
-                            <span class="text-[#666666]">{{ doc.documentType }}</span>
+                            <span class="text-[#666666]">{{ doc.document_type }}</span>
                         </div>
                     </div>
                 </div>

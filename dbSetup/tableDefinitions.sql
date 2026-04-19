@@ -3,15 +3,11 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 -- ENTITY SETS
 
 CREATE TABLE actors (
-    name varchar(100) PRIMARY KEY
+    name text PRIMARY KEY
 );
 
 CREATE TABLE genres (
     genre varchar(50) PRIMARY KEY
-);
-
-CREATE TABLE tags (
-    tag varchar(50) PRIMARY KEY
 );
 
 CREATE TABLE users (
@@ -26,7 +22,11 @@ CREATE TABLE documents (
     copyright_year integer,
     studio text,
     title text,
+    producer text,
+    writer text,
     reel_count integer,
+    series text,
+    document_type text,
     uploaded_by varchar(20),
     uploaded_time timestamp,
     CONSTRAINT fk_uploaded_by FOREIGN KEY (uploaded_by) REFERENCES users(name)
@@ -47,6 +47,8 @@ CREATE TABLE search_history (
     "time" timestamp NOT NULL DEFAULT NOW(),
     start_year integer,
     end_year integer,
+    min_reels integer,
+    max_reels integer,
     studio text,
     actors text,
     genres text,
@@ -83,13 +85,22 @@ CREATE TABLE view_history (
     CONSTRAINT fk_view_history_search FOREIGN KEY (search_id) REFERENCES search_history(id) ON DELETE SET NULL
 );
 
-CREATE TABLE has_actor (
+CREATE TABLE has_character (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     document_id varchar(15),
-    actor_name varchar(100),
-    role varchar(50),
+    character_name text,
+    actor_name text,
+    character_description text,
     CONSTRAINT fk_document_id FOREIGN KEY (document_id) REFERENCES documents(id),
-    CONSTRAINT fk_actor_name FOREIGN KEY (actor_name) REFERENCES actors(name),
-    PRIMARY KEY (document_id, actor_name)
+    CONSTRAINT fk_actor_name FOREIGN KEY (actor_name) REFERENCES actors(name)
+);
+
+CREATE TABLE has_location (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    document_id varchar(15),
+    "location" text,
+    "description" text,
+    CONSTRAINT fk_document_id FOREIGN KEY (document_id) REFERENCES documents(id)
 );
 
 CREATE TABLE has_genre (
@@ -100,19 +111,15 @@ CREATE TABLE has_genre (
     PRIMARY KEY (document_id, genre)
 );
 
-CREATE TABLE has_tag (
-    document_id varchar(15),
-    tag varchar(50),
-    CONSTRAINT fk_document_id FOREIGN KEY (document_id) REFERENCES documents(id),
-    CONSTRAINT fk_tag FOREIGN KEY (tag) REFERENCES tags(tag),
-    PRIMARY KEY (document_id, tag)
-);
 
 -- OTHER
 
 CREATE INDEX idx_studio ON documents(studio);
 CREATE INDEX idx_copyright_year ON documents(copyright_year);
 CREATE INDEX idx_title ON documents(title);
+CREATE INDEX idx_actor ON has_character(actor_name);
+CREATE INDEX idx_has_character_document_id ON has_character(document_id);
+CREATE INDEX idx_has_location_document_id ON has_location(document_id);
 CREATE INDEX idx_search_history_user_time ON search_history(user_name, "time" DESC);
 CREATE INDEX idx_view_history_user_time ON view_history(user_name, viewed_at DESC);
 CREATE INDEX idx_view_history_search_id ON view_history(search_id);
@@ -132,5 +139,5 @@ CREATE MATERIALIZED VIEW text_search_view AS (
         setweight(to_tsvector(coalesce(text_content_view.content,'')), 'B') AS text_vector
     FROM documents, text_content_view
     WHERE documents.id = text_content_view.document_id
-    GROUP BY id
+    GROUP BY id, text_content_view.content
 ) WITH NO DATA;

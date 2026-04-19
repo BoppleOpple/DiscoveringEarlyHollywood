@@ -13,17 +13,30 @@ from backend.datatypes import Document, Flag
 @pytest.fixture
 def example_document() -> Document:
     return Document(
-        None,
         id="s1234l56789",
         studio="MGM",
         title="A great movie",
-        documentType="synopsis",
-        copyrightYear=1920,
-        reelCount=4,
-        uploadedTime=datetime.now(),
-        uploadedBy="admin_user",
-        actors=["Kayla Morris", "Greg Morris"],
-        tags=["foo", "bar"],
+        document_type="synopsis",
+        copyright_year=1920,
+        reel_count=4,
+        uploaded_time=datetime.now(),
+        uploaded_by="admin_user",
+        actors=[
+            {
+                "actor_name": "Grace Mason",
+                "character_name": "Kayla Morris",
+                "character_description": "wealthy wife of Greg",
+            },
+            {
+                "actor_name": "Tom Scott",
+                "character_name": "Greg Morris",
+                "character_description": None,
+            },
+        ],
+        locations=[
+            {"name": "mansion", "description": "the Morris home"},
+            {"name": "mdocksn", "description": None},
+        ],
         genres=["drama", "horror"],
         transcripts=[(1, "S1234L56789"), (2, "document body"), (3, "copyright page")],
         flags=[
@@ -156,16 +169,20 @@ class TestDocumentDetail:
         assert example_document.id in response.text
         assert example_document.studio in response.text
         assert example_document.title in response.text
-        assert example_document.documentType in response.text
-        assert str(example_document.copyrightYear) in response.text
-        assert str(example_document.reelCount) in response.text
-        assert str(example_document.uploadedTime) in response.text
+        assert example_document.document_type in response.text
+        assert str(example_document.copyright_year) in response.text
+        assert str(example_document.reel_count) in response.text
+        assert str(example_document.uploaded_time) in response.text
 
         for genre in example_document.genres:
             assert genre in response.text
 
         for actor in example_document.actors:
-            assert actor in response.text
+            if actor["actor_name"]:
+                assert actor["actor_name"] in response.text
+
+            if actor["character_name"]:
+                assert actor["character_name"] in response.text
 
         for page, text in example_document.transcripts:
             assert text in response.text
@@ -349,7 +366,7 @@ class TestDownloadCSV:
         doc_id: str = "s1229l00001"
         csv_data: str = "foobar"
         expected_bytes: bytes = csv_data.encode("utf-8")
-        mock_document: Document = Document(None, id=doc_id, title="Document 1")
+        mock_document: Document = Document(id=doc_id, title="Document 1")
 
         mocker.patch("backend.db_utils.get_document", return_value=mock_document)
         mock_get_documents_as_csv: MockType = mocker.patch(

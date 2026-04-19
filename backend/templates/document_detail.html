@@ -95,7 +95,7 @@
                     <div class="flex-shrink-0">
                         <a id="document-preview-pdf-link" name="document-preview-pdf-link" href="{{ url_for('document.download_pdf', doc_id=document.id, download=False) }}">
                             <div class="w-64 min-h-32 bg-[#F5F5F0] border-2 border-[#CCCCCC] rounded-lg flex items-center justify-center overflow-hidden">
-                                <img class="grow" src="{{ url_for('document.thumbnail', doc_id=document.id, page=page+1) }}" alt="Thumbnail could not be loaded">
+                                <img class="grow" src="{{ url_for('document.thumbnail', doc_id=document.id, page=page) }}" alt="Thumbnail could not be loaded">
                                 <!-- <div class="text-center">
                                     <svg class="w-24 h-24 text-[#666666] mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" 
@@ -105,14 +105,14 @@
                                         Copyright Document
                                     </p>
                                     <p class="text-[#666666] mt-1">
-                                        {{ document.copyrightYear }}
+                                        {{ document.copyright_year }}
                                     </p>
                                 </div> -->
                             </div>
                         </a>
                     </div>
                 </td>
-                <td class="pt-2 pb-2">{{ text }}</td>
+                <td class="pt-2 pb-2 p-3">{{ text }}</td>
             </tr>
             {% endfor %}
         </table>
@@ -125,7 +125,7 @@
                 <div class="space-y-2">
                     <div class="flex">
                         <span class="text-[#666666] w-24">Year:</span>
-                        <span class="text-[#2C2C2C]">{{ document.copyrightYear }}</span>
+                        <a href="{{ url_for('index', year_min=document.copyright_year, year_max=document.copyright_year) }}" class="text-[#2c2caa] underline">{{ document.copyright_year }}</a>
                     </div>
                     <div class="flex">
                         <span class="text-[#666666] w-24">Studio:</span>
@@ -141,22 +141,39 @@
                     </div> -->
                     <div class="flex">
                         <span class="text-[#666666] w-24">Reels:</span>
-                        <span class="text-[#2C2C2C]">{{ document.reelCount }}</span>
+                        <a href="{{ url_for('index', reel_min=document.reel_count, reel_max=document.reel_count) }}" class="text-[#2c2caa] underline">{{ document.reel_count }}</a>
                     </div>
                     <div class="flex">
                         <span class="text-[#666666] w-24">Uploaded:</span>
-                        <span class="text-[#2C2C2C]">{{ document.uploadedTime }}</span>
+                        <span class="text-[#2C2C2C]">{{ document.uploaded_time }}</span>
                     </div>
                 </div>
             </div>
 
             <div>
-                <h4 class="text-[#2C2C2C] font-medium mb-3">Cast</h4>
-                <div class="space-y-1">
-                    {% for actor in document.actors %}
-                    <p class="text-[#2C2C2C]">{{ actor }}</p>
-                    {% endfor %}
-                </div>
+                <table class="w-full">
+                    <thead class="border-b-4">
+                        <tr>
+                            <th>Actor</th>
+                            <th>Role</th>
+                        </tr>
+                    </thead>
+
+                    <tbody class="divide-y-2">
+                        {% for actor in document.actors %}
+                        <tr class="text-[#2C2C2C]">
+                            <td class="actor_name_cell">
+                                {% if actor["actor_name"] %}
+                                    <a href="{{ url_for('index', search=actor['actor_name']|tojson ) }}" class="text-[#2c2caa] underline">{{ actor["actor_name"] if actor["actor_name"] }}</a>
+                                {% else %}
+                                    Unspecified
+                                {% endif %}
+                            </td>
+                            <td class="character_name_cell">{{ actor["character_name"] if actor["character_name"] else "" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
 
             <div class="col-span-2 mt-4">
@@ -166,11 +183,12 @@
                 <div class="flex gap-8">
                     <div class="flex">
                         <span class="text-[#666666] w-32">Document Type:</span>
-                        <span class="text-[#2C2C2C]">{{ document.documentType }}</span>
+                        <span class="text-[#2C2C2C]">{{ document.document_type }}</span>
+                        <!-- <a href="{{ url_for('index', document_type=document_type) }}" class="text-[#2C2C2C]">{{ document.document_type }}</a> -->
                     </div>
                     <div class="flex">
                         <span class="text-[#666666] w-32">Registration Date:</span>
-                        <span class="text-[#2C2C2C]">{{ document.copyrightYear }}</span>
+                        <a href="{{ url_for('index', year_min=document.copyright_year, year_max=document.copyright_year) }}" class="text-[#2c2caa] underline">{{ document.copyright_year }}</a>
                     </div>
                 </div>
             </div>

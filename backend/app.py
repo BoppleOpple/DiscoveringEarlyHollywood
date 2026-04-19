@@ -7,9 +7,13 @@ from flask import (
     url_for,
     session,
     g,
+    send_file,
+    flash,
+    redirect,
 )
 import psycopg2
 from dotenv import load_dotenv
+from io import BytesIO
 
 from . import db_utils
 from .datatypes import Document, Query
@@ -36,8 +40,10 @@ def _print_kwargs(**kwargs):
     print(kwargs)
 
 
-def create_app(**kwargs) -> Flask:
-    app: Flask = Flask(__name__)
+def create_app(flask_constructor_options: dict = None, **kwargs) -> Flask:
+    if flask_constructor_options is None:
+        flask_constructor_options = {}
+    app: Flask = Flask(__name__, subdomain_matching=True, **flask_constructor_options)
 
     app.config.update(**kwargs)
 
@@ -85,18 +91,19 @@ def create_app(**kwargs) -> Flask:
         search = request.args.get("search", "")
         year_min: int = request.args.get("year_min", 1912, type=int)
         year_max: int = request.args.get("year_max", 1928, type=int)
+        reel_min: int = request.args.get("reel_min", None, type=int)
+        reel_max: int = request.args.get("reel_max", None, type=int)
         page: int = request.args.get("page", 1, type=int)
 
         query: Query = Query(
             actors=[],  # TODO
-            tags=[],  # TODO
             keywords=list(
                 filter(lambda s: s != "", search.split(" ")) if search else []
-            ),  # TODO allow searching both titles and transcripts
-            documentType=None,  # TODO
+            ),
+            document_type=None,  # TODO
             studio=None,  # TODO
-            copyrightYearRange=(year_min, year_max),  # TODO allow a start & end value
-            durationRange=(None, None),  # TODO
+            copyright_year_range=(year_min, year_max),
+            reel_range=(reel_min, reel_max),
         )
 
         num_results = db_utils.get_num_results(
@@ -126,13 +133,29 @@ def create_app(**kwargs) -> Flask:
             replay_search_id: int | None = request.args.get(
                 "replay_search_id", type=int
             )
-            replay_entry = (
-                db_utils.get_search_history_entry(
+
+            if replay_search_id is None:
+                replay_search_id = db_utils.find_matching_search(
+                    db_utils.get_db_connection(),
+                    user_name=user_name,
+                    start_year=year_min if "year_min" in request.args else None,
+                    end_year=year_max if "year_max" in request.args else None,
+                    min_reels=reel_min,
+                    max_reels=reel_max,
+                    studio=None,  # TODO wire studio filter when available
+                    actors=[],
+                    genres=[],
+                    tags=[],
+                    search_text=search,
+                )
+
+                print(replay_search_id)
+
+            replay_entry: dict | None = None
+            if replay_search_id is not None:
+                replay_entry = db_utils.get_search_history_entry(
                     db_utils.get_db_connection(), user_name, replay_search_id
                 )
-                if replay_search_id is not None
-                else None
-            )
 
             # load from previous search if it is a repeat
             if replay_entry:
@@ -151,6 +174,8 @@ def create_app(**kwargs) -> Flask:
                             user_name=user_name,
                             start_year=year_min if "year_min" in request.args else None,
                             end_year=year_max if "year_max" in request.args else None,
+                            min_reels=reel_min,
+                            max_reels=reel_max,
                             studio=None,  # TODO wire studio filter when available
                             actors=[],
                             genres=[],
@@ -167,6 +192,8 @@ def create_app(**kwargs) -> Flask:
             search=search,
             year_min=year_min,
             year_max=year_max,
+            reel_min=reel_min,
+            reel_max=reel_max,
             page=page,
             num_results=num_results,
             results_per_page=app.config["RESULTS_PER_PAGE"],
@@ -179,6 +206,43 @@ def create_app(**kwargs) -> Flask:
     def flagged_documents():
         flagged = db_utils.get_flagged(db_utils.get_db_connection())
         return render_template("flagged_documents.html", documents=flagged)
+
+    @app.route("/download_query")
+    def download_query_as_csv():
+        search: str = request.args.get("search", "")
+        year_min: int = request.args.get("year_min", 1912, type=int)
+        year_max: int = request.args.get("year_max", 1928, type=int)
+
+        query: Query = Query(
+            actors=[],  # TODO
+            keywords=list(
+                filter(lambda s: s != "", search.split(" ")) if search else []
+            ),
+            document_type=None,  # TODO
+            studio=None,  # TODO
+            copyright_year_range=(year_min, year_max),  # TODO allow a start & end value
+            reel_range=(None, None),  # TODO
+        )
+
+        ids: list[str] = db_utils.get_search_result_ids(
+            db_utils.get_db_connection(), query
+        )
+
+        if len(ids) > app.config["MAX_CSV_ROWS"]:
+            flash(
+                f"Query is too large to download. The maximum number of documents is {app.config["MAX_CSV_ROWS"]}",  # noqa: E501
+                "error",
+            )
+            return redirect(url_for("index", **request.args))
+
+        csv_body: str = db_utils.get_documents_as_csv(db_utils.get_db_connection(), ids)
+
+        return send_file(
+            BytesIO(csv_body.encode("utf-8")),
+            mimetype="text/csv",
+            as_attachment=True,
+            download_name="query.csv",
+        )
 
     return app
 
@@ -198,6 +262,9 @@ if __name__ == "__main__":
             os.environ["POPPLER_PATH"] if "POPPLER_PATH" in os.environ else None
         ),
         RESULTS_PER_PAGE=20,
+        MAX_CSV_ROWS=(
+            int(os.environ["MAX_CSV_ROWS"]) if "MAX_CSV_ROWS" in os.environ else 500
+        ),
     )
 
     app.run(debug=True, port=5000)
