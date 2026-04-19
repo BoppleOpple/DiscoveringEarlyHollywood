@@ -551,6 +551,67 @@ def _search_label(
     return ", ".join(parts) if parts else "All documents"
 
 
+def find_matching_search(
+    conn: connection,
+    *,
+    user_name: str,
+    start_year: int | None,
+    end_year: int | None,
+    min_reels: int | None,
+    max_reels: int | None,
+    studio: str | None,
+    actors: list[str] | None,
+    genres: list[str] | None,
+    tags: list[str] | None,
+    search_text: str | None,
+) -> int | None:
+    """Insert one row into ``search_history`` and return its ``id``."""
+
+    query_parts: list[sql.SQL] = [
+        sql.SQL(
+            """
+            SELECT id FROM search_history
+            WHERE user_name = {}"""
+        ).format(sql.Literal(user_name))
+    ]
+
+    column_values: dict = {
+        "user_name": user_name,
+        "start_year": start_year,
+        "end_year": end_year,
+        "min_reels": min_reels,
+        "max_reels": max_reels,
+        "studio": studio,
+        "actors": _csv(actors),
+        "genres": _csv(genres),
+        "tags": _csv(tags),
+        "search_text": (
+            search_text.strip() if search_text and search_text.strip() else None
+        ),
+    }
+
+    for column, value in column_values.items():
+        if value is not None:
+            query_parts.append(
+                sql.SQL("AND {} = {}").format(
+                    sql.Identifier(column), sql.Literal(value)
+                )
+            )
+        else:
+            query_parts.append(sql.SQL("AND {} IS NULL").format(sql.Identifier(column)))
+
+    query_parts.append(sql.SQL(";"))
+
+    with conn.cursor() as cur:
+        cur.execute(sql.SQL("\n").join(query_parts))
+        result: tuple = cur.fetchone()
+
+    search_id: int = result[0] if result else None
+    conn.commit()
+
+    return search_id
+
+
 def log_search(
     conn: connection,
     *,

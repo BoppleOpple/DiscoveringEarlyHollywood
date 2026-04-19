@@ -133,13 +133,29 @@ def create_app(flask_constructor_options: dict = None, **kwargs) -> Flask:
             replay_search_id: int | None = request.args.get(
                 "replay_search_id", type=int
             )
-            replay_entry = (
-                db_utils.get_search_history_entry(
+
+            if replay_search_id is None:
+                replay_search_id = db_utils.find_matching_search(
+                    db_utils.get_db_connection(),
+                    user_name=user_name,
+                    start_year=year_min if "year_min" in request.args else None,
+                    end_year=year_max if "year_max" in request.args else None,
+                    min_reels=reel_min,
+                    max_reels=reel_max,
+                    studio=None,  # TODO wire studio filter when available
+                    actors=[],
+                    genres=[],
+                    tags=[],
+                    search_text=search,
+                )
+
+                print(replay_search_id)
+
+            replay_entry: dict | None = None
+            if replay_search_id is not None:
+                replay_entry = db_utils.get_search_history_entry(
                     db_utils.get_db_connection(), user_name, replay_search_id
                 )
-                if replay_search_id is not None
-                else None
-            )
 
             # load from previous search if it is a repeat
             if replay_entry:
