@@ -9,7 +9,7 @@ class TestQuery:
         resultQuery = Query()
 
         # Act
-        resultQuery.setKeywords(["comedy", "drama"])
+        resultQuery.set_keywords(["comedy", "drama"])
 
         # Assert
         assert resultQuery.keywords == expectedQuery.keywords
@@ -20,32 +20,32 @@ class TestQuery:
         resultQuery = Query()
 
         # Act
-        resultQuery.addKeyword("drama")
+        resultQuery.add_keyword("drama")
 
         # Assert
         assert resultQuery.keywords == expectedQuery.keywords
 
     def test_set_copyright_year_range(self):
         # Arrange
-        expectedQuery = Query(copyrightYearRange=(1915, 1925))
+        expectedQuery = Query(copyright_year_range=(1915, 1925))
         resultQuery = Query()
 
         # Act
-        resultQuery.setCopyrightYearRange(1915, 1925)
+        resultQuery.set_copyright_year_range(1915, 1925)
 
         # Assert
-        assert resultQuery.copyrightYearRange == expectedQuery.copyrightYearRange
+        assert resultQuery.copyright_year_range == expectedQuery.copyright_year_range
 
-    def test_set_duration_range(self):
+    def test_set_reel_range(self):
         # Arrange
-        expectedQuery = Query(durationRange=(5, 10))
+        expectedQuery = Query(reel_range=(5, 10))
         resultQuery = Query()
 
         # Act
-        resultQuery.setDurationRange(5, 10)
+        resultQuery.set_reel_range(5, 10)
 
         # Assert
-        assert resultQuery.durationRange == expectedQuery.durationRange
+        assert resultQuery.reel_range == expectedQuery.reel_range
 
     def test_set_actors(self):
         # Arrange
@@ -53,7 +53,7 @@ class TestQuery:
         resultQuery = Query()
 
         # Act
-        resultQuery.setActors(["Charlie Chaplin", "Buster Keaton"])
+        resultQuery.set_actors(["Charlie Chaplin", "Buster Keaton"])
 
         # Assert
         assert resultQuery.actors == expectedQuery.actors
@@ -64,32 +64,10 @@ class TestQuery:
         resultQuery = Query()
 
         # Act
-        resultQuery.addActor("Walter Goggins")
+        resultQuery.add_actor("Walter Goggins")
 
         # Assert
         assert resultQuery.actors == expectedQuery.actors
-
-    def test_set_tags(self):
-        # Arrange
-        expectedQuery = Query(tags=["New", "Old"])
-        resultQuery = Query()
-
-        # Act
-        resultQuery.setTags(["New", "Old"])
-
-        # Assert
-        assert resultQuery.tags == expectedQuery.tags
-
-    def test_add_tags(self):
-        # Arrange
-        expectedQuery = Query(tags=["Old"])
-        resultQuery = Query()
-
-        # Act
-        resultQuery.addTag("Old")
-
-        # Assert
-        assert resultQuery.tags == expectedQuery.tags
 
     def test_set_genres(self):
         # Arrange
@@ -97,7 +75,7 @@ class TestQuery:
         resultQuery = Query()
 
         # Act
-        resultQuery.setGenres(["comedy", "drama"])
+        resultQuery.set_genres(["comedy", "drama"])
 
         # Assert
         assert resultQuery.genres == expectedQuery.genres
@@ -108,21 +86,21 @@ class TestQuery:
         resultQuery = Query()
 
         # Act
-        resultQuery.addGenre("Thriller")
+        resultQuery.add_genre("Thriller")
 
         # Assert
         assert resultQuery.genres == expectedQuery.genres
 
     def test_set_document_type(self):
         # Arrange
-        expectedQuery = Query(documentType="TestType")
+        expectedQuery = Query(document_type="TestType")
         resultQuery = Query()
 
         # Act
-        resultQuery.setDocumentType("TestType")
+        resultQuery.set_document_type("TestType")
 
         # Assert
-        assert resultQuery.documentType == expectedQuery.documentType
+        assert resultQuery.document_type == expectedQuery.document_type
 
     def test_set_studio(self):
         # Arrange
@@ -130,7 +108,7 @@ class TestQuery:
         resultQuery = Query()
 
         # Act
-        resultQuery.setStudio("Universal")
+        resultQuery.set_studio("Universal")
 
         # Assert
         assert resultQuery.studio == expectedQuery.studio
@@ -153,7 +131,6 @@ class TestDocument:
         constructorId = "s0000l11111"
         expectedId = "s2222l33333"
         doc = Document(
-            None,
             id=constructorId,
         )
 
@@ -169,7 +146,6 @@ class TestDocument:
         constructorStudio = "MGM"
         expectedStudio = "Ghibli"
         doc = Document(
-            None,
             studio=constructorStudio,
         )
 
@@ -184,7 +160,7 @@ class TestDocument:
         # Arrange
         constructorTitle = "Arsenic and Old Lace"
         expectedTitle = "Nosferatu"
-        doc = Document(None, title=constructorTitle)
+        doc = Document(title=constructorTitle)
 
         # Act
         doc.title = expectedTitle
@@ -193,86 +169,99 @@ class TestDocument:
         assert doc.metadata.title == expectedTitle
         assert doc.title == expectedTitle
 
-    def test_documentType(self):
+    def test_document_type(self):
         # Arrange
         constructorDocumentType = "script"
         expectedDocumentType = "synopsis"
-        doc = Document(None, documentType=constructorDocumentType)
+        doc = Document(document_type=constructorDocumentType)
 
         # Act
-        doc.documentType = expectedDocumentType
+        doc.document_type = expectedDocumentType
 
         # Assert
-        assert doc.metadata.documentType == expectedDocumentType
-        assert doc.documentType == expectedDocumentType
+        assert doc.metadata.document_type == expectedDocumentType
+        assert doc.document_type == expectedDocumentType
 
-    def test_copyrightYear(self):
+    def test_copyright_year(self):
         # Arrange
         constructorYear = 1901
         expectedYear = 1898
-        doc = Document(None, copyrightYear=constructorYear)
+        doc = Document(copyright_year=constructorYear)
 
         # Act
-        doc.copyrightYear = expectedYear
+        doc.copyright_year = expectedYear
 
         # Assert
-        assert doc.metadata.copyrightYear == expectedYear
-        assert doc.copyrightYear == expectedYear
+        assert doc.metadata.copyright_year == expectedYear
+        assert doc.copyright_year == expectedYear
 
-    def test_reelCount(self):
+    def test_reel_count(self):
         # Arrange
         constructorReelCount = 3
         expectedReelCount = 1
         doc = Document(
-            None,
-            reelCount=constructorReelCount,
+            reel_count=constructorReelCount,
         )
 
         # Act
-        doc.reelCount = expectedReelCount
+        doc.reel_count = expectedReelCount
 
         # Assert
-        assert doc.metadata.reelCount == expectedReelCount
-        assert doc.reelCount == expectedReelCount
+        assert doc.metadata.reel_count == expectedReelCount
+        assert doc.reel_count == expectedReelCount
 
-    def test_uploadedTime(self):
+    def test_uploaded_time(self):
         # Arrange
         constructorUploadedTime = datetime.datetime.fromisoformat("2025-12-22T14:51:11")
         expectedUploadedTime = datetime.datetime.fromisoformat("2025-12-22T14:51:11")
         doc = Document(
-            None,
-            uploadedTime=constructorUploadedTime,
+            uploaded_time=constructorUploadedTime,
         )
 
         # Act
-        doc.uploadedTime = expectedUploadedTime
+        doc.uploaded_time = expectedUploadedTime
 
         # Assert
-        assert doc.metadata.uploadedTime == expectedUploadedTime
-        assert doc.uploadedTime == expectedUploadedTime
+        assert doc.metadata.uploaded_time == expectedUploadedTime
+        assert doc.uploaded_time == expectedUploadedTime
 
-    def test_uploadedBy(self):
+    def test_uploaded_by(self):
         # Arrange
         constructorUploadedBy = "John_Doe"
         expectedUploadedBy = "The_Grinch"
         doc = Document(
-            None,
-            uploadedBy=constructorUploadedBy,
+            uploaded_by=constructorUploadedBy,
         )
 
         # Act
-        doc.uploadedBy = expectedUploadedBy
+        doc.uploaded_by = expectedUploadedBy
 
         # Assert
-        assert doc.metadata.uploadedBy == expectedUploadedBy
-        assert doc.uploadedBy == expectedUploadedBy
+        assert doc.metadata.uploaded_by == expectedUploadedBy
+        assert doc.uploaded_by == expectedUploadedBy
 
     def test_actors(self):
         # Arrange
-        constructorActors = ["Charlie Chaplin"]
-        expectedActors = ["Walter Goggins", "Brad Pitt"]
+        constructorActors = [
+            {
+                "actor_name": "Charlie Chaplin",
+                "character_name": "Adolf Hitler",
+                "character_description": "german dictator",
+            }
+        ]
+        expectedActors = [
+            {
+                "actor_name": "Walter Goggins",
+                "character_name": None,
+                "character_description": "a wealthy man",
+            },
+            {
+                "actor_name": "Brad Pitt",
+                "character_name": "Jason",
+                "character_description": None,
+            },
+        ]
         doc = Document(
-            None,
             actors=constructorActors,
         )
 
@@ -283,28 +272,28 @@ class TestDocument:
         assert doc.metadata.actors == expectedActors
         assert doc.actors == expectedActors
 
-    def test_tags(self):
+    def test_locations(self):
         # Arrange
-        constructorTags = ["influential"]
-        expectedTags = ["serial"]
+        constructorLocations = [
+            {"name": "courtyard", "description": "where the film begins"}
+        ]
+        expectedLocations = [{"name": "crypt", "description": "where the film ends"}]
         doc = Document(
-            None,
-            tags=constructorTags,
+            locations=constructorLocations,
         )
 
         # Act
-        doc.tags = expectedTags
+        doc.locations = expectedLocations
 
         # Assert
-        assert doc.metadata.tags == expectedTags
-        assert doc.tags == expectedTags
+        assert doc.metadata.locations == expectedLocations
+        assert doc.locations == expectedLocations
 
     def test_genres(self):
         # Arrange
         constructorGenres = ["drama"]
         expectedGenres = ["comedy", "commentary"]
         doc = Document(
-            None,
             genres=constructorGenres,
         )
 
@@ -322,7 +311,6 @@ class TestDocument:
 
         # Act
         doc = Document(
-            None,
             transcripts=inputContent,
         )
 

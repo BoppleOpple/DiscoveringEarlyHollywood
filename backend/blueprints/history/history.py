@@ -56,7 +56,7 @@ def download_history():
             [
                 doc["title"],
                 doc["year"],
-                doc["documentType"],
+                doc["document_type"],
                 doc["description"],
                 doc["viewedDate"],
                 doc["searchText"] or "",
@@ -74,6 +74,20 @@ def download_history():
         as_attachment=True,
         download_name="viewing-history.csv",
     )
+
+
+@history.route("/clear")
+def clear_history():
+    user_name = session.get("user")
+    if not user_name:
+        flash("Log in to clear your history.", "error")
+        return redirect(url_for("index"))
+
+    db_utils.clear_search_history(db_utils.get_db_connection(), user_name)
+    db_utils.clear_view_history(db_utils.get_db_connection(), user_name)
+
+    flash("Your search history has been cleared!.", "success")
+    return redirect(url_for("index"))
 
 
 @history.route("/history/replay/<int:search_id>")
@@ -98,5 +112,9 @@ def replay_search(search_id):
         query_args["year_min"] = search_entry["start_year"]
     if search_entry["end_year"] is not None:
         query_args["year_max"] = search_entry["end_year"]
+    if search_entry["min_reels"] is not None:
+        query_args["reel_min"] = search_entry["min_reels"]
+    if search_entry["max_reels"] is not None:
+        query_args["reel_max"] = search_entry["max_reels"]
 
     return redirect(url_for("index", **query_args))

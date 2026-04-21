@@ -107,7 +107,9 @@ HAVING COUNT(distinct document_id) >= 2")
 def execute_document_query(
     cursor: cursor,
     query: Query,
-    prefix: sql.SQL = sql.SQL("SELECT id, copyright_year, studio, title"),
+    prefix: sql.SQL = sql.SQL(
+        "SELECT id, copyright_year, studio, title, document_type"
+    ),
     suffix: sql.SQL = sql.SQL(";"),
     rankPages: bool = False,
 ):
@@ -150,19 +152,31 @@ def execute_document_query(
         )
 
     # handle filtering by minimum year
-    if query.copyrightYearRange[0] is not None:
+    if query.copyright_year_range[0] is not None:
         sqlLines.append(
             sql.SQL("AND copyright_year >= {}").format(
-                sql.Literal(query.copyrightYearRange[0])
+                sql.Literal(query.copyright_year_range[0])
             )
         )
 
     # handle filtering by maximum year
-    if query.copyrightYearRange[1] is not None:
+    if query.copyright_year_range[1] is not None:
         sqlLines.append(
             sql.SQL("AND copyright_year <= {}").format(
-                sql.Literal(query.copyrightYearRange[1])
+                sql.Literal(query.copyright_year_range[1])
             )
+        )
+
+    # handle filtering by minimum reel count
+    if query.reel_range[0] is not None:
+        sqlLines.append(
+            sql.SQL("AND reel_count >= {}").format(sql.Literal(query.reel_range[0]))
+        )
+
+    # handle filtering by maximum reel count
+    if query.reel_range[1] is not None:
+        sqlLines.append(
+            sql.SQL("AND reel_count <= {}").format(sql.Literal(query.reel_range[1]))
         )
 
     # handle filtering by studio/copyright holder
@@ -170,9 +184,9 @@ def execute_document_query(
         sqlLines.append(sql.SQL("AND studio = {}").format(sql.Literal(query.studio)))
 
     # handle filtering by document upload time
-    if query.queryTime:
+    if query.query_time:
         sqlLines.append(
-            sql.SQL("AND uploaded_time <= {}").format(sql.Literal(query.queryTime))
+            sql.SQL("AND uploaded_time <= {}").format(sql.Literal(query.query_time))
         )
 
     # handle filtering by actors (list of required actors)
@@ -180,17 +194,7 @@ def execute_document_query(
         sqlLines.append(
             sql.SQL("AND id in ( {} )").format(
                 relation_from_id_to_all_values(
-                    "document_id", "actor_name", "has_actor", query.actors
-                )
-            )
-        )
-
-    # handle filtering by tags (list of required tags)
-    if query.tags:
-        sqlLines.append(
-            sql.SQL("AND id in ( {} )").format(
-                relation_from_id_to_all_values(
-                    "document_id", "tag", "has_tag", query.tags
+                    "document_id", "actor_name", "has_character", query.actors
                 )
             )
         )
@@ -229,7 +233,6 @@ def execute_document_query(
     cursor.execute(SQLQuery)
 
 
-# TODO convert query params to a `query` object
 def search_results(
     conn: connection, query: Query, page: int = 1, resultsPerPage: int = 50
 ) -> list[Document]:
@@ -260,59 +263,66 @@ def search_results(
         raise Exception("No SQL connection found")
 
     documents: list = []
-    cur: cursor = None
-    with conn.cursor() as cur:
-        # gather only the attributes needed for the results page
 
-        execute_document_query(
-            cur,
-            query,
-            suffix=sql.Composed(
-                [
-                    sql.SQL("LIMIT "),
-                    sql.Literal(resultsPerPage),
-                    sql.SQL("\nOFFSET "),
-                    sql.Literal(resultsPerPage * (page - 1)),
-                    sql.SQL(";"),
-                ]
-            ),
-            rankPages=True,
-        )
+    try:
+        cur: cursor = None
+        with conn.cursor() as cur:
+            # gather only the attributes needed for the results page
 
-        documents: list[Document] = [
-            Document(
-                None,  # TODO
-                id=documentQuery[0],
-                studio=documentQuery[2],
-                title=documentQuery[3],
-                copyrightYear=documentQuery[1],
-            )
-            for documentQuery in cur.fetchall()
-        ]
-
-        for document in documents:
-            cur.execute(
-                "SELECT actor_name \
-                FROM has_actor \
-                WHERE document_id=%s;",
-                [document.id],
+            execute_document_query(
+                cur,
+                query,
+                suffix=sql.Composed(
+                    [
+                        sql.SQL("LIMIT "),
+                        sql.Literal(resultsPerPage),
+                        sql.SQL("\nOFFSET "),
+                        sql.Literal(resultsPerPage * (page - 1)),
+                        sql.SQL(";"),
+                    ]
+                ),
+                rankPages=True,
             )
 
-            actorQuery = cur.fetchall()
+            documents: list[Document] = [
+                Document(
+                    id=documentQuery[0],
+                    studio=documentQuery[2],
+                    title=documentQuery[3],
+                    copyright_year=documentQuery[1],
+                    document_type=documentQuery[4],
+                )
+                for documentQuery in cur.fetchall()
+            ]
 
-            document.actors = [result[0] for result in actorQuery]
+            for document in documents:
+                cur.execute(
+                    "SELECT actor_name \
+                    FROM has_character \
+                    WHERE document_id=%s;",
+                    [document.id],
+                )
 
-            cur.execute(
-                "SELECT page_number, content \
-                FROM transcripts \
-                WHERE document_id=%s \
-                ORDER BY page_number;",
-                [document.id],
-            )
+                actorQuery = cur.fetchall()
 
-            document.transcripts = cur.fetchall()
+                document.actors = [result[0] for result in actorQuery]
 
-    conn.commit()
+                cur.execute(
+                    "SELECT page_number, content \
+                    FROM transcripts \
+                    WHERE document_id=%s \
+                    ORDER BY page_number;",
+                    [document.id],
+                )
+
+                document.transcripts = cur.fetchall()
+
+        conn.commit()
+    except (
+        psycopg2.errors.ObjectNotInPrerequisiteState,
+        psycopg2.errors.InFailedSqlTransaction,
+    ) as e:
+        print(e)
 
     return documents
 
@@ -333,27 +343,72 @@ def get_num_results(conn: connection, query: Query):
     count : int
         The number of relevant results
     """
+    count: int = 0
     if not conn:
         raise Exception("No SQL connection found")
 
-    cur: cursor = None
-    with conn.cursor() as cur:
-        execute_document_query(
-            cur,
-            query,
-            prefix=sql.SQL("SELECT COUNT(*)"),
-        )
+    try:
+        cur: cursor = None
+        with conn.cursor() as cur:
+            execute_document_query(
+                cur,
+                query,
+                prefix=sql.SQL("SELECT COUNT(*)"),
+            )
 
-        result: tuple = cur.fetchone()
+            result: tuple = cur.fetchone()
 
-    # set `count` to the number of results if any exist, otherwise 0
-    count: int = 0
-    if result:
-        count = result[0]
+        # set `count` to the number of results if any exist, otherwise 0
+        if result:
+            count = result[0]
 
-    conn.commit()
+        conn.commit()
+    except psycopg2.errors.ObjectNotInPrerequisiteState as e:
+        print(e)
 
     return count
+
+
+# TODO combine with `search_results` instead of performing 2 queries
+def get_search_result_ids(conn: connection, query: Query) -> list[str]:
+    """Fetch the ids of every document matching a given query.
+
+    Parameters
+    ----------
+    conn : :obj:`psycopg2.extensions.connection`
+        A ``psycopg2`` connection to perform queries with
+    query : :obj:`Query`
+        A ``Query`` object specifying the search parameters
+
+    Returns
+    -------
+    ids : list[str]
+        The ids of relevant documents
+    """
+    ids: list[str] = []
+    if not conn:
+        raise Exception("No SQL connection found")
+
+    try:
+        cur: cursor = None
+        with conn.cursor() as cur:
+            execute_document_query(
+                cur,
+                query,
+                prefix=sql.SQL("SELECT id"),
+            )
+
+            result: tuple = cur.fetchall()
+
+        # set `count` to the number of results if any exist, otherwise 0
+        if result:
+            ids = [row[0] for row in result]
+
+        conn.commit()
+    except psycopg2.errors.ObjectNotInPrerequisiteState as e:
+        print(e)
+
+    return ids
 
 
 def get_headlines(
@@ -474,6 +529,8 @@ def _search_label(
     search_text: str | None,
     start_year: int | None,
     end_year: int | None,
+    min_reels: int | None,
+    max_reels: int | None,
     studio: str | None,
     genres: str | None,
 ) -> str:
@@ -484,6 +541,8 @@ def _search_label(
     parts: list[str] = []
     if start_year is not None or end_year is not None:
         parts.append(f"Years: {start_year or '?'}-{end_year or '?'}")
+    if min_reels is not None or max_reels is not None:
+        parts.append(f"Reels: {min_reels or '?'}-{max_reels or '?'}")
     if studio:
         parts.append(f"Studio: {studio}")
     if genres:
@@ -492,12 +551,75 @@ def _search_label(
     return ", ".join(parts) if parts else "All documents"
 
 
+def find_matching_search(
+    conn: connection,
+    *,
+    user_name: str,
+    start_year: int | None,
+    end_year: int | None,
+    min_reels: int | None,
+    max_reels: int | None,
+    studio: str | None,
+    actors: list[str] | None,
+    genres: list[str] | None,
+    tags: list[str] | None,
+    search_text: str | None,
+) -> int | None:
+    """Find a row in the ``search_history`` table patching the provided query parameters."""
+
+    query_parts: list[sql.SQL] = [
+        sql.SQL(
+            """
+            SELECT id FROM search_history
+            WHERE user_name = {}"""
+        ).format(sql.Literal(user_name))
+    ]
+
+    column_values: dict = {
+        "user_name": user_name,
+        "start_year": start_year,
+        "end_year": end_year,
+        "min_reels": min_reels,
+        "max_reels": max_reels,
+        "studio": studio,
+        "actors": _csv(actors),
+        "genres": _csv(genres),
+        "tags": _csv(tags),
+        "search_text": (
+            search_text.strip() if search_text and search_text.strip() else None
+        ),
+    }
+
+    for column, value in column_values.items():
+        if value is not None:
+            query_parts.append(
+                sql.SQL("AND {} = {}").format(
+                    sql.Identifier(column), sql.Literal(value)
+                )
+            )
+        else:
+            query_parts.append(sql.SQL("AND {} IS NULL").format(sql.Identifier(column)))
+
+    query_parts.append(sql.SQL(";"))
+
+    with conn.cursor() as cur:
+        cur.execute(sql.SQL("\n").join(query_parts))
+        result: tuple = cur.fetchone()
+
+    search_id: int = result[0] if result else None
+    conn.commit()
+
+    return search_id
+
+
 def log_search(
     conn: connection,
     *,
     user_name: str,
     start_year: int | None,
     end_year: int | None,
+    min_reels: int | None,
+    max_reels: int | None,
     studio: str | None,
     actors: list[str] | None,
     genres: list[str] | None,
@@ -508,16 +630,27 @@ def log_search(
     with conn.cursor() as cur:
         cur.execute(
             """
-            INSERT INTO search_history
-                (user_name, "time", start_year, end_year, studio, actors, genres, tags, search_text)
-            VALUES
-                (%s, NOW(), %s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO search_history (
+                user_name,
+                "time",
+                start_year,
+                end_year,
+                min_reels,
+                max_reels,
+                studio,
+                actors,
+                genres,
+                tags,
+                search_text
+            ) VALUES (%s, NOW(), %s, %s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING id;
             """,
             [
                 user_name,
                 start_year,
                 end_year,
+                min_reels,
+                max_reels,
                 studio,
                 _csv(actors),
                 _csv(genres),
@@ -601,7 +734,16 @@ def get_search_history(conn: connection, user_name: str, limit: int = 50) -> lis
     with conn.cursor() as cur:
         cur.execute(
             """
-            SELECT id, "time", search_text, start_year, end_year, studio, genres
+            SELECT
+                id,
+                "time",
+                search_text,
+                start_year,
+                end_year,
+                min_reels,
+                max_reels,
+                studio,
+                genres
             FROM search_history
             WHERE user_name=%s
             ORDER BY "time" DESC
@@ -621,15 +763,19 @@ def get_search_history(conn: connection, user_name: str, limit: int = 50) -> lis
                 search_text=row[2],
                 start_year=row[3],
                 end_year=row[4],
-                studio=row[5],
-                genres=row[6],
+                min_reels=row[5],
+                max_reels=row[6],
+                studio=row[7],
+                genres=row[8],
             ),
             "date": row[1].strftime("%b %d, %Y %I:%M %p"),
             "search_text": row[2],
             "start_year": row[3],
             "end_year": row[4],
-            "studio": row[5],
-            "genres": row[6],
+            "min_reels": row[5],
+            "max_reels": row[6],
+            "studio": row[7],
+            "genres": row[8],
         }
         for row in rows
     ]
@@ -645,7 +791,18 @@ def get_search_history_entry(
     with conn.cursor() as cur:
         cur.execute(
             """
-            SELECT id, "time", search_text, start_year, end_year, studio, actors, genres, tags
+            SELECT
+                id,
+                "time",
+                search_text,
+                start_year,
+                end_year,
+                min_reels,
+                max_reels,
+                studio,
+                actors,
+                genres,
+                tags
             FROM search_history
             WHERE id=%s AND user_name=%s;
             """,
@@ -664,11 +821,27 @@ def get_search_history_entry(
         "search_text": row[2],
         "start_year": row[3],
         "end_year": row[4],
-        "studio": row[5],
-        "actors": row[6],
-        "genres": row[7],
-        "tags": row[8],
+        "min_reels": row[5],
+        "max_reels": row[6],
+        "studio": row[7],
+        "actors": row[8],
+        "genres": row[9],
+        "tags": row[10],
     }
+
+
+def clear_search_history(conn: connection, user_name: str):
+    """Delete all search history rows associated with a given user."""
+    if not conn:
+        raise Exception("No SQL connection found")
+
+    with conn.cursor() as cur:
+        cur.execute(
+            "DELETE FROM search_history WHERE user_name=%s;",
+            [user_name],
+        )
+
+    conn.commit()
 
 
 def get_view_history(conn: connection, user_name: str, limit: int = 200) -> list[dict]:
@@ -719,7 +892,7 @@ def get_view_history(conn: connection, user_name: str, limit: int = 200) -> list
                 "title": row[1],
                 "year": row[2],
                 "description": description,
-                "documentType": "Document",
+                "document_type": "Document",
                 "viewedDate": row[4].strftime("%b %d, %Y %I:%M %p"),
                 "viewedAt": row[4],
                 "searchText": search_text,
@@ -749,6 +922,20 @@ def get_viewed_document_ids(conn: connection, user_name: str) -> set[str]:
     return {row[0] for row in rows}
 
 
+def clear_view_history(conn: connection, user_name: str):
+    """Delete all view history rows associated with a given user."""
+    if not conn:
+        raise Exception("No SQL connection found")
+
+    with conn.cursor() as cur:
+        cur.execute(
+            "DELETE FROM view_history WHERE user_name=%s;",
+            [user_name],
+        )
+
+    conn.commit()
+
+
 def get_documents(conn: connection, doc_ids: list[str]) -> str:
     """Fetch *all* data pertaining to multiple documents.
 
@@ -770,7 +957,7 @@ def get_documents(conn: connection, doc_ids: list[str]) -> str:
     transcript_data: list[tuple] = None
     actor_data: list[tuple] = None
     genre_data: list[tuple] = None
-    tag_data: list[tuple] = None
+    location_data: list[tuple] = None
     flag_data: list[tuple] = None
     cur: cursor = None
 
@@ -778,7 +965,14 @@ def get_documents(conn: connection, doc_ids: list[str]) -> str:
 
     with conn.cursor() as cur:
         cur.execute(
-            "SELECT id, copyright_year, studio, title, reel_count, uploaded_by, uploaded_time \
+            "SELECT \
+                id, \
+                copyright_year, \
+                studio, title, \
+                reel_count, \
+                document_type, \
+                uploaded_by, \
+                uploaded_time \
             FROM documents \
             WHERE id IN %s;",
             [cleaned_ids],
@@ -797,8 +991,8 @@ def get_documents(conn: connection, doc_ids: list[str]) -> str:
         transcript_data = cur.fetchall()
 
         cur.execute(
-            "SELECT document_id, actor_name \
-            FROM has_actor \
+            "SELECT document_id, actor_name, character_name, character_description \
+            FROM has_character \
             WHERE document_id IN %s;",
             [cleaned_ids],
         )
@@ -815,13 +1009,13 @@ def get_documents(conn: connection, doc_ids: list[str]) -> str:
         genre_data = cur.fetchall()
 
         cur.execute(
-            "SELECT document_id, tag \
-            FROM has_tag \
+            "SELECT document_id, location, description \
+            FROM has_location \
             WHERE document_id IN %s;",
             [cleaned_ids],
         )
 
-        tag_data = cur.fetchall()
+        location_data = cur.fetchall()
 
         cur.execute(
             "SELECT document_id, user_name, error_location, error_description \
@@ -845,19 +1039,23 @@ def get_documents(conn: connection, doc_ids: list[str]) -> str:
         studio: str = document_row[2]
         title: str = document_row[3]
         reel_count: int = int(document_row[4]) if document_row[4] is not None else None
-        uploaded_by: str = document_row[5]
-        uploaded_time: str = document_row[6]
+        document_type: str = document_row[5]
+        uploaded_by: str = document_row[6]
+        uploaded_time: str = document_row[7]
 
         documents[id] = Document(
-            None,  # TODO
             id=id,
             studio=studio,
             title=title,
-            documentType=None,  # TODO
-            copyrightYear=copyright_year,
-            reelCount=reel_count,
-            uploadedTime=uploaded_time,
-            uploadedBy=uploaded_by,
+            document_type=document_type,
+            copyright_year=copyright_year,
+            reel_count=reel_count,
+            uploaded_time=uploaded_time,
+            uploaded_by=uploaded_by,
+            transcripts=[],
+            actors=[],
+            genres=[],
+            locations=[],
         )
 
     # include transcript data
@@ -874,8 +1072,16 @@ def get_documents(conn: connection, doc_ids: list[str]) -> str:
     for actor_row in actor_data:
         id: str = actor_row[0]
         name: str = actor_row[1]
+        character_name: str = actor_row[2]
+        character_description: str = actor_row[3]
 
-        documents[id].actors.append(name)
+        documents[id].actors.append(
+            {
+                "actor_name": name,
+                "character_name": character_name,
+                "character_description": character_description,
+            }
+        )
 
     # include genre data
     for genre_row in genre_data:
@@ -884,12 +1090,13 @@ def get_documents(conn: connection, doc_ids: list[str]) -> str:
 
         documents[id].genres.append(genre)
 
-    # include tag data
-    for tag_row in tag_data:
-        id: str = tag_row[0]
-        tag: str = tag_row[1]
+    # include location data
+    for location_row in location_data:
+        id: str = location_row[0]
+        name: str = location_row[1]
+        description: str = location_row[2]
 
-        documents[id].tags.append(tag)
+        documents[id].locations.append({"name": name, "description": description})
 
     # include flag data
     for flag_row in flag_data:
@@ -934,6 +1141,20 @@ def get_document(conn: connection, doc_id: str) -> Document:
     return documents[0]
 
 
+def _format_actor_data(actor: dict) -> str:
+    name: str = actor["actor_name"] if actor["actor_name"] else "Unspecified"
+    character: str = (
+        actor["character_name"] if actor["character_name"] else "Unspecified"
+    )
+    description: str = (
+        actor["character_description"]
+        if actor["character_description"]
+        else "Unspecified"
+    )
+
+    return f"{name} -- {character} ({description})"
+
+
 def get_documents_as_csv(conn: connection, doc_ids: list[str]) -> str:
     """Fetch *all* data pertaining to a document.
 
@@ -966,7 +1187,7 @@ def get_documents_as_csv(conn: connection, doc_ids: list[str]) -> str:
                 "transcript",
                 "actors",
                 "genres",
-                "tags",
+                "locations",
             ]
         )
         + "\n"
@@ -977,16 +1198,28 @@ def get_documents_as_csv(conn: connection, doc_ids: list[str]) -> str:
             _csv(
                 [
                     _clean_csv_value(doc.id),
-                    _clean_csv_value(str(doc.copyrightYear)),
+                    _clean_csv_value(str(doc.copyright_year)),
                     _clean_csv_value(doc.studio),
                     _clean_csv_value(doc.title),
-                    _clean_csv_value(str(doc.reelCount)),
-                    _clean_csv_value(doc.uploadedBy),
-                    _clean_csv_value(str(doc.uploadedTime)),
+                    _clean_csv_value(str(doc.reel_count)),
+                    _clean_csv_value(doc.uploaded_by),
+                    _clean_csv_value(str(doc.uploaded_time)),
                     _clean_csv_value(doc.content),
-                    _clean_csv_value(";".join(doc.actors)),
+                    _clean_csv_value(
+                        ";".join(
+                            [_format_actor_data(actor) for actor in doc.actors if actor]
+                        )
+                    ),
                     _clean_csv_value(";".join(doc.genres)),
-                    _clean_csv_value(";".join(doc.tags)),
+                    _clean_csv_value(
+                        ";".join(
+                            [
+                                location["name"]
+                                for location in doc.locations
+                                if location["name"]
+                            ]
+                        )
+                    ),
                 ]
             )
             + "\n"

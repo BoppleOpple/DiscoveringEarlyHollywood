@@ -29,9 +29,9 @@
             {% endfor %}
         </div>
 
-        <button id="history-clear-searches-btn" name="history-clear-searches-btn" class="w-full mt-6 bg-white hover:bg-[#F5F5F0] text-[#2C2C2C] border-2 border-[#E0E0E0] hover:border-[#8B0000] transition-colors py-2 px-4 rounded">
-            Clear Search History
-        </button>
+        <a id="history-clear-searches-btn" name="history-clear-searches-btn" href="{{ url_for('history.clear_history') }}" class="block w-full mt-6 bg-white hover:bg-[#F5F5F0] text-[#2C2C2C] text-center border-2 border-[#E0E0E0] hover:border-[#8B0000] transition-colors py-2 px-4 rounded">
+            Clear History
+        </a>
     </aside>
 
     <!-- Main Content - Viewing History -->
@@ -82,7 +82,7 @@
                             <div class="flex gap-4">
                                 <span class="text-[#2B6CB0]">{{ doc.year }}</span>
                                 <span class="text-[#666666]">•</span>
-                                <span class="text-[#666666]">{{ doc.documentType }}</span>
+                                <span class="text-[#666666]">{{ doc.document_type }}</span>
                             </div>
                         </div>
                     </div>
