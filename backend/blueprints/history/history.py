@@ -76,7 +76,7 @@ def download_history():
     )
 
 
-@history.route("/clear")
+@history.route("/clear", methods=["POST"])
 def clear_history():
     user_name = session.get("user")
     if not user_name:
