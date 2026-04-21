@@ -1141,6 +1141,20 @@ def get_document(conn: connection, doc_id: str) -> Document:
     return documents[0]
 
 
+def _format_actor_data(actor: dict) -> str:
+    name: str = actor["actor_name"] if actor["actor_name"] else "Unspecified"
+    character: str = (
+        actor["character_name"] if actor["character_name"] else "Unspecified"
+    )
+    description: str = (
+        actor["character_description"]
+        if actor["character_description"]
+        else "Unspecified"
+    )
+
+    return f"{name} -- {character} ({description})"
+
+
 def get_documents_as_csv(conn: connection, doc_ids: list[str]) -> str:
     """Fetch *all* data pertaining to a document.
 
@@ -1192,7 +1206,9 @@ def get_documents_as_csv(conn: connection, doc_ids: list[str]) -> str:
                     _clean_csv_value(str(doc.uploaded_time)),
                     _clean_csv_value(doc.content),
                     _clean_csv_value(
-                        ";".join([actor for actor in doc.actors if actor])
+                        ";".join(
+                            [_format_actor_data(actor) for actor in doc.actors if actor]
+                        )
                     ),
                     _clean_csv_value(";".join(doc.genres)),
                     _clean_csv_value(
