@@ -5,10 +5,10 @@
 {% block content %}
 <div class="flex max-w-7xl mx-auto">
     <!-- Left Sidebar - Previous Searches -->
-    <aside class="w-64 p-6 border-r-2 border-[#E0E0E0] min-h-screen">
-        <h3 class="text-[#2C2C2C] text-lg font-medium mb-4">Previous Searches</h3>
+    <aside class="w-64 p-6 border-r-2 border-[#E0E0E0] min-h-screen",id="left-side-bar">
+        <h3 class="text-[#2C2C2C] text-lg font-medium mb-4",id="previous-searches-lbl">Previous Searches</h3>
         
-        <div class="space-y-3">
+        <div class="space-y-3",id="previous-searches-list">
             {% for search in searches %}
             <a id="history-replay-search-link-{{ search.id }}" name="history-replay-search-link-{{ search.id }}" href="{{ url_for('history.replay_search', search_id=search.id) }}"
                class="block w-full text-left p-3 bg-white border-2 border-[#E0E0E0] rounded hover:border-[#8B0000] transition-colors group">
@@ -17,10 +17,10 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                     </svg>
                     <div class="flex-1 min-w-0">
-                        <p class="text-[#2C2C2C] truncate group-hover:text-[#8B0000] transition-colors">
+                        <p class="text-[#2C2C2C] truncate group-hover:text-[#8B0000] transition-colors",id="search-query-text">
                             {{ search.query }}
                         </p>
-                        <p class="text-[#666666] text-sm mt-1">
+                        <p class="text-[#666666] text-sm mt-1",id="search-query-date">
                             {{ search.date }}
                         </p>
                     </div>
@@ -36,11 +36,11 @@
     </aside>
 
     <!-- Main Content - Viewing History -->
-    <div class="flex-1 p-6">
+    <div class="flex-1 p-6",id="viewing-history-main-content">
         <div class="mb-6 flex items-center justify-between">
             <div>
-                <h2 class="text-[#2C2C2C] text-xl font-medium">Your Viewing History</h2>
-                <p class="text-[#666666] mt-1">
+                <h2 class="text-[#2C2C2C] text-xl font-medium",id="viewing-history-header">Your Viewing History</h2>
+                <p class="text-[#666666] mt-1",id="num-docs-viewed">
                     {{ history|length }} documents viewed
                 </p>
             </div>
@@ -62,7 +62,7 @@
             </div>
         </div>
 
-        <div class="space-y-4">
+        <div class="space-y-4",id="view-history-list">
             {% for doc in history %}
             <div class="relative">
                 <a id="history-document-link-{{ doc.id }}" name="history-document-link-{{ doc.id }}" href="{{ url_for('document.document_detail', doc_id=doc.id) }}" 
@@ -78,17 +78,17 @@
                             </div>
                         </div>
                         <div class="flex-1">
-                            <h3 class="text-[#800080] text-lg font-medium mb-2">{{ doc.title }}</h3>
-                            <p class="text-[#666666] mb-3">{{ doc.description }}</p>
+                            <h3 class="text-[#800080] text-lg font-medium mb-2",id="viewed-doc-title">{{ doc.title }}</h3>
+                            <p class="text-[#666666] mb-3",id="viewed-doc-description">{{ doc.description }}</p>
                             <div class="flex gap-4">
-                                <span class="text-[#2B6CB0]">{{ doc.year }}</span>
+                                <span class="text-[#2B6CB0]",id="viewed-doc-year">{{ doc.year }}</span>
                                 <span class="text-[#666666]">•</span>
-                                <span class="text-[#666666]">{{ doc.document_type }}</span>
+                                <span class="text-[#666666]",id="viewed-doc-type">{{ doc.document_type }}</span>
                             </div>
                         </div>
                     </div>
                 </a>
-                <div class="absolute top-4 right-4 text-[#666666] text-sm">
+                <div class="absolute top-4 right-4 text-[#666666] text-sm",id="document-viewed-date">
                     Viewed: {{ doc.viewedDate }}
                 </div>
             </div>
