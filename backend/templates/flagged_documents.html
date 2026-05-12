@@ -9,20 +9,20 @@
            class="inline-block mb-4 border-2 border-[#8B0000] text-[#8B0000] hover:bg-[#8B0000] hover:text-white py-2 px-4 rounded transition-colors">
             ← Back to Search
         </a>
-        <h2 class="text-[#2C2C2C] text-xl font-medium">Flagged Documents</h2>
-        <p class="text-[#666666] mt-1">
+        <h2 class="text-[#2C2C2C] text-xl font-medium",id="flagged-documents-header">Flagged Documents</h2>
+        <p class="text-[#666666] mt-1",id="documents-flagged-num">
             {{ documents|length }} documents flagged for review
         </p>
     </div>
 
     <div class="space-y-4">
         {% if not documents %}
-        <div class="bg-white border-2 border-[#E0E0E0] rounded-lg p-6 text-[#666666]">
+        <div class="bg-white border-2 border-[#E0E0E0] rounded-lg p-6 text-[#666666]",id='no-flagged-msg'>
             No documents have been flagged yet.
         </div>
         {% endif %}
         {% for doc in documents %}
-        <div class="bg-white border-2 border-[#E0E0E0] rounded-lg overflow-hidden">
+        <div class="bg-white border-2 border-[#E0E0E0] rounded-lg overflow-hidden",id="flagged-entry">
             <div class="p-4">
                 <div class="flex gap-4">
                     <div class="flex-shrink-0">
@@ -38,10 +38,10 @@
                         <div class="flex items-start justify-between">
                             <a id="flagged-document-link-{{ doc.id }}" name="flagged-document-link-{{ doc.id }}" href="{{ url_for('document.document_detail', doc_id=doc.id) }}" 
                                class="text-left flex-1 group">
-                                <h3 class="text-[#800080] text-lg font-medium mb-2 group-hover:underline">
+                                <h3 class="text-[#800080] text-lg font-medium mb-2 group-hover:underline",id="flagged-document-title">
                                     {{ doc.title }}
                                 </h3>
-                                <p class="text-[#666666] mb-3">
+                                <p class="text-[#666666] mb-3",id="studio-information">
                                     {% if doc.studio %}
                                     Studio: {{ doc.studio }}
                                     {% else %}
@@ -49,9 +49,9 @@
                                     {% endif %}
                                 </p>
                                 <div class="flex gap-4">
-                                    <span class="text-[#2B6CB0]">{{ doc.copyright_year }}</span>
+                                    <span class="text-[#2B6CB0]",id="flagged-doc-year">{{ doc.copyright_year }}</span>
                                     <span class="text-[#666666]">•</span>
-                                    <span class="text-[#666666]">{{ doc.document_type or 'Document' }}</span>
+                                    <span class="text-[#666666]",id="flagged-document-type">{{ doc.document_type or 'Document' }}</span>
                                 </div>
                             </a>
                             <button id="flagged-document-toggle-btn-{{ doc.id }}" name="flagged-document-toggle-btn-{{ doc.id }}" onclick="toggleFlags('{{ doc.id }}')" 
@@ -71,25 +71,25 @@
 
             <!-- Flag Comments Dropdown -->
             <div id="flags-{{ doc.id }}" class="hidden border-t-2 border-[#E0E0E0] bg-[#FFF8F0] p-4">
-                <h4 class="text-[#2C2C2C] font-medium mb-3">
+                <h4 class="text-[#2C2C2C] font-medium mb-3",id="review-comments-header">
                     Review Comments
                 </h4>
-                <div class="space-y-3">
+                <div class="space-y-3",id="flagged-entry">
                     {% for flag in doc.flags %}
                     <div class="bg-white border border-[#E0E0E0] rounded-lg p-3">
                         <div class="flex items-start justify-between mb-2">
                             <div class="flex items-center gap-2">
-                                <div class="w-8 h-8 bg-[#8B0000] rounded-full flex items-center justify-center text-white text-sm">
+                                <div class="w-8 h-8 bg-[#8B0000] rounded-full flex items-center justify-center text-white text-sm",id="reporter-pfp">
                                     {% set initials = flag.reporterName.split(' ') %}
                                     {{ initials[0][0] }}{% if initials|length > 1 %}{{ initials[1][0] }}{% endif %}
                                 </div>
                                 <div>
-                                    <p class="text-[#2C2C2C] font-medium">{{ flag.reporterName }}</p>
-                                    <p class="text-[#999999] text-sm">{{ flag.errorLocation }}</p>
+                                    <p class="text-[#2C2C2C] font-medium",id="report-name">{{ flag.reporterName }}</p>
+                                    <p class="text-[#999999] text-sm",id="flagged-error-location">{{ flag.errorLocation }}</p>
                                 </div>
                             </div>
                         </div>
-                        <p class="text-[#666666] ml-10">
+                        <p class="text-[#666666] ml-10",id="flagged-error-description">
                             {{ flag.errorDescription }}
                         </p>
                     </div>

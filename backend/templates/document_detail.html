@@ -17,7 +17,7 @@
         <div class="flex gap-8">
             <div class="flex-1">
                 <div class="flex items-start justify-between gap-4 mb-4">
-                    <h2 class="text-[#800080] text-xl font-medium">
+                    <h2 class="text-[#800080] text-xl font-medium", id="document-detail-title">
                         {{ document.title }}
                     </h2>
                     <button
@@ -59,7 +59,7 @@
                             >
                         </div>
                         <div>
-                            <label for="error_description" class="block text-[#2C2C2C] mb-1">What should be reviewed?</label>
+                            <label for="error_description" class="block text-[#2C2C2C] mb-1",id="document-detail-error-desc-lbl">What should be reviewed?</label>
                             <textarea
                                 id="error_description"
                                 name="error_description"
@@ -119,49 +119,49 @@
 
         <div class="grid grid-cols-2 gap-6">
             <div>
-                <h4 class="text-[#2C2C2C] font-medium mb-3">
+                <h4 class="text-[#2C2C2C] font-medium mb-3",id="document-detail-film-details">
                     Film Details
                 </h4>
                 <div class="space-y-2">
                     <div class="flex">
-                        <span class="text-[#666666] w-24">Year:</span>
-                        <a href="{{ url_for('index', year_min=document.copyright_year, year_max=document.copyright_year) }}" class="text-[#2c2caa] underline">{{ document.copyright_year }}</a>
+                        <span class="text-[#666666] w-24",id="metadata-year-lbl">Year:</span>
+                        <a href="{{ url_for('index', year_min=document.copyright_year, year_max=document.copyright_year) }}" class="text-[#2c2caa] underline",id="metadata-year">{{ document.copyright_year }}</a>
                     </div>
                     <div class="flex">
-                        <span class="text-[#666666] w-24">Studio:</span>
-                        <span class="text-[#2C2C2C]">{{ document.studio }}</span>
+                        <span class="text-[#666666] w-24",id="metadata-studio-lbl">Studio:</span>
+                        <span class="text-[#2C2C2C]",id="metadata-studio">{{ document.studio }}</span>
                     </div>
                     <div class="flex">
-                        <span class="text-[#666666] w-24">Genre:</span>
-                        <span class="text-[#2C2C2C]">{{ document.genres|join(', ') if document.genres else 'Unspecified' }}</span>
+                        <span class="text-[#666666] w-24",id="metadata-genre-lbl">Genre:</span>
+                        <span class="text-[#2C2C2C]",id="metadata-genre">{{ document.genres|join(', ') if document.genres else 'Unspecified' }}</span>
                     </div>
                     <!-- <div class="flex">
                         <span class="text-[#666666] w-24">Director:</span>
                         <span class="text-[#2C2C2C]">{{ document.director }}</span>
                     </div> -->
                     <div class="flex">
-                        <span class="text-[#666666] w-24">Reels:</span>
-                        <a href="{{ url_for('index', reel_min=document.reel_count, reel_max=document.reel_count) }}" class="text-[#2c2caa] underline">{{ document.reel_count }}</a>
+                        <span class="text-[#666666] w-24",id="metadata-reels-lbl">Reels:</span>
+                        <a href="{{ url_for('index', reel_min=document.reel_count, reel_max=document.reel_count) }}" class="text-[#2c2caa] underline",id="metadata-reels">{{ document.reel_count }}</a>
                     </div>
                     <div class="flex">
-                        <span class="text-[#666666] w-24">Uploaded:</span>
-                        <span class="text-[#2C2C2C]">{{ document.uploaded_time }}</span>
+                        <span class="text-[#666666] w-24",id="metadata-uploaded-lbl">Uploaded:</span>
+                        <span class="text-[#2C2C2C]",id="metadata-uploaded">{{ document.uploaded_time }}</span>
                     </div>
                 </div>
             </div>
 
             <div>
-                <table class="w-full">
-                    <thead class="border-b-4">
+                <table class="w-full",id="actor-table">
+                    <thead class="border-b-4",id="actor-table-header">
                         <tr>
-                            <th>Actor</th>
-                            <th>Role</th>
+                            <th id="table-actor-lbl">Actor</th>
+                            <th id="table-role-lbl">Role</th>
                         </tr>
                     </thead>
 
-                    <tbody class="divide-y-2">
+                    <tbody class="divide-y-2",id="actor-table-body">
                         {% for actor in document.actors %}
-                        <tr class="text-[#2C2C2C]">
+                        <tr class="text-[#2C2C2C]",id="actor-table-row">
                             <td class="actor_name_cell">
                                 {% if actor["actor_name"] %}
                                     <a href="{{ url_for('index', search=actor['actor_name']|tojson ) }}" class="text-[#2c2caa] underline">{{ actor["actor_name"] if actor["actor_name"] }}</a>
@@ -177,18 +177,18 @@
             </div>
 
             <div class="col-span-2 mt-4">
-                <h4 class="text-[#2C2C2C] font-medium mb-3">
+                <h4 class="text-[#2C2C2C] font-medium mb-3",id=document-info-header>
                     Document Information
                 </h4>
                 <div class="flex gap-8">
                     <div class="flex">
-                        <span class="text-[#666666] w-32">Document Type:</span>
-                        <span class="text-[#2C2C2C]">{{ document.document_type }}</span>
+                        <span class="text-[#666666] w-32",id="document-type-lbl">Document Type:</span>
+                        <span class="text-[#2C2C2C]",id="document-type">{{ document.document_type }}</span>
                         <!-- <a href="{{ url_for('index', document_type=document_type) }}" class="text-[#2C2C2C]">{{ document.document_type }}</a> -->
                     </div>
                     <div class="flex">
-                        <span class="text-[#666666] w-32">Registration Date:</span>
-                        <a href="{{ url_for('index', year_min=document.copyright_year, year_max=document.copyright_year) }}" class="text-[#2c2caa] underline">{{ document.copyright_year }}</a>
+                        <span class="text-[#666666] w-32",id="registration-date-lbl">Registration Date:</span>
+                        <a href="{{ url_for('index', year_min=document.copyright_year, year_max=document.copyright_year) }}" class="text-[#2c2caa] underline",id="copyright-year">{{ document.copyright_year }}</a>
                     </div>
                 </div>
             </div>
@@ -197,15 +197,15 @@
         <div class="mt-8 pt-6 border-t-2 border-[#E0E0E0]">
             {% if document.flags %}
             <div class="mb-6">
-                <h4 class="text-[#2C2C2C] font-medium mb-3">Submitted Review Flags</h4>
+                <h4 class="text-[#2C2C2C] font-medium mb-3",id="submitted-flags-lbl">Submitted Review Flags</h4>
                 <div class="space-y-3">
                     {% for flag in document.flags %}
                     <div class="bg-[#FFF8F0] border border-[#E0E0E0] rounded-lg p-4">
                         <div class="flex items-center justify-between gap-4 mb-2">
-                            <p class="text-[#2C2C2C] font-medium">{{ flag.reporterName }}</p>
-                            <p class="text-sm text-[#666666]">{{ flag.errorLocation }}</p>
+                            <p class="text-[#2C2C2C] font-medium",id="flag-reporter">{{ flag.reporterName }}</p>
+                            <p class="text-sm text-[#666666]",id="flag-location">{{ flag.errorLocation }}</p>
                         </div>
-                        <p class="text-[#666666]">{{ flag.errorDescription }}</p>
+                        <p class="text-[#666666]",id="flag-description">{{ flag.errorDescription }}</p>
                     </div>
                     {% endfor %}
                 </div>

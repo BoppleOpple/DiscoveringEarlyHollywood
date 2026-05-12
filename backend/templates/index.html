@@ -4,13 +4,13 @@
 <div class="flex max-w-7xl mx-auto">
     <!-- Left Sidebar - Search Filters -->
     <aside class="w-64 p-6 border-r-2 border-[#E0E0E0] min-h-screen">
-        <h3 class="text-[#2C2C2C] text-lg font-medium mb-4">
+        <h3 class="text-[#2C2C2C] text-lg font-medium mb-4",id="search-filter-header">
             Search & Filter
         </h3>
 
         <form method="GET" action="{{ url_for('index') }}" class="space-y-6">
             <div>
-                <label class="text-[#2C2C2C] block mb-2">
+                <label class="text-[#2C2C2C] block mb-2",id="search-lbl">
                     Search
                 </label>
                 <input
@@ -24,25 +24,25 @@
             </div>
 
             <div>
-                <label class="text-[#2C2C2C] block mb-2">
+                <label class="text-[#2C2C2C] block mb-2",id="year-range-lbl">
                     Year Range
                 </label>
-                <div class="px-2 py-4">
+                <div class="px-2 py-4",id="year-range">
                     <input id="search-year-min-input" type="range" name="year_min" min="1912" max="1928" value="{{ year_min }}" 
                            class="w-full accent-[#8B0000]" onchange="this.nextElementSibling.textContent=this.value">
-                    <span class="text-[#666666]">{{ year_min }}</span>
+                    <span class="text-[#666666]",id="year-min">{{ year_min }}</span>
                     <span class="text-[#666666] float-right">to</span>
                     <input id="search-year-max-input" type="range" name="year_max" min="1912" max="1928" value="{{ year_max }}" 
                            class="w-full accent-[#8B0000] mt-2" onchange="this.nextElementSibling.textContent=this.value">
-                    <span class="text-[#666666]">{{ year_max }}</span>
+                    <span class="text-[#666666]",id="year-max">{{ year_max }}</span>
                 </div>
             </div>
 
             <div>
-                <label class="text-[#2C2C2C] block mb-2">
+                <label class="text-[#2C2C2C] block mb-2",id="reel-range-lbl">
                     Reel Range
                 </label>
-                <div class="flex">
+                <div class="flex",id="reel-range">
                     <input id="search-reel-min-input" type="number" name="reel_min" min="0" value="{{ reel_min }}" 
                            class="w-full accent-[#8B0000] mr-2 rounded-lg px-2" placeholder="min">
                     <span class="text-[#666666] float-right">to</span>
@@ -76,19 +76,19 @@
     <main class="flex-1 p-6">
         <div class="mb-6 w-full flex justify-between">
             <div>
-                <h2 class="text-[#2C2C2C] text-xl font-medium">
+                <h2 class="text-[#2C2C2C] text-xl font-medium",id="home-page-header">
                     Copyright Documents from Early Hollywood
                 </h2>
-                <p class="text-[#666666] mt-1">
+                <p class="text-[#666666] mt-1",id="num-documents-found">
                     {{ num_results }} documents found
                 </p>
             </div>
-            <a href="{{ url_for('download_query_as_csv', **request.args) }}" class="w-fit h-fit bg-[#2C2C2C] hover:bg-[#8B0000] text-white py-2 px-4 rounded transition-colors">
+            <a href="{{ url_for('download_query_as_csv', **request.args) }}" class="w-fit h-fit bg-[#2C2C2C] hover:bg-[#8B0000] text-white py-2 px-4 rounded transition-colors",id="download-csv-btn">
                 Download as CSV
             </a>
         </div>
 
-        <div class="space-y-4">
+        <div class="space-y-4",id="document-list">
             {% for doc in documents %}
             {% set snippet = headlines[doc.id] %}
             {% set detail_url = url_for('document.document_detail', doc_id=doc.id, search_id=current_search_id, return_to=current_results_path) if current_search_id else url_for('document.document_detail', doc_id=doc.id, return_to=current_results_path) %}
@@ -107,19 +107,19 @@
                     <div class="flex-1">
                         {# Viewed documents are purple; unseen documents are blue. #}
                         {% if doc.id in viewed_doc_ids %}
-                        <h3 class="text-[#800080] text-lg font-medium mb-2">{{ doc.title }}</h3>
+                        <h3 class="text-[#800080] text-lg font-medium mb-2",id="viewed-doc-list-doc-title">{{ doc.title }}</h3>
                         {% else %}
-                        <h3 class="text-[#2B6CB0] text-lg font-medium mb-2">{{ doc.title }}</h3>
+                        <h3 class="text-[#2B6CB0] text-lg font-medium mb-2",id="doc-list-doc-title">{{ doc.title }}</h3>
                         {% endif %}
                         {% if doc.transcripts %}
                         <p class="text-[#666666] mb-3">...{{ snippet|safe }}...</p>
                         {% else %}
-                        <p class="text-[#666666] mb-3">No transcript available.</p>
+                        <p class="text-[#666666] mb-3",id="no-transcrip-msg">No transcript available.</p>
                         {% endif %}
                         <div class="flex gap-4">
-                            <span class="text-[#2B6CB0]">{{ doc.copyright_year }}</span>
+                            <span class="text-[#2B6CB0]",id="doc-list-copyright-year">{{ doc.copyright_year }}</span>
                             <span class="text-[#666666]">•</span>
-                            <span class="text-[#666666]">{{ doc.document_type }}</span>
+                            <span class="text-[#666666]",id="doc-list-doc-type">{{ doc.document_type }}</span>
                         </div>
                     </div>
                 </div>
@@ -127,8 +127,8 @@
             {% endfor %}
         </div>
 
-        <div class="flex items-center mt-6 justify-center">
-            <div class="min-w-100">
+        <div class="flex items-center mt-6 justify-center",id="page-nav">
+            <div class="min-w-100",id="previous-nav-btn">
                 {% if page > 1 %}
                 <a id="search-previous-page-link" name="search-previous-page-link" class="w-full bg-[#2C2C2C] hover:bg-[#8B0000] text-white py-2 px-4 rounded transition-colors" href="{{ modify_args_on_page('index', {'page': page-1}) }}">
                     Previous
@@ -136,11 +136,11 @@
                 {% endif %}
             </div>
             
-            <p class="ml-6 mr-6">
+            <p class="ml-6 mr-6",id="nav-page-num">
                 Page {{page}} of {{ceil(num_results / results_per_page)}}
             </p>
 
-            <div class="min-w-100">
+            <div class="min-w-100",id="next-nav-btn">
                 {% if page < num_results / results_per_page %}
                 <a id="search-next-page-link" name="search-next-page-link" class="w-full bg-[#2C2C2C] hover:bg-[#8B0000] text-white py-2 px-4 rounded transition-colors" href="{{ modify_args_on_page('index', {'page': page+1}) }}">
                     Next
