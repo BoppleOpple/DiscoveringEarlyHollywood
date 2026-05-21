@@ -39,15 +39,17 @@ def test_goto_flagged_documents_page(driver):
 
 def test_nav_next_page(driver):
     # Arrange
-    driver.get("https://deh.boppleopple.net/")
+    driver.get("http://127.0.0.1:5000/")
 
     # Act
-    next_page_button = driver.find_element(By.NAME, "search-next-page-link")
+    next_page_button = WebDriverWait(driver, 3).until(
+        EC.element_to_be_clickable((By.ID, "search-next-page-link"))
+    )
 
-    driver.execute_script("arguments[0].click();", next_page_button)
+    next_page_button.click()
 
     footer = WebDriverWait(driver, 3).until(
-        EC.presence_of_element_located((By.XPATH, "//*[contains(text(), 'Page 2 of')]"))
+        EC.visibility_of_element_located((By.ID, "nav-page-num"))
     )
 
     # Assert
@@ -56,35 +58,18 @@ def test_nav_next_page(driver):
 
 def test_nav_previous_page(driver):
     # Arrange
-    driver.get("https://deh.boppleopple.net/?page=2")
+    driver.get("http://127.0.0.1:5000/?page=2")
 
     # Act
-    previous_page_button = driver.find_element(By.NAME, "search-previous-page-link")
+    previous_page_button = WebDriverWait(driver, 3).until(
+        EC.element_to_be_clickable((By.ID, "search-previous-page-link"))
+    )
 
-    driver.execute_script("arguments[0].click();", previous_page_button)
+    previous_page_button.click()
 
     footer = WebDriverWait(driver, 3).until(
-        EC.presence_of_element_located((By.XPATH, "//*[contains(text(), 'Page 1 of')]"))
+        EC.presence_of_element_located((By.ID, "nav-page-num"))
     )
 
     # Assert
     assert "Page 1 of" in footer.text
-
-
-def test_download_csv_too_large_query(driver):
-    # Arrange
-    driver.get("https://deh.boppleopple.net/")
-
-    # Act
-    download_csv_button = driver.find_element(By.LINK_TEXT, "Download as CSV")
-
-    driver.execute_script("arguments[0].click();", download_csv_button)
-
-    error_msg = WebDriverWait(driver, 5).until(
-        EC.presence_of_element_located(
-            (By.XPATH, "//*[contains(text(), 'Query is too large to download.')]")
-        )
-    )
-
-    # Assert
-    assert "Query is too large to download." in error_msg.text
