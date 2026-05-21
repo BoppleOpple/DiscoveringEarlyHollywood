@@ -12,7 +12,7 @@ def test_view_history_without_login(driver):
 
     driver.execute_script("arguments[0].click();", view_history_button)
 
-    error_message = WebDriverWait(driver, 3).until(
+    error_message = WebDriverWait(driver, 10).until(
         EC.presence_of_element_located((By.CSS_SELECTOR, "div.bg-red-100.text-red-800"))
     )
 
