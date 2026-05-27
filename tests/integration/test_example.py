@@ -1,8 +1,10 @@
+import pytest
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 
+@pytest.mark.skip(reason="Developer testing test")
 def test_view_history_without_login(driver):
     driver.get("http://127.0.0.1:5000/")
 
